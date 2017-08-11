@@ -1,13 +1,12 @@
 #define LIBRG_IMPLEMENTATION
 #include <librg.h>
 
-librg_component(waffle, { i32 x; i32 y; i32 z; });
+typedef struct { i32 x; i32 y; i32 z; } librg_component(rotation);
+typedef struct { i32 x; i32 y; i32 z; } librg_component(position);
+typedef struct { i32 x; i32 y; i32 z; } librg_component(waffle);
+typedef struct { b32 cool; } librg_component(zaklaus);
 
-librg_component(position, { i32 x; i32 y; i32 z; });
-librg_component(rotation, { i32 x; i32 y; i32 z; });
-librg_component(zaklaus,  { b32 cool; });
-
-int bar();
+// int bar();
 
 int main() {
 
@@ -22,7 +21,7 @@ int main() {
     librg_attach_rotation(ent, (rotation_t) { 1, 2, 3 });
     librg_attach_zaklaus(ent, (zaklaus_t) { true });
 
-    bar();
+    // bar();
 
     // transform_t *foo = librg_fetch_transform(ent);
 

@@ -17,8 +17,6 @@
     #define ZPL_EVENT_IMPLEMENTATION
 #endif
 
-// #define ZPLM_NO_MATH_H
-
 #include <zpl.h>
 #include <zpl_ent.h>
 #include <zpl_math.h>
@@ -107,8 +105,8 @@ extern "C" {
 
     #define LIBRG_ENTITY_ALLOCATOR zpl_heap_allocator
 
-    #define librg_component_declare(NAME, CODE) \
-        typedef struct ZPL_JOIN2(NAME, _t) CODE ZPL_JOIN2(NAME, _t); \
+    #define librg_component_declare(NAME) \
+        ZPL_JOIN2(NAME, _t); \
         typedef struct ZPL_JOIN2(NAME, _meta_ent_t) { \
             zple_id_t handle; \
             ZPLE_ID   used; \
@@ -198,7 +196,7 @@ extern "C" {
         return zple_create(&librg__entity_pool);
     }
 
-    #define librg_component_define(NAME, CODE) \
+    #define librg_component_define(NAME) \
         ZPL_JOIN2(NAME, _pool) ZPL_JOIN3(librg__component_, NAME, _pool); \
         \
         void ZPL_JOIN2(librg_init_, NAME) (ZPL_JOIN2(NAME, _pool) *h, zple_pool *p, zpl_allocator_t a) { \
@@ -244,9 +242,9 @@ extern "C" {
         }
 
     #undef librg_component
-    #define librg_component(NAME, CODE) \
-        librg_component_declare(NAME, CODE) \
-        librg_component_define(NAME, CODE)
+    #define librg_component(NAME) \
+        librg_component_declare(NAME) \
+        librg_component_define(NAME)
 
 
 #ifdef __cplusplus
