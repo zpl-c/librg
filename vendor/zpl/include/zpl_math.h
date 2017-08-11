@@ -22,7 +22,7 @@ Credits:
     Ginger Bill (GitHub: gingerBill)
 
 Version History:
-    1.0.0 - Initial Version
+    1.0.1 - Initial Version
 
 */
 
@@ -1914,7 +1914,7 @@ float zplm_smoother_step(float a, float b, float t) { float x = (t - a)/(b - a);
 
 
 #define ZPLM_VEC_LERPN(N, d, a, b, t) \
-zplm_vec_t##N db; \
+zplm_vec##N##_t db; \
 zplm_vec##N##_sub(&db, b, a); \
 zplm_vec##N##_muleq(&db, t); \
 zplm_vec##N##_add(d, a, db)
