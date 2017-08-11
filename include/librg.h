@@ -13,9 +13,11 @@
 #ifdef LIBRG_IMPLEMENTATION
     #define ZPL_IMPLEMENTATION
     #define ZPLE_IMPLEMENTATION
-    #define ZPL_MATH_IMPLEMENTATION
+    #define ZPLM_IMPLEMENTATION
     #define ZPL_EVENT_IMPLEMENTATION
 #endif
+
+// #define ZPLM_NO_MATH_H
 
 #include <zpl.h>
 #include <zpl_ent.h>
