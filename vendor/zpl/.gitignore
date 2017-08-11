@@ -1,9 +1,0 @@
-# project files & folders
-build
-include/project.4coder
-include/build.sh
-include/quick.c
-
-# other
-.DS_Store
-.swp
