@@ -23,23 +23,24 @@
 #include <zpl_event.h>
 #include <enet/enet.h>
 
-// remove it?
-#ifndef LIBRG_PLATFORM
-#define LIBRG_PLATFORM 1
-#endif
-#ifndef LIBRG_PROTOCOL
-#define LIBRG_PROTOCOL 1
-#endif
-#ifndef LIBRG_BUILD
-#define LIBRG_BUILD 1
-#endif
-
 #ifdef __cplusplus
 extern "C" {
 #endif
 
     #define LIBRG_API ZPL_DEF
     #define librg_log zpl_printf
+
+    #ifndef LIBRG_PLATFORM
+    #define LIBRG_PLATFORM 1
+    #endif
+
+    #ifndef LIBRG_PROTOCOL
+    #define LIBRG_PROTOCOL 1
+    #endif
+
+    #ifndef LIBRG_BUILD
+    #define LIBRG_BUILD 1
+    #endif
 
 
     /**
@@ -75,8 +76,23 @@ extern "C" {
 
     } librg_mode_e;
 
+    /**
+     * Main initialization method
+     * MUST BE called in the begging of your application
+     */
     LIBRG_API void  librg_init(librg_mode_e mode, librg_cfg_t config);
+
+    /**
+     * Main tick method
+     * MUST BE called in your loop
+     * preferably w/o delays
+     */
     LIBRG_API void  librg_tick();
+
+    /**
+     * Should be called at the end of
+     * execution of the program
+     */
     LIBRG_API void  librg_free();
 
     /**
@@ -87,7 +103,16 @@ extern "C" {
      */
     LIBRG_API void  librg_run_blocking();
 
+    /**
+     * Is librg instance is running
+     * in the server mode
+     */
     LIBRG_API b32   librg_is_server();
+
+    /**
+     * Is librg instance is running
+     * in the client mode
+     */
     LIBRG_API b32   librg_is_client();
 
 
@@ -95,33 +120,37 @@ extern "C" {
      * ENTITIES
      */
 
-    typedef zple_id_t librg_entity_t;
+    /**
+     * Allocator that will be used for new Entity System
+     */
+    #define LIBRG_ENTITY_ALLOCATOR zpl_heap_allocator
 
+    typedef zple_id_t librg_entity_t;
 
     LIBRG_API librg_entity_t librg_create();
     LIBRG_API void           librg_destroy(librg_entity_t entity);
 
     ZPL_EXTERN zple_pool librg__entity_pool;
 
-    #define LIBRG_ENTITY_ALLOCATOR zpl_heap_allocator
-
     #define librg_component_declare(NAME) \
         ZPL_JOIN2(NAME, _t); \
+        \
         typedef struct ZPL_JOIN2(NAME, _meta_ent_t) { \
             zple_id_t handle; \
             ZPLE_ID   used; \
         } ZPL_JOIN2(NAME, _meta_ent_t); \
-        typedef struct ZPL_JOIN2(NAME, _pool) { \
+        \
+        typedef struct ZPL_JOIN3(librg__component_, NAME, _pool_t) { \
             zpl_allocator_t backing; \
             usize count; \
             i8 initialized; \
             zpl_buffer_t(ZPL_JOIN2(NAME, _meta_ent_t)) entities; \
             zpl_buffer_t(ZPL_JOIN2(NAME, _t))         data; \
-        } ZPL_JOIN2(NAME, _pool); \
+        } ZPL_JOIN3(librg__component_, NAME, _pool_t); \
         \
         \
-        void                  ZPL_JOIN2(librg_init_, NAME)       (ZPL_JOIN2(NAME, _pool) *h, zple_pool *p, zpl_allocator_t a); \
-        void                  ZPL_JOIN2(librg_free_, NAME)       (ZPL_JOIN2(NAME, _pool) *h); \
+        void                  ZPL_JOIN2(librg_init_, NAME)       (ZPL_JOIN3(librg__component_, NAME, _pool_t) *h, zple_pool *p, zpl_allocator_t a); \
+        void                  ZPL_JOIN2(librg_free_, NAME)       (ZPL_JOIN3(librg__component_, NAME, _pool_t) *h); \
         ZPL_JOIN2(NAME, _t) * ZPL_JOIN2(librg_attach_, NAME)     (zple_id_t handle, ZPL_JOIN2(NAME, _t) data); \
         void                  ZPL_JOIN2(librg_detach_, NAME)     (zple_id_t handle); \
         ZPL_JOIN2(NAME, _t) * ZPL_JOIN2(librg_fetch_, NAME)      (zple_id_t handle);
@@ -196,17 +225,22 @@ extern "C" {
         return zple_create(&librg__entity_pool);
     }
 
+    void librg_destroy(librg_entity_t entity) {
+        return zple_destroy(&librg__entity_pool, entity);
+    }
+
+
     #define librg_component_define(NAME) \
-        ZPL_JOIN2(NAME, _pool) ZPL_JOIN3(librg__component_, NAME, _pool); \
+        ZPL_JOIN3(librg__component_, NAME, _pool_t) ZPL_JOIN3(librg__component_, NAME, _pool); \
         \
-        void ZPL_JOIN2(librg_init_, NAME) (ZPL_JOIN2(NAME, _pool) *h, zple_pool *p, zpl_allocator_t a) { \
+        void ZPL_JOIN2(librg_init_, NAME) (ZPL_JOIN3(librg__component_, NAME, _pool_t) *h, zple_pool *p, zpl_allocator_t a) { \
             ZPL_ASSERT(h&&p); h->backing = a; \
             h->count = p->count; \
             h->initialized = 1; \
             zpl_buffer_init(h->entities, a, p->count); \
             zpl_buffer_init(h->data, a, p->count); \
         }\
-        void ZPL_JOIN2(librg_free_, NAME) (ZPL_JOIN2(NAME, _pool) *h) { \
+        void ZPL_JOIN2(librg_free_, NAME) (ZPL_JOIN3(librg__component_, NAME, _pool_t) *h) { \
             ZPL_ASSERT(h); \
             zpl_buffer_free(h->entities, h->backing); \
             zpl_buffer_free(h->data, h->backing); \
@@ -240,6 +274,16 @@ extern "C" {
                 return NULL; \
             } \
         }
+
+    #define librg_foreach(NAME, cb) \
+        for (usize i = 0; i < ZPL_JOIN3(librg__component_, NAME, _pool).count; ++i) { \
+            ZPL_JOIN2(NAME, _meta_ent_t) ent = ZPL_JOIN3(librg__component_, NAME, _pool).entities[i]; \
+            if (ent.used) { \
+                cb(ent.handle, ZPL_JOIN2(librg_fetch_, NAME)(ent.handle)); \
+            } \
+        }
+
+
 
     #undef librg_component
     #define librg_component(NAME) \
