@@ -1,26 +1,32 @@
 #define LIBRG_IMPLEMENTATION
 #include <librg.h>
 
-// librg_component(transform_t, transform, {
-//     i32 x;
-//     i32 y;
-//     i32 z;
-// });
+librg_component(waffle, { i32 x; i32 y; i32 z; });
+
+librg_component(position, { i32 x; i32 y; i32 z; });
+librg_component(rotation, { i32 x; i32 y; i32 z; });
+librg_component(zaklaus,  { b32 cool; });
+
+int bar();
 
 int main() {
 
-    // librg_ent_t ent = librg_ent_create();
+    // dis is inside librg_init
+        zple_init(&librg__entity_pool, zpl_heap_allocator(), 100);
 
-    // librg_attach_transform(ent, (transform_t) { 1, 2, 3 });
-    // librg_attach_streamable(ent, (streamable_t) { 15 });
-    // librg_attach_clientowned(ent, (clientowned_t) { NULL });
+    librg_entity_t ent = librg_create();
+    librg_entity_t ent2 = librg_create();
+
+    librg_attach_position(ent, (position_t) { 1, 2, 3 });
+    librg_attach_position(ent2, (position_t) { 1, 2, 3 });
+    librg_attach_rotation(ent, (rotation_t) { 1, 2, 3 });
+    librg_attach_zaklaus(ent, (zaklaus_t) { true });
+
+    bar();
 
     // transform_t *foo = librg_fetch_transform(ent);
 
-    // librg_detach_clientowned(ent);
+    // librg_log("the result is: %d %d %d\n", foo->x, foo->y, foo->z);
 
-    // librg_ent_destroy(ent);// or _free
-
-    librg_log("aaa\n");
     return 0;
 }
