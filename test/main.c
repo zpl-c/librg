@@ -14,6 +14,7 @@ int main() {
 
     // dis is inside librg_init
     zple_init(&librg__entity_pool, zpl_heap_allocator(), 100);
+    zpl_array_init(librg__components, zpl_heap_allocator());
 
     // librg_entity_t ent = librg_create();
     // librg_entity_t ent2 = librg_create();
@@ -26,46 +27,29 @@ int main() {
     // librg_detach_zaklaus(ent);
 
 
-    // NOTE(ZaKlaus): Generate some entities.
     for (isize i = 0; i < 15; ++i) {
         zple_id_t h = librg_create();
         librg_attach_transform(h, (transform_t){i, i*2, i*i});
     }
 
-    // NOTE(ZaKlaus): Do foreach on our component pool
     librg_foreach(transform, transform_print_cb);
 
-    zple_id_t t = zple_create();
-    ZPL_ASSERT(t.id == 15); // NOTE(ZaKlaus): This entity should be 16th.
+    zple_id_t t = librg_create();
+    ZPL_ASSERT(t.id == 15);
 
-    // // TODO(ZaKlaus): Add component to entity
-    // transform_t *data = transform_attach(&tranpool, t, (transform_t) { 1, 2, 3 });
+    transform_t *data = librg_attach_transform(t, (transform_t) { 1, 2, 3 });
 
-    // // NOTE(ZaKlaus): Check on the data.
-    // transform_t *d = transform_fetch(&tranpool, t);
-    // ZPL_ASSERT(d->x == 1 && d->y == 2 && d->z == 3);
+    librg_attach_zaklaus(t, (zaklaus_t) { true });
 
-    // // NOTE(ZaKlaus): Detach component from entity.
-    // // WARN(ZaKlaus): Do this each time when you destroy the entity!
-    // transform_detach(&tranpool, t);
+    transform_t *d = librg_fetch_transform(t);
+    ZPL_ASSERT(d->x == 1 && d->y == 2 && d->z == 3);
 
-    // // TODO(ZaKlaus): Remove entity
-    // zple_destroy(&pool, t);
+    // librg_detach_transform(t);
 
-    // // NOTE(ZaKlaus): Add new entity
-    // t = zple_create(&pool);
-    // ZPL_ASSERT(t.id == 15 && t.generation == 1); // NOTE(ZaKlaus): This should be re-used entity.
+    librg_destroy(t);
 
-    // NOTE(ZaKlaus): Release our resources
-    // transform_free(&tranpool);
-    // zple_free(&pool);
-
-
-    // bar();
-
-    // transform_t *foo = librg_fetch_transform(ent);
-
-    // librg_log("the result is: %d %d %d\n", foo->x, foo->y, foo->z);
+    t = librg_create();
+    ZPL_ASSERT(t.id == 15 && t.generation == 1); // NOTE(ZaKlaus): This should be re-used entity.
 
     return 0;
 }
