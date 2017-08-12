@@ -80,20 +80,20 @@ extern "C" {
      * Main initialization method
      * MUST BE called in the begging of your application
      */
-    LIBRG_API void  librg_init(librg_mode_e mode, librg_cfg_t config);
+    LIBRG_API void librg_init(librg_mode_e mode, librg_cfg_t config);
 
     /**
      * Main tick method
      * MUST BE called in your loop
      * preferably w/o delays
      */
-    LIBRG_API void  librg_tick();
+    LIBRG_API void librg_tick();
 
     /**
      * Should be called at the end of
      * execution of the program
      */
-    LIBRG_API void  librg_free();
+    LIBRG_API void librg_free();
 
     /**
      * Old method, compatibility with
@@ -101,19 +101,19 @@ extern "C" {
      * can be used to run on a server side, for simple testing
      * @deprecated
      */
-    LIBRG_API void  librg_run_blocking();
+    LIBRG_API void librg_run_blocking();
 
     /**
      * Is librg instance is running
      * in the server mode
      */
-    LIBRG_API b32   librg_is_server();
+    LIBRG_API b32 librg_is_server();
 
     /**
      * Is librg instance is running
      * in the client mode
      */
-    LIBRG_API b32   librg_is_client();
+    LIBRG_API b32 librg_is_client();
 
 
     /**
@@ -125,26 +125,35 @@ extern "C" {
      */
     #define LIBRG_ENTITY_ALLOCATOR zpl_heap_allocator
 
+
+    // ZPL_EXTERN zple_pool librg__entity_pool;
+
+
     typedef zple_id_t librg_entity_t;
 
-    LIBRG_API librg_entity_t librg_create();
-    LIBRG_API void           librg_destroy(librg_entity_t entity);
+    /**
+     * Create entity and return handle
+     */
+    LIBRG_API librg_entity_t librg_entity_create();
 
-    ZPL_EXTERN zple_pool librg__entity_pool;
+    /**
+     * Auto detach all attached components
+     * and destroy entity
+     */
+    LIBRG_API void librg_entity_destroy(librg_entity_t entity);
 
     #define librg_component_declare(NAME) \
         ZPL_JOIN2(NAME, _t); \
         \
-        typedef struct ZPL_JOIN2(NAME, _meta_ent_t) { \
+        typedef struct ZPL_JOIN3(librg_, NAME, _meta_ent_t) { \
             zple_id_t handle; \
             ZPLE_ID   used; \
-        } ZPL_JOIN2(NAME, _meta_ent_t); \
+        } ZPL_JOIN3(librg_, NAME, _meta_ent_t); \
         \
         typedef struct ZPL_JOIN3(librg__component_, NAME, _pool_t) { \
             zpl_allocator_t backing; \
             usize count; \
-            i8 initialized; \
-            zpl_buffer_t(ZPL_JOIN2(NAME, _meta_ent_t)) entities; \
+            zpl_buffer_t(ZPL_JOIN3(librg_, NAME, _meta_ent_t)) entities; \
             zpl_buffer_t(ZPL_JOIN2(NAME, _t))         data; \
         } ZPL_JOIN3(librg__component_, NAME, _pool_t); \
         \
@@ -219,18 +228,29 @@ extern "C" {
      * ENTITIES
      */
 
+    /**
+     * Global variable with entity pool
+     */
     zple_pool librg__entity_pool;
-    zpl_array_t(void *) librg__components;
 
+    /**
+     * Global variable with array of component pools
+     */
+    zpl_array_t(void *) librg__component_pool;
+
+    /**
+     * Create dummy component to
+     * use it as template for removal in destroy
+     */
     typedef struct {} librg_component_declare(_dummy);
 
-    zple_id_t librg_create() {
+    zple_id_t librg_entity_create() {
         return zple_create(&librg__entity_pool);
     }
 
-    void librg_destroy(librg_entity_t entity) {
-        for (i32 i = 0; i < zpl_array_count(librg__components); i++) {
-            _dummy_meta_ent_t *meta_ent = ((librg__component__dummy_pool_t*)librg__components[i])->entities+entity.id;
+    void librg_entity_destroy(librg_entity_t entity) {
+        for (i32 i = 0; i < zpl_array_count(librg__component_pool); i++) {
+            librg__dummy_meta_ent_t *meta_ent = ((librg__component__dummy_pool_t*)librg__component_pool[i])->entities+entity.id;
             ZPL_ASSERT(meta_ent);
             meta_ent->used = false;
         }
@@ -245,10 +265,9 @@ extern "C" {
         void ZPL_JOIN2(librg_init_, NAME) (ZPL_JOIN3(librg__component_, NAME, _pool_t) *h, zple_pool *p, zpl_allocator_t a) { \
             ZPL_ASSERT(h&&p); h->backing = a; \
             h->count = p->count; \
-            h->initialized = 1; \
             zpl_buffer_init(h->entities, a, p->count); \
             zpl_buffer_init(h->data, a, p->count); \
-            zpl_array_append(librg__components, cast(void *)h); \
+            zpl_array_append(librg__component_pool, cast(void *)h); \
         }\
         void ZPL_JOIN2(librg_free_, NAME) (ZPL_JOIN3(librg__component_, NAME, _pool_t) *h) { \
             ZPL_ASSERT(h); \
@@ -256,27 +275,27 @@ extern "C" {
             zpl_buffer_free(h->data, h->backing); \
         } \
         ZPL_JOIN2(NAME, _t) * ZPL_JOIN2(librg_attach_, NAME) (zple_id_t handle, ZPL_JOIN2(NAME, _t) data) { \
-            if (!ZPL_JOIN3(librg__component_, NAME, _pool).initialized) { \
+            if (ZPL_JOIN3(librg__component_, NAME, _pool).count == 0) { \
                 ZPL_JOIN2(librg_init_, NAME)(&ZPL_JOIN3(librg__component_, NAME, _pool), &librg__entity_pool, LIBRG_ENTITY_ALLOCATOR()); \
             } \
-            ZPL_JOIN2(NAME, _meta_ent_t) *meta_ent = (ZPL_JOIN3(librg__component_, NAME, _pool).entities+handle.id); \
+            ZPL_JOIN3(librg_, NAME, _meta_ent_t) *meta_ent = (ZPL_JOIN3(librg__component_, NAME, _pool).entities+handle.id); \
             meta_ent->handle = handle; \
             meta_ent->used = true; \
             *(ZPL_JOIN3(librg__component_, NAME, _pool).data+handle.id) = data; \
             return (ZPL_JOIN3(librg__component_, NAME, _pool).data+handle.id); \
         } \
         void ZPL_JOIN2(librg_detach_, NAME) (zple_id_t handle) { \
-            if (!ZPL_JOIN3(librg__component_, NAME, _pool).initialized) { \
+            if (ZPL_JOIN3(librg__component_, NAME, _pool).count == 0) { \
                 ZPL_JOIN2(librg_init_, NAME)(&ZPL_JOIN3(librg__component_, NAME, _pool), &librg__entity_pool, LIBRG_ENTITY_ALLOCATOR()); \
             } \
-            ZPL_JOIN2(NAME, _meta_ent_t) *meta_ent = (ZPL_JOIN3(librg__component_, NAME, _pool).entities+handle.id); \
+            ZPL_JOIN3(librg_, NAME, _meta_ent_t) *meta_ent = (ZPL_JOIN3(librg__component_, NAME, _pool).entities+handle.id); \
             meta_ent->used = false; \
         } \
         ZPL_JOIN2(NAME, _t) * ZPL_JOIN2(librg_fetch_, NAME) (zple_id_t handle) { \
-            if (!ZPL_JOIN3(librg__component_, NAME, _pool).initialized) { \
+            if (ZPL_JOIN3(librg__component_, NAME, _pool).count == 0) { \
                 ZPL_JOIN2(librg_init_, NAME)(&ZPL_JOIN3(librg__component_, NAME, _pool), &librg__entity_pool, LIBRG_ENTITY_ALLOCATOR()); \
             } \
-            ZPL_JOIN2(NAME, _meta_ent_t) *meta_ent = (ZPL_JOIN3(librg__component_, NAME, _pool).entities+handle.id); \
+            ZPL_JOIN3(librg_, NAME, _meta_ent_t) *meta_ent = (ZPL_JOIN3(librg__component_, NAME, _pool).entities+handle.id); \
             if ((meta_ent->used) && (meta_ent->handle.id == handle.id) && (meta_ent->handle.generation == handle.generation)) { \
                 return (ZPL_JOIN3(librg__component_, NAME, _pool).data+handle.id); \
             } \
@@ -287,7 +306,7 @@ extern "C" {
 
     #define librg_foreach(NAME, cb) \
         for (usize i = 0; i < ZPL_JOIN3(librg__component_, NAME, _pool).count; ++i) { \
-            ZPL_JOIN2(NAME, _meta_ent_t) ent = ZPL_JOIN3(librg__component_, NAME, _pool).entities[i]; \
+            ZPL_JOIN3(librg_, NAME, _meta_ent_t) ent = ZPL_JOIN3(librg__component_, NAME, _pool).entities[i]; \
             if (ent.used) { \
                 cb(ent.handle, ZPL_JOIN2(librg_fetch_, NAME)(ent.handle)); \
             } \
