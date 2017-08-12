@@ -14,7 +14,7 @@
     #define ZPL_IMPLEMENTATION
     #define ZPLE_IMPLEMENTATION
     #define ZPLM_IMPLEMENTATION
-    #define ZPL_EVENT_IMPLEMENTATION
+    #define ZPLEV_IMPLEMENTATION
 #endif
 
 #include <zpl.h>
@@ -41,6 +41,7 @@ extern "C" {
     #ifndef LIBRG_BUILD
     #define LIBRG_BUILD 1
     #endif
+
 
 
     /**
@@ -98,10 +99,10 @@ extern "C" {
     LIBRG_API void librg_free();
 
     /**
-     * Old method, compatibility with
-     * librg automatic mode, runs blocking while loop
-     * can be used to run on a server side, for simple testing
      * @deprecated
+     * Old method, compatibility with
+     * librg-cpp automatic mode, runs blocking while loop
+     * can be used to run on a server side, for simple testing
      */
     LIBRG_API void librg_run_blocking();
 
@@ -118,6 +119,8 @@ extern "C" {
     LIBRG_API b32 librg_is_client();
 
 
+
+
     /**
      * ENTITIES
      */
@@ -127,10 +130,8 @@ extern "C" {
      */
     #define LIBRG_ENTITY_ALLOCATOR zpl_heap_allocator
 
-
-    // ZPL_EXTERN zple_pool librg__entity_pool;
-
-
+    // todo: make custom entity handle
+    // to store shared network ids
     typedef zple_id_t librg_entity_t;
 
     /**
@@ -282,6 +283,53 @@ extern "C" {
     #define librg_component(NAME) \
         librg_component_declare(NAME)
 
+
+
+
+    /**
+     * EVENTS
+     */
+
+    typedef zplev_data_t librg_evt_t;
+    typedef zplev_cb     librg_evt_cb;
+
+    /**
+     * Used to attach event handler
+     * You can bind as many event handlers onto
+     * single event, as you want
+     *
+     * In the callback you will need to cast event
+     * to type of structure that you've triggered this event with
+     *
+     * @param  id usually you define event ids inside enum
+     * @param  callback
+     * @return index of added event, can be used to remove particular event handler
+     */
+    LIBRG_API u64 librg_event_add(u64 id, librg_evt_cb callback);
+
+    /**
+     * Used to trigger execution of all attached
+     * event handlers for particlar event
+     *
+     * You can provide pointer to any data, which will be
+     * passed inside the event callback
+     *
+     * @param id usually you define event ids inside enum
+     * @param  event pointer onto data or NULL
+     */
+    LIBRG_API void librg_event_trigger(u64 id, librg_evt_t event);
+
+    /**
+     * Used to remove particular callback from
+     * event chain, so it wont be called ever again
+     *
+     * @param  id usually you define event ids inside enum
+     * @param  index returned by librg_event_add
+     */
+    LIBRG_API void librg_event_remove(u64 id, u64 index);
+
+
+
     /**
      * NETWORK
      */
@@ -304,17 +352,6 @@ extern "C" {
     LIBRG_API u64   librg_net_add       (u64 id, librg_net_cb callback);
     LIBRG_API void  librg_net_remove    (u64 id, u64 index);
 
-
-    /**
-     * EVENTS
-     */
-
-    typedef zplev_data_t librg_evt_t;
-    typedef zplev_cb     librg_evt_cb;
-
-    LIBRG_API u64   librg_evt_add       (u64 id, librg_evt_cb callback);
-    LIBRG_API void  librg_evt_trigger   (u64 id, librg_evt_t event);
-    LIBRG_API void  librg_evt_remove    (u64 id, u64 index);
 
 
     /**
@@ -345,6 +382,7 @@ extern "C" {
      * for inner librg stuff
      */
     zple_pool       librg__entity_pool;
+    zplev_pool      librg__events;
     librg_cfg_t     librg__config;
     librg_mode_e    librg__mode;
     zpl_timer_pool  librg__timers;
@@ -360,6 +398,9 @@ extern "C" {
      */
     typedef struct {} librg_component_declare(_dummy);
 
+
+
+
     void librg_tick() {
         zpl_timer_update(librg__timers);
     }
@@ -372,12 +413,17 @@ extern "C" {
         librg__mode   = mode;
         librg__config = config;
 
+        // apply default settings (if no user provided)
         librg__set_default(librg__config.tick_delay, 32);
         librg__set_default(librg__config.entity_limit, 2048);
+        librg__set_default(librg__config.world_size.x, 4096.0f);
+        librg__set_default(librg__config.world_size.y, 4096.0f);
 
         // init entity system
         zple_init(&librg__entity_pool, LIBRG_ENTITY_ALLOCATOR(), librg__config.entity_limit);
         zpl_array_init(librg__component_pool, LIBRG_ENTITY_ALLOCATOR());
+
+        zplev_init(&librg__events, zpl_heap_allocator());
 
         // init timers
         zpl_array_init(librg__timers, zpl_heap_allocator());
@@ -385,11 +431,13 @@ extern "C" {
         zpl_timer_set(tick_timer, 1000 * librg__config.tick_delay, -1, librg__tick_cb);
         zpl_timer_start(tick_timer, 1000);
 
+
     }
 
     void librg_free() {
-        // free all timers
+        // free all timers and events first
         zpl_array_free(librg__timers);
+        zplev_destroy(&librg__events);
 
         // free the entity component pools
         for (i32 i = 0; i < zpl_array_count(librg__component_pool); i++) {
@@ -403,6 +451,18 @@ extern "C" {
         zpl_array_free(librg__component_pool);
         zple_free(&librg__entity_pool);
     }
+
+    b32 librg_is_server() {
+        return librg__mode == librg_mode_server_ev;
+    }
+
+    b32 librg_is_client() {
+        return librg__mode == librg_mode_client_ev;
+    }
+
+
+
+
 
     zple_id_t librg_entity_create() {
         return zple_create(&librg__entity_pool);
@@ -525,6 +585,22 @@ extern "C" {
     #define librg_component(NAME) \
         librg_component_declare(NAME) \
         librg_component_define(NAME)
+
+
+
+
+    u64 librg_event_add(u64 id, librg_evt_cb callback) {
+        return zplev_add(&librg__events, id, callback);
+    }
+
+    void librg_event_trigger(u64 id, librg_evt_t event) {
+        zplev_trigger(&librg__events, id, event);
+    }
+
+    void librg_event_remove(u64 id, u64 index) {
+        zplev_remove(&librg__events, id, index);
+    }
+
 
 
 #ifdef __cplusplus

@@ -8,9 +8,10 @@ int main() {
         .entity_limit   = 2048,
     });
 
-    while (true) {
-        librg_tick();
-    }
+
+    // while (true) {
+    //     librg_tick();
+    // }
 
     librg_free();
     return 0;
