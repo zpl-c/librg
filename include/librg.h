@@ -1,3 +1,42 @@
+/**
+ * LIBRG - reguider library
+ *
+ * A library for building simple and elegant cross-platform mmo client-server solutions.
+ *
+ * Usage:
+ * #define LIBRG_IMPLEMENTATION exactly in ONE source file right BEFORE including the library, like:
+ *
+ * #define LIBRG_IMPLEMENTATION
+ * #include <librg.h>
+ *
+ * Credits:
+ * Vladislav Gritsenko (GitHub: inlife)
+ * Dominik Madarasz (GitHub: zaklaus)
+ *
+ * Dependencies:
+ * zpl.h
+ * zpl_ent.h
+ * zpl_math.h
+ * zpl_event.h
+ * enet.h
+ *
+ * Version History:
+ * 2.0.0 - Initial C version rewrite
+ *
+ * Copyright 2017 Vladislav Gritsenko
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 #ifndef LIBRG_INCLUDE_H
 #define LIBRG_INCLUDE_H
 
@@ -29,6 +68,7 @@ extern "C" {
 
     #define LIBRG_API ZPL_DEF
     #define librg_log zpl_printf
+
 
     #ifndef LIBRG_PLATFORM
     #define LIBRG_PLATFORM 1
@@ -336,21 +376,21 @@ extern "C" {
 
     LIBRG_API void librg_connect(char *host, int port);
     LIBRG_API void librg_disconnect();
-    LIBRG_API b32  librg_is_connected();
+    LIBRG_API b32 librg_is_connected();
 
     typedef void *librg_peer_t;
     typedef void *librg_net_cb;
 
-    LIBRG_API void librg_send_all               (u64 id, librg_net_cb callback);
-    LIBRG_API void librg_send_instream          (u64 id, librg_net_cb callback);
-    LIBRG_API void librg_send_to                (u64 id, librg_entity_t entity, librg_net_cb callback);
-    LIBRG_API void librg_send_except            (u64 id, librg_entity_t entity, librg_net_cb callback);
-    LIBRG_API void librg_send_instream_except   (u64 id, librg_entity_t entity, librg_net_cb callback);
+    LIBRG_API void librg_send_all(u64 id, librg_net_cb callback);
+    LIBRG_API void librg_send_instream(u64 id, librg_net_cb callback);
+    LIBRG_API void librg_send_to(u64 id, librg_entity_t entity, librg_net_cb callback);
+    LIBRG_API void librg_send_except(u64 id, librg_entity_t entity, librg_net_cb callback);
+    LIBRG_API void librg_send_instream_except(u64 id, librg_entity_t entity, librg_net_cb callback);
 
     #define librg_send librg_send_all
 
-    LIBRG_API u64   librg_net_add       (u64 id, librg_net_cb callback);
-    LIBRG_API void  librg_net_remove    (u64 id, u64 index);
+    LIBRG_API u64 librg_net_add(u64 id, librg_net_cb callback);
+    LIBRG_API void librg_net_remove(u64 id, u64 index);
 
 
 
@@ -358,11 +398,11 @@ extern "C" {
      * STREAMER
      */
 
-    LIBRG_API void librg_streamer_remove          (librg_entity_t entity);
-    LIBRG_API void librg_streamer_set_visible     (librg_entity_t entity, b32 state);
-    LIBRG_API void librg_streamer_set_visible_for (librg_entity_t entity, librg_entity_t target, b32 state);
-    LIBRG_API void librg_streamer_client_set      (librg_entity_t entity, librg_peer_t peer);
-    LIBRG_API void librg_streamer_client_remove   (librg_entity_t entity);
+    LIBRG_API void librg_streamer_remove(librg_entity_t entity);
+    LIBRG_API void librg_streamer_set_visible(librg_entity_t entity, b32 state);
+    LIBRG_API void librg_streamer_set_visible_for(librg_entity_t entity, librg_entity_t target, b32 state);
+    LIBRG_API void librg_streamer_client_set(librg_entity_t entity, librg_peer_t peer);
+    LIBRG_API void librg_streamer_client_remove(librg_entity_t entity);
 
 #ifdef __cplusplus
 }
