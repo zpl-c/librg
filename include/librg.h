@@ -52,7 +52,7 @@ extern "C" {
         u16 tick_delay;
 
         // streamer configuration
-        zplm_vec3_t world_size;
+        zplm_vec2_t world_size;
 
         // network configuration
         u16 port;
@@ -132,6 +132,64 @@ extern "C" {
     typedef zple_id_t librg_entity_t;
 
     /**
+     * Entity filter
+     * Used for ruinning complex iterations on entity pool
+     *
+     * Can be used to retrieve only entites containing all
+     * of the provided components (logical AND operation).
+     * And entities that exclude provided components (logical NOT).
+     *
+     * Supports up to 8 components for "contains" operation.
+     * And up to 4 components for "excludes" operation.
+     *
+     * First undefined component index in the list will skip all other
+     * components for that operation:
+     *     { .contains1 = librg_index_c1(), .contains3 = librg_index_c3() }
+     *     In this case librg_index_c3() WILL NOT be added to condition.
+     *
+     * If you want to enable this behavior: make sure
+     * you define LIBRG_ENTITY_UNOPTIMIZED_CYCLES before including the librg.h
+     *
+     *
+     * EXAMPLES:
+     *     librg_entity_filter_t filter = { librg_index_c1(), librg_index_c2() };
+     * OR
+     *     librg_entity_filter_t filter = { librg_index_c1(), .excludes1 = librg_index_c2() };
+     */
+    typedef union librg_entity_filter_t {
+        struct {
+            u32 contains1; u32 contains2; u32 contains3; u32 contains4;
+            u32 contains5; u32 contains6; u32 contains7; u32 contains8;
+            u32 excludes1; u32 excludes2; u32 excludes3; u32 excludes4;
+        };
+
+        struct {
+            u32 contains[8];
+            u32 excludes[4];
+        };
+    } librg_entity_filter_t;
+
+
+    /**
+     * Callback that will be used to pass
+     * the entity inside the function-handler
+     */
+    #define LIBRG_ENTITY_CB(name) void name(librg_entity_t entity)
+        typedef LIBRG_ENTITY_CB(librg_entity_cb_t);
+    #undef  LIBRG_ENTITY_CB
+
+    /**
+     * If you dont want to skip filter rules if previous one is empty
+     * make sure you #define LIBRG_ENTITY_UNOPTIMIZED_CYCLES
+     * before including the librg.h
+     */
+    #if defined(LIBRG_ENTITY_UNOPTIMIZED_CYCLES)
+        #define LIBRG__ENTITY_EACH_BREAK continue
+    #else
+        #define LIBRG__ENTITY_EACH_BREAK break
+    #endif
+
+    /**
      * Create entity and return handle
      */
     LIBRG_API librg_entity_t librg_entity_create();
@@ -142,6 +200,59 @@ extern "C" {
      */
     LIBRG_API void librg_entity_destroy(librg_entity_t entity);
 
+    /**
+     * Method used for interation on the collection of entities
+     * filtered by provided conditions, and calls callback for each found entity
+     *
+     * Filter condition is formbed by naming component ids that are need to be included
+     * or excluded, depending on the number or key of element in the structure
+     *
+     * NOTE: Component id order IS RELEVANT, if you want to have as much performance as possible,
+     * make sure you put component with lowest amount of attached entities in the first slot
+     *
+     * @param filter
+     * @param callback
+     */
+    LIBRG_API void librg_entity_each(librg_entity_filter_t filter, librg_entity_cb_t callback);
+
+    /**
+     * Macro that declares component structs and methods
+     * SHOULD BE called IN ALL c/cpp files that will be using it
+     * with EXACTLY THE SAME sturcture and description as in other c/cpp files
+     *
+     * Describes these public API methods:
+     *
+     * 1) attach
+     *     Used to attach a component onto entity.
+     *     Returns pointer onto attached component.
+     *     Contains lazy-initialization call for itself.
+     *
+     * EXAMPLE: librg_attach_{component}(ent, somedata);
+     *
+     *
+     * 2) fetch
+     *     Used to fetch attached component from the entity.
+     *     If entiy doesnt have a component, NULL will be returned.
+     *     Contains lazy-initialization call for itself.
+     *
+     * EXAMPLE: {component}_t *foo = librg_fetch_{component}(ent);
+     *
+     *
+     * 3) detach
+     *     Used to remove attached component form the entity
+     *     Contains lazy-initialization call for itself.
+     *
+     * EXAMPLE: librg_detach_{component}(ent);
+     *
+     *
+     * 4) index
+     *     Used to get run-time component index inside inner storage.
+     *     MUST NOT be saved in any static parsistant storage, considering the fact
+     *     that indexes are not persistant, and can change between application calls.
+     *
+     * EXAMPLE: u32 index = librg_index_{component}();
+     *
+     */
     #define librg_component_declare(NAME) \
         ZPL_JOIN2(NAME, _t); \
         \
@@ -153,16 +264,18 @@ extern "C" {
         typedef struct ZPL_JOIN3(librg__component_, NAME, _pool_t) { \
             zpl_allocator_t backing; \
             usize count; \
+            u32 index; \
             zpl_buffer_t(ZPL_JOIN3(librg_, NAME, _meta_ent_t)) entities; \
             zpl_buffer_t(ZPL_JOIN2(NAME, _t))         data; \
         } ZPL_JOIN3(librg__component_, NAME, _pool_t); \
         \
         \
-        void                  ZPL_JOIN2(librg__init_, NAME)       (ZPL_JOIN3(librg__component_, NAME, _pool_t) *h, zple_pool *p, zpl_allocator_t a); \
-        void                  ZPL_JOIN2(librg__free_, NAME)       (ZPL_JOIN3(librg__component_, NAME, _pool_t) *h); \
-        ZPL_JOIN2(NAME, _t) * ZPL_JOIN2(librg_attach_, NAME)     (zple_id_t handle, ZPL_JOIN2(NAME, _t) data); \
-        void                  ZPL_JOIN2(librg_detach_, NAME)     (zple_id_t handle); \
-        ZPL_JOIN2(NAME, _t) * ZPL_JOIN2(librg_fetch_, NAME)      (zple_id_t handle);
+        void                  ZPL_JOIN2(librg__init_, NAME)     (ZPL_JOIN3(librg__component_, NAME, _pool_t) *h, zple_pool *p, zpl_allocator_t a); \
+        void                  ZPL_JOIN2(librg__free_, NAME)     (ZPL_JOIN3(librg__component_, NAME, _pool_t) *h); \
+        ZPL_JOIN2(NAME, _t) * ZPL_JOIN2(librg_attach_, NAME)    (zple_id_t handle, ZPL_JOIN2(NAME, _t) data); \
+        void                  ZPL_JOIN2(librg_detach_, NAME)    (zple_id_t handle); \
+        ZPL_JOIN2(NAME, _t) * ZPL_JOIN2(librg_fetch_, NAME)     (zple_id_t handle); \
+        u32                   ZPL_JOIN2(librg_index_, NAME)     ();
 
     #define librg_component(NAME) \
         librg_component_declare(NAME)
@@ -223,11 +336,6 @@ extern "C" {
 extern "C" {
 #endif
 
-
-    /**
-     * ENTITIES
-     */
-
     /**
      * Global variable with entity pool
      */
@@ -244,6 +352,26 @@ extern "C" {
      */
     typedef struct {} librg_component_declare(_dummy);
 
+
+    void librg_init(librg_mode_e mode, librg_cfg_t config) {
+        zple_init(&librg__entity_pool, zpl_heap_allocator(), 100);
+        zpl_array_init(librg__component_pool, zpl_heap_allocator());
+    }
+
+    void librg_free() {
+        // free the entity component pools
+        for (i32 i = 0; i < zpl_array_count(librg__component_pool); i++) {
+            ZPL_ASSERT(librg__component_pool[i]);
+            librg__component__dummy_pool_t *h = cast(librg__component__dummy_pool_t*)librg__component_pool[i];
+            zpl_buffer_free(h->entities, h->backing);
+            zpl_buffer_free(h->data, h->backing);
+        }
+
+        // free containers and entity pool
+        zpl_array_free(librg__component_pool);
+        zple_free(&librg__entity_pool);
+    }
+
     zple_id_t librg_entity_create() {
         return zple_create(&librg__entity_pool);
     }
@@ -258,6 +386,59 @@ extern "C" {
         return zple_destroy(&librg__entity_pool, entity);
     }
 
+    void librg_entity_each(librg_entity_filter_t filter, librg_entity_cb_t callback) {
+        u32 index = filter.contains1;
+        ZPL_ASSERT(index != 0);
+        ZPL_ASSERT(index <= zpl_array_count(librg__component_pool));
+
+        librg__component__dummy_pool_t *pool = cast(librg__component__dummy_pool_t*)librg__component_pool[index - 1];
+        ZPL_ASSERT(pool);
+
+        // iterating on each entity having the first provided component
+        for (usize i = 0; i < pool->count; ++i) {
+            librg__dummy_meta_ent_t meta_ent = pool->entities[i];
+            if (!meta_ent.used) continue;
+
+            librg_entity_t handle = meta_ent.handle;
+            b32 used = true;
+
+            // iterate the rest contained components, and make sure they exist
+            for (usize j = 1; j < 8; j++) {
+                if (filter.contains[j] == 0) LIBRG__ENTITY_EACH_BREAK;
+                librg__component__dummy_pool_t *sub_pool = cast(librg__component__dummy_pool_t*)librg__component_pool[filter.contains[j] - 1];
+                ZPL_ASSERT(sub_pool);
+
+                librg__dummy_meta_ent_t *sub_meta_ent = cast(librg__dummy_meta_ent_t *)(sub_pool->entities+handle.id);
+                ZPL_ASSERT(sub_meta_ent);
+
+                // if not used - skip
+                if (!sub_meta_ent->used) {
+                    used = false; break;
+                }
+            }
+
+            // early skip if some component is not attached
+            if (!used) continue;
+
+            for (usize j = 0; j < 4; j++) {
+                if (filter.excludes[j] == 0) LIBRG__ENTITY_EACH_BREAK;
+                librg__component__dummy_pool_t *sub_pool = cast(librg__component__dummy_pool_t*)librg__component_pool[filter.excludes[j] - 1];
+                ZPL_ASSERT(sub_pool);
+
+                librg__dummy_meta_ent_t *sub_meta_ent = cast(librg__dummy_meta_ent_t *)(sub_pool->entities+handle.id);
+                ZPL_ASSERT(sub_meta_ent);
+
+                // if not used - skip
+                if (sub_meta_ent->used) {
+                    used = false; break;
+                }
+            }
+
+            // component exists for all "contains" conditions
+            if (used) callback(handle);
+        }
+    }
+
 
     #define librg_component_define(NAME) \
         ZPL_JOIN3(librg__component_, NAME, _pool_t) ZPL_JOIN3(librg__component_, NAME, _pool); \
@@ -268,11 +449,15 @@ extern "C" {
             zpl_buffer_init(h->entities, a, p->count); \
             zpl_buffer_init(h->data, a, p->count); \
             zpl_array_append(librg__component_pool, cast(void *)h); \
+            h->index = zpl_array_count(librg__component_pool);\
         }\
         void ZPL_JOIN2(librg__free_, NAME) (ZPL_JOIN3(librg__component_, NAME, _pool_t) *h) { \
             ZPL_ASSERT(h); \
             zpl_buffer_free(h->entities, h->backing); \
             zpl_buffer_free(h->data, h->backing); \
+        } \
+        u32 ZPL_JOIN2(librg_index_, NAME)() { \
+            return ZPL_JOIN3(librg__component_, NAME, _pool).index; \
         } \
         ZPL_JOIN2(NAME, _t) * ZPL_JOIN2(librg_attach_, NAME) (zple_id_t handle, ZPL_JOIN2(NAME, _t) data) { \
             if (ZPL_JOIN3(librg__component_, NAME, _pool).count == 0) { \
@@ -312,6 +497,7 @@ extern "C" {
             } \
         }
 
+    // #define librg_foreach2(NAME1, NAME2, cb)
 
 
     #undef librg_component
