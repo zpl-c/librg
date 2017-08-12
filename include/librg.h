@@ -54,6 +54,8 @@ extern "C" {
         // streamer configuration
         zplm_vec2_t world_size;
 
+        u32 entity_limit;
+
         // network configuration
         u16 port;
         u16 max_connections;
@@ -336,10 +338,16 @@ extern "C" {
 extern "C" {
 #endif
 
+    #define librg__set_default(expr, value) if (!expr) expr = value
+
     /**
-     * Global variable with entity pool
+     * Storage containers
+     * for inner librg stuff
      */
-    zple_pool librg__entity_pool;
+    zple_pool       librg__entity_pool;
+    librg_cfg_t     librg__config;
+    librg_mode_e    librg__mode;
+    zpl_timer_pool  librg__timers;
 
     /**
      * Global variable with array of component pools
@@ -352,13 +360,37 @@ extern "C" {
      */
     typedef struct {} librg_component_declare(_dummy);
 
+    void librg_tick() {
+        zpl_timer_update(librg__timers);
+    }
+
+    ZPL_TIMER_CB(librg__tick_cb) {
+        librg_log("Hello, Sailor!\n");
+    }
 
     void librg_init(librg_mode_e mode, librg_cfg_t config) {
-        zple_init(&librg__entity_pool, zpl_heap_allocator(), 100);
-        zpl_array_init(librg__component_pool, zpl_heap_allocator());
+        librg__mode   = mode;
+        librg__config = config;
+
+        librg__set_default(librg__config.tick_delay, 32);
+        librg__set_default(librg__config.entity_limit, 2048);
+
+        // init entity system
+        zple_init(&librg__entity_pool, LIBRG_ENTITY_ALLOCATOR(), librg__config.entity_limit);
+        zpl_array_init(librg__component_pool, LIBRG_ENTITY_ALLOCATOR());
+
+        // init timers
+        zpl_array_init(librg__timers, zpl_heap_allocator());
+        zpl_timer_t *tick_timer = zpl_timer_add(librg__timers);
+        zpl_timer_set(tick_timer, 1000 * librg__config.tick_delay, -1, librg__tick_cb);
+        zpl_timer_start(tick_timer, 1000);
+
     }
 
     void librg_free() {
+        // free all timers
+        zpl_array_free(librg__timers);
+
         // free the entity component pools
         for (i32 i = 0; i < zpl_array_count(librg__component_pool); i++) {
             ZPL_ASSERT(librg__component_pool[i]);
@@ -378,7 +410,7 @@ extern "C" {
 
     void librg_entity_destroy(librg_entity_t entity) {
         for (i32 i = 0; i < zpl_array_count(librg__component_pool); i++) {
-            librg__dummy_meta_ent_t *meta_ent = ((librg__component__dummy_pool_t*)librg__component_pool[i])->entities+entity.id;
+            librg__dummy_meta_ent_t *meta_ent = (cast(librg__component__dummy_pool_t*)librg__component_pool[i])->entities+entity.id;
             ZPL_ASSERT(meta_ent);
             meta_ent->used = false;
         }
@@ -488,17 +520,6 @@ extern "C" {
                 return NULL; \
             } \
         }
-
-    #define librg_foreach(NAME, cb) \
-        for (usize i = 0; i < ZPL_JOIN3(librg__component_, NAME, _pool).count; ++i) { \
-            ZPL_JOIN3(librg_, NAME, _meta_ent_t) ent = ZPL_JOIN3(librg__component_, NAME, _pool).entities[i]; \
-            if (ent.used) { \
-                cb(ent.handle, ZPL_JOIN2(librg_fetch_, NAME)(ent.handle)); \
-            } \
-        }
-
-    // #define librg_foreach2(NAME1, NAME2, cb)
-
 
     #undef librg_component
     #define librg_component(NAME) \
