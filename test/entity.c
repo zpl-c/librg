@@ -14,9 +14,11 @@ void entitycb(librg_entity_t entity) {
 
 int main() {
 
-    librg_init(librg_mode_server_ev, (librg_cfg_t){
-        .tick_delay = 32,
-        .world_size = zplm_vec2(5000.0f, 5000.0f),
+    librg_init((librg_cfg_t) {
+        .tick_delay     = 32,
+        .mode           = librg_server_ev,
+        .world_size     = zplm_vec2(5000.0f, 5000.0f),
+        .entity_limit   = 2048,
     });
 
     for (isize i = 0; i < 15; ++i) {
