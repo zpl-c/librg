@@ -51,10 +51,10 @@
 #define LIBRG_VERSION LIBRG_VERSION_CREATE(LIBRG_VERSION_MAJOR, LIBRG_VERSION_MINOR, LIBRG_VERSION_PATCH)
 
 #ifdef LIBRG_IMPLEMENTATION
-    #define ZPL_IMPLEMENTATION
-    #define ZPLE_IMPLEMENTATION
-    #define ZPLM_IMPLEMENTATION
-    #define ZPLEV_IMPLEMENTATION
+#define ZPL_IMPLEMENTATION
+#define ZPLE_IMPLEMENTATION
+#define ZPLM_IMPLEMENTATION
+#define ZPLEV_IMPLEMENTATION
 #endif
 
 #include <zpl.h>
@@ -68,22 +68,20 @@ extern "C" {
 #endif
 
     #define LIBRG_API ZPL_DEF
+
+    #ifndef LIBRG_PLATFORM_ID
+    #define LIBRG_PLATFORM_ID 1
+    #endif
+
+    #ifndef LIBRG_PLATFORM_PROTOCOL
+    #define LIBRG_PLATFORM_PROTOCOL 1
+    #endif
+
+    #ifndef LIBRG_PLATFORM_BUILD
+    #define LIBRG_PLATFORM_BUILD 1
+    #endif
+
     #define librg_log zpl_printf
-
-
-    #ifndef LIBRG_PLATFORM
-    #define LIBRG_PLATFORM 1
-    #endif
-
-    #ifndef LIBRG_PROTOCOL
-    #define LIBRG_PROTOCOL 1
-    #endif
-
-    #ifndef LIBRG_BUILD
-    #define LIBRG_BUILD 1
-    #endif
-
-
 
     /**
      * CORE
@@ -420,15 +418,6 @@ extern "C" {
     typedef LIBRG__NET_MESSAGE_CB(librg_net_message);
     #undef  LIBRG__NET_MESSAGE_CB
 
-    typedef struct librg__net_t {
-        b32 connected;
-
-        librg_peer_t peer;
-        librg_host_t host;
-
-        // zpl_hastable() librg_peer_t
-    } librg__net_t;
-
     LIBRG_API b32 librg_is_connected();
 
     LIBRG_API void librg_network_start(librg_address_t address);
@@ -468,6 +457,17 @@ extern "C" {
 #endif
 
     #define librg__set_default(expr, value) if (!expr) expr = value
+
+    ZPL_TABLE(ZPL_STATIC, librg__peers_t, librg__peers, librg_entity_t);
+
+    typedef struct librg__net_t {
+        b32 connected;
+
+        librg_peer_t peer;
+        librg_host_t host;
+
+        librg__peers_t connected_peers;
+    } librg__net_t;
 
     /**
      * Storage containers
@@ -803,8 +803,8 @@ extern "C" {
                         enet_packet_destroy(event.packet);
                     }
                     break;
-                case ENET_EVENT_TYPE_CONNECT:       librg__messages[LIBRG_CONNECTION_INIT](&msg); break;
-                case ENET_EVENT_TYPE_DISCONNECT:    librg__messages[LIBRG_CONNECTION_DISCONNECT](&msg); break;
+                case ENET_EVENT_TYPE_CONNECT:    librg__messages[LIBRG_CONNECTION_INIT](&msg); break;
+                case ENET_EVENT_TYPE_DISCONNECT: librg__messages[LIBRG_CONNECTION_DISCONNECT](&msg); break;
                 case ENET_EVENT_TYPE_NONE: break;
             }
         }
