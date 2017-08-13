@@ -1,10 +1,11 @@
 #define LIBRG_IMPLEMENTATION
+#define LIBRG_DEBUG
 #include <librg.h>
 
 typedef struct { bool a; } librg_component(foo);
 
 void on_connect(librg_event_t evt) {
-
+    librg_log("aaaaaaa\n");
 }
 
 int main() {
@@ -22,24 +23,14 @@ int main() {
         .entity_limit   = 2048,
     });
 
-    librg_transform_t foo;
-
     librg_event_add(LIBRG_CONNECTION_REQUEST, on_connect);
-
-    librg_network_start((librg_address_t) { .host = "localhost", .port = 27010 });
-    librg_network_stop();
-
-    // librg_client_connect("localhost", 27010);
-    // librg_client_disconnect();
-
-    // librg_connect();
+    librg_network_start(&(librg_address_t) { .host = "localhost", .port = 27010 });
 
     while (true) {
         librg_tick();
     }
 
-    // librg_stop();
-
+    librg_network_stop();
     librg_free();
     return 0;
 }

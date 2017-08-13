@@ -1,4 +1,5 @@
 #define LIBRG_IMPLEMENTATION
+#define LIBRG_DEBUG
 #include <librg.h>
 
 int main() {
@@ -16,10 +17,13 @@ int main() {
         .entity_limit   = 2048,
     });
 
+    librg_network_start(&(librg_address_t) { .host = "localhost", .port = 27010 });
+
     while (true) {
         librg_tick();
     }
 
+    librg_network_stop();
     librg_free();
     return 0;
 }
