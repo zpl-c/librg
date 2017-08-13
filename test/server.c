@@ -1,6 +1,10 @@
 #define LIBRG_IMPLEMENTATION
 #include <librg.h>
 
+void on_connect(librg_event_t evt) {
+
+}
+
 int main() {
     char *test = "===============      SERVER      =================\n" \
                  "==                                              ==\n" \
@@ -16,9 +20,22 @@ int main() {
         .entity_limit   = 2048,
     });
 
-    // while (true) {
-    //     librg_tick();
-    // }
+
+    librg_event_add(LIBRG_CONNECTION_REQUEST, on_connect);
+
+    librg_network_start((librg_address_t) { .host = "localhost", .port = 27010 });
+    librg_network_stop();
+
+    // librg_client_connect("localhost", 27010);
+    // librg_client_disconnect();
+
+    // librg_connect();
+
+    while (true) {
+        librg_tick();
+    }
+
+    // librg_stop();
 
     librg_free();
     return 0;

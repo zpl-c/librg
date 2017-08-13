@@ -1623,7 +1623,7 @@ extern "C" {
         zpl_bs_header_t *zpl__bsh = ZPL_BS_HEADER(x);                   \
         ZPL_ASSERT_MSG(((offset == 0) ? zpl__bsh->write_pos : offset) + size <= zpl_bs_capacity(x), \
                        "zpl_bs_write: trying to write outside of the bounds"); \
-        zpl_memcopy(x + (offset == 0) ? zpl__bsh->write_pos : offset, value, size); \
+        zpl_memcopy(x + ((offset == 0) ? zpl__bsh->write_pos : offset), value, size); \
         if (offset == 0) zpl__bsh->write_pos += size;                   \
     } while (0)
 
