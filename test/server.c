@@ -1,6 +1,8 @@
 #define LIBRG_IMPLEMENTATION
 #include <librg.h>
 
+typedef struct { bool a; } librg_component(foo);
+
 void on_connect(librg_event_t evt) {
 
 }
@@ -20,6 +22,7 @@ int main() {
         .entity_limit   = 2048,
     });
 
+    librg_transform_t foo;
 
     librg_event_add(LIBRG_CONNECTION_REQUEST, on_connect);
 

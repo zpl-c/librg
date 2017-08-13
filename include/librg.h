@@ -37,7 +37,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 #ifndef LIBRG_INCLUDE_H
 #define LIBRG_INCLUDE_H
 
@@ -296,8 +295,8 @@ extern "C" {
      * EXAMPLE: u32 index = librg_index_{component}();
      *
      */
-    #define librg_component_declare(NAME) \
-        ZPL_JOIN2(NAME, _t); \
+    #define librg_component_declare_inner(PREFIX, NAME) \
+        ZPL_JOIN3(PREFIX, NAME, _t); \
         \
         typedef struct ZPL_JOIN3(librg_, NAME, _meta_ent_t) { \
             zple_id_t handle; \
@@ -309,21 +308,20 @@ extern "C" {
             usize count; \
             u32 index; \
             zpl_buffer_t(ZPL_JOIN3(librg_, NAME, _meta_ent_t)) entities; \
-            zpl_buffer_t(ZPL_JOIN2(NAME, _t))         data; \
+            zpl_buffer_t(ZPL_JOIN3(PREFIX, NAME, _t))         data; \
         } ZPL_JOIN3(librg__component_, NAME, _pool_t); \
         \
         \
-        void                  ZPL_JOIN2(librg__init_, NAME)     (ZPL_JOIN3(librg__component_, NAME, _pool_t) *h, zple_pool *p, zpl_allocator_t a); \
-        void                  ZPL_JOIN2(librg__free_, NAME)     (ZPL_JOIN3(librg__component_, NAME, _pool_t) *h); \
-        ZPL_JOIN2(NAME, _t) * ZPL_JOIN2(librg_attach_, NAME)    (zple_id_t handle, ZPL_JOIN2(NAME, _t) data); \
-        void                  ZPL_JOIN2(librg_detach_, NAME)    (zple_id_t handle); \
-        ZPL_JOIN2(NAME, _t) * ZPL_JOIN2(librg_fetch_, NAME)     (zple_id_t handle); \
-        u32                   ZPL_JOIN2(librg_index_, NAME)     ();
+        void ZPL_JOIN2(librg__init_, NAME) (ZPL_JOIN3(librg__component_, NAME, _pool_t) *h, zple_pool *p, zpl_allocator_t a); \
+        void ZPL_JOIN2(librg__free_, NAME) (ZPL_JOIN3(librg__component_, NAME, _pool_t) *h); \
+        ZPL_JOIN3(PREFIX, NAME, _t) * ZPL_JOIN2(librg_attach_, NAME) (zple_id_t handle, ZPL_JOIN3(PREFIX, NAME, _t) data); \
+        void ZPL_JOIN2(librg_detach_, NAME) (zple_id_t handle); \
+        ZPL_JOIN3(PREFIX, NAME, _t) * ZPL_JOIN2(librg_fetch_, NAME) (zple_id_t handle); \
+        u32 ZPL_JOIN2(librg_index_, NAME) ();
 
+    #define librg_component_declare(NAME) librg_component_declare_inner(,NAME)
     #define librg_component(NAME) \
         librg_component_declare(NAME)
-
-
 
 
     /**
@@ -390,33 +388,36 @@ extern "C" {
      * NETWORK
      */
 
+    #ifndef LIBRG_NETWORK_CHANNELS
+        #define LIBRG_NETWORK_CHANNELS 4
+    #endif
+
     typedef zpl_bs_t    librg_bs_t;
     typedef ENetPeer   *librg_peer_t;
     typedef ENetHost   *librg_host_t;
     typedef ENetPacket *librg_packet_t;
 
-    typedef struct librg_address_t {
+    typedef struct {
         char *host;
         i32 port;
     } librg_address_t;
 
-    typedef struct librg_message_t {
+    typedef struct {
         librg_bs_t data;
         librg_peer_t peer;
         librg_packet_t packet;
     } librg_message_t;
 
-    #ifndef LIBRG_NETWORK_CHANNELS
-    #define LIBRG_NETWORK_CHANNELS 4
-    #endif
+    typedef void (librg_message_handler_t)(librg_message_t *msg);
 
-    #define LIBRG__NET_HANDLER_CB(name) void name(librg_message_t *msg)
-    typedef LIBRG__NET_HANDLER_CB(librg_message_handler_t);
-    #undef  LIBRG__NET_HANDLER_CB
+    ZPL_TABLE_DECLARE(extern, librg_peers_t, librg_peers_, librg_entity_t);
 
-    #define LIBRG__NET_MESSAGE_CB(name) void name(librg_bs_t bs)
-    typedef LIBRG__NET_MESSAGE_CB(librg_net_message);
-    #undef  LIBRG__NET_MESSAGE_CB
+    typedef struct librg_network_t {
+        librg_peer_t peer;
+        librg_host_t host;
+
+        librg_peers_t connected_peers;
+    } librg_network_t;
 
     LIBRG_API b32 librg_is_connected();
 
@@ -436,6 +437,28 @@ extern "C" {
 
 
     /**
+     * COMPONENTS
+     */
+
+    typedef struct {
+        zplm_vec3_t position;
+        zplm_quat_t rotation;
+    } librg_component_declare_inner(librg_, transform);
+
+    typedef struct {
+        b32 wut;
+    } librg_component_declare_inner(librg_, streamable);
+
+    typedef struct {
+        librg_peer_t peer;
+    } librg_component_declare_inner(librg_, client);
+
+    #ifndef LIBRG_DISABLE_COMPONENT_SHORTCUTS
+        typedef librg_transform_t transform_t;
+        typedef librg_client_t    client_t;
+    #endif
+
+    /**
      * STREAMER
      */
 
@@ -444,6 +467,8 @@ extern "C" {
     LIBRG_API void librg_streamer_set_visible_for(librg_entity_t entity, librg_entity_t target, b32 state);
     LIBRG_API void librg_streamer_client_set(librg_entity_t entity, librg_peer_t peer);
     LIBRG_API void librg_streamer_client_remove(librg_entity_t entity);
+
+
 
 #ifdef __cplusplus
 }
@@ -458,17 +483,6 @@ extern "C" {
 
     #define librg__set_default(expr, value) if (!expr) expr = value
 
-    ZPL_TABLE(ZPL_STATIC, librg__peers_t, librg__peers, librg_entity_t);
-
-    typedef struct librg__net_t {
-        b32 connected;
-
-        librg_peer_t peer;
-        librg_host_t host;
-
-        librg__peers_t connected_peers;
-    } librg__net_t;
-
     /**
      * Storage containers
      * for inner librg stuff
@@ -476,8 +490,8 @@ extern "C" {
     zple_pool       librg__entity_pool;
     zplev_pool      librg__events;
     librg_cfg_t     librg__config;
-    librg__net_t    librg__network;
     zpl_timer_pool  librg__timers;
+    librg_network_t librg__network;
 
     zpl_array_t(librg_message_handler_t *) librg__messages;
 
@@ -486,14 +500,13 @@ extern "C" {
      */
     zpl_array_t(void *) librg__component_pool;
 
+    ZPL_TABLE_DEFINE(librg_peers_t, librg_peers_, librg_entity_t);
+
     /**
      * Create dummy component to
      * use it as template for removal in destroy
      */
     typedef struct {} librg_component_declare(_dummy);
-
-    #define librg_bs zpl_bs
-
 
     zple_id_t librg_entity_create() {
         return zple_create(&librg__entity_pool);
@@ -562,7 +575,7 @@ extern "C" {
         }
     }
 
-    #define librg_component_define(NAME) \
+    #define librg_component_define_inner(PREFIX, NAME) \
         ZPL_JOIN3(librg__component_, NAME, _pool_t) ZPL_JOIN3(librg__component_, NAME, _pool); \
         \
         void ZPL_JOIN2(librg__init_, NAME) (ZPL_JOIN3(librg__component_, NAME, _pool_t) *h, zple_pool *p, zpl_allocator_t a) { \
@@ -581,7 +594,7 @@ extern "C" {
         u32 ZPL_JOIN2(librg_index_, NAME)() { \
             return ZPL_JOIN3(librg__component_, NAME, _pool).index; \
         } \
-        ZPL_JOIN2(NAME, _t) * ZPL_JOIN2(librg_attach_, NAME) (zple_id_t handle, ZPL_JOIN2(NAME, _t) data) { \
+        ZPL_JOIN3(PREFIX, NAME, _t) * ZPL_JOIN2(librg_attach_, NAME) (zple_id_t handle, ZPL_JOIN3(PREFIX, NAME, _t) data) { \
             if (ZPL_JOIN3(librg__component_, NAME, _pool).count == 0) { \
                 ZPL_JOIN2(librg__init_, NAME)(&ZPL_JOIN3(librg__component_, NAME, _pool), &librg__entity_pool, LIBRG_ENTITY_ALLOCATOR()); \
             } \
@@ -598,7 +611,7 @@ extern "C" {
             ZPL_JOIN3(librg_, NAME, _meta_ent_t) *meta_ent = (ZPL_JOIN3(librg__component_, NAME, _pool).entities+handle.id); \
             meta_ent->used = false; \
         } \
-        ZPL_JOIN2(NAME, _t) * ZPL_JOIN2(librg_fetch_, NAME) (zple_id_t handle) { \
+        ZPL_JOIN3(PREFIX, NAME, _t) * ZPL_JOIN2(librg_fetch_, NAME) (zple_id_t handle) { \
             if (ZPL_JOIN3(librg__component_, NAME, _pool).count == 0) { \
                 ZPL_JOIN2(librg__init_, NAME)(&ZPL_JOIN3(librg__component_, NAME, _pool), &librg__entity_pool, LIBRG_ENTITY_ALLOCATOR()); \
             } \
@@ -610,11 +623,14 @@ extern "C" {
                 return NULL; \
             } \
         }
-
+    #define librg_component_define(NAME) librg_component_define_inner(,NAME)
     #undef librg_component
     #define librg_component(NAME) \
         librg_component_declare(NAME) \
         librg_component_define(NAME)
+
+    librg_component_define_inner(librg_, transform);
+    librg_component_define_inner(librg_, client);
 
     u64 librg_event_add(u64 id, librg_event_cb_t callback) {
         return zplev_add(&librg__events, id, callback);
@@ -658,16 +674,19 @@ extern "C" {
     }
 
     void librg__connection_request(librg_message_t *msg) {
-        zpl_entity_t entity = librg_entity_create();
+        librg_entity_t entity = librg_entity_create();
 
         // assign default compoenents
-        librg_assign_transform(entity, (transform_t){});
-        librg_assign_client(entity, (client_t){ msg->peer });
+        librg_attach_transform(entity, (librg_transform_t){});
+        librg_attach_client(entity, (librg_client_t){ msg->peer });
 
         // add client peer to storage
         // connected_peers.insert(std::make_pair(peer, entity));
 
-        librg_send_to(LIBRG_CONNECTION_ACCEPT, peer);
+        librg_peers_set(&librg__network.connected_peers, cast(u64)msg->peer, entity);
+
+
+        // librg_send_to(LIBRG_CONNECTION_ACCEPT, peer);
 
 
 
@@ -815,6 +834,8 @@ extern "C" {
     }
 
     void librg_network_start(librg_address_t address) {
+        librg_peers_init(&librg__network.connected_peers, zpl_heap_allocator());
+
         if (librg_is_server()) {
             ENetAddress eaddress;
 
@@ -853,6 +874,8 @@ extern "C" {
             // reset our peer
             enet_peer_reset(librg__network.peer);
         }
+
+        librg_peers_destroy(&librg__network.connected_peers);
     }
 
     void librg_init(librg_cfg_t config) {
@@ -870,6 +893,7 @@ extern "C" {
         zple_init(&librg__entity_pool, LIBRG_ENTITY_ALLOCATOR(), librg__config.entity_limit);
         zpl_array_init(librg__component_pool, LIBRG_ENTITY_ALLOCATOR());
 
+        // events
         zplev_init(&librg__events, zpl_heap_allocator());
         zpl_array_init_reserve(librg__messages, zpl_heap_allocator(), 10);
         zpl_array_count(librg__messages) = 10; /* 10 messages in the bottom */
@@ -880,6 +904,7 @@ extern "C" {
         zpl_timer_set(tick_timer, 1000 * librg__config.tick_delay, -1, librg__tick_cb);
         zpl_timer_start(tick_timer, 1000);
 
+        // network
         ZPL_ASSERT_MSG(enet_initialize() == 0, "cannot initialize enet");
 
         // add event handlers for our network stuufz
