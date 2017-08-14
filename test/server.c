@@ -4,8 +4,12 @@
 
 typedef struct { bool a; } librg_component(foo);
 
-void on_connect(librg_event_t evt) {
-    librg_log("aaaaaaa\n");
+void on_connect_request(librg_event_t *event) {
+    u32 secret = zpl_bs_read_u32(event->bs);
+
+    if (secret != 42) {
+        return librg_event_reject(event);
+    }
 }
 
 int main() {
@@ -23,7 +27,7 @@ int main() {
         .entity_limit   = 2048,
     });
 
-    librg_event_add(LIBRG_CONNECTION_REQUEST, on_connect);
+    librg_event_add(LIBRG_CONNECTION_REQUEST, on_connect_request);
     librg_network_start(&(librg_address_t) { .host = "localhost", .port = 27010 });
 
     while (true) {

@@ -83,9 +83,13 @@ extern "C" {
     #define librg_log zpl_printf
 
     #ifdef LIBRG_DEBUG
-        #define librg_dbg zpl_printf
+    #define librg_dbg(fmt, ...) zpl_printf(fmt, ##__VA_ARGS__)
     #else
-        #define librg_dbg librg__dummy
+    #define librg_dbg(fmt, ...)
+    #endif
+
+    #ifndef LIBRG_DEFAULT_BS_SIZE
+    #define LIBRG_DEFAULT_BS_SIZE 1024
     #endif
 
 
@@ -283,7 +287,7 @@ extern "C" {
      *     Used to fetch attached component from the entity.
      *     If entiy doesnt have a component, NULL will be returned.
      *     Contains lazy-initialization call for itself.
-     *     
+     *
      * EXAMPLE: {component}_t *foo = librg_fetch_{component}(ent);
      *
      *
@@ -335,8 +339,16 @@ extern "C" {
      * EVENTS
      */
 
-    typedef zplev_data_t librg_event_t;
-    typedef zplev_cb     librg_event_cb_t;
+
+    typedef struct librg_event_t {
+        b32 rejected;
+        union {
+            void *data;
+            zpl_bs_t bs;
+        };
+    } librg_event_t;
+
+    typedef void (librg_event_cb_t)(librg_event_t *event);
 
     enum {
         LIBRG_CONNECTION_INIT,
@@ -376,20 +388,34 @@ extern "C" {
      * passed inside the event callback
      *
      * @param id usually you define event ids inside enum
-     * @param  event pointer onto data or NULL
+     * @param event pointer onto data or NULL
      */
-    LIBRG_API void librg_event_trigger(u64 id, librg_event_t event);
+    LIBRG_API void librg_event_trigger(u64 id, librg_event_t *event);
 
     /**
      * Used to remove particular callback from
      * event chain, so it wont be called ever again
      *
-     * @param  id usually you define event ids inside enum
-     * @param  index returned by librg_event_add
+     * @param id usually you define event ids inside enum
+     * @param index returned by librg_event_add
      */
     LIBRG_API void librg_event_remove(u64 id, u64 index);
 
+    /**
+     * Used to reject some event from triggering from
+     * inside of executing callback
+     *
+     * @param pointer on the event
+     */
+    LIBRG_API void librg_event_reject(librg_event_t *event);
 
+    /**
+     * Checks if current event was not rejected
+     * inside any of the callbacks
+     *
+     * @param pointer on the event
+     */
+    LIBRG_API b32 librg_event_succeeded(librg_event_t *event);
 
     /**
      * NETWORK
@@ -642,15 +668,30 @@ extern "C" {
     librg_component_define_inner(librg_, client);
 
     u64 librg_event_add(u64 id, librg_event_cb_t callback) {
-        return zplev_add(&librg__events, id, callback);
+        return zplev_add(&librg__events, id, (zplev_cb *)callback);
     }
 
-    void librg_event_trigger(u64 id, librg_event_t event) {
-        zplev_trigger(&librg__events, id, event);
+    void librg_event_trigger(u64 id, librg_event_t *event) {
+        zplev_block *block = zplev_pool_get(&librg__events, id);
+        if (!block) return;
+
+        for (isize i = 0; i < zpl_array_count(*block) && !event->rejected; ++i) {
+            (*block)[i](event);
+        }
     }
 
     void librg_event_remove(u64 id, u64 index) {
         zplev_remove(&librg__events, id, index);
+    }
+
+    void librg_event_reject(librg_event_t *event) {
+        ZPL_ASSERT(event);
+        event->rejected = true;
+    }
+
+    b32 librg_event_succeeded(librg_event_t *event) {
+        ZPL_ASSERT(event);
+        return !event->rejected;
     }
 
     b32 librg_is_server() {
@@ -665,6 +706,9 @@ extern "C" {
         return librg__network.peer && librg__network.peer->state == ENET_PEER_STATE_CONNECTED;
     }
 
+    /**
+     * SHARED
+     */
     void librg__connection_init(librg_message_t *msg) {
         librg_dbg("librg__connection_init\n");
 
@@ -674,41 +718,57 @@ extern "C" {
         librg_log("a new connection attempt at %s:%u.\n", my_host, msg->peer->address.port);
 
         if (librg_is_client()) {
-            zpl_bs_t data;
-            zpl_bs_init(data, zpl_heap_allocator(), 1024);
+            librg_event_t event;
+            zpl_bs_init(event.bs, zpl_heap_allocator(), LIBRG_DEFAULT_BS_SIZE);
 
-            librg_event_trigger(LIBRG_CONNECTION_REQUEST, data);
-            librg_send_to(LIBRG_CONNECTION_REQUEST, msg->peer, data);
+            librg_event_trigger(LIBRG_CONNECTION_REQUEST, &event);
+            librg_send_to(LIBRG_CONNECTION_REQUEST, msg->peer, event.bs);
 
-            zpl_bs_free(data);
+            zpl_bs_free(event.bs);
         }
     }
 
+    /**
+     * SERVER SIDE
+     */
     void librg__connection_request(librg_message_t *msg) {
         librg_dbg("librg__connection_request\n");
 
-        librg_entity_t entity = librg_entity_create();
+        librg_event_t event = { .bs = msg->data };
+        librg_event_trigger(LIBRG_CONNECTION_REQUEST, &event);
 
-        // assign default compoenents
-        librg_attach_transform(entity, (librg_transform_t){});
-        librg_attach_client(entity, (librg_client_t){ msg->peer });
+        if (librg_event_succeeded(&event)) {
+            librg_entity_t entity = librg_entity_create();
 
-        // add client peer to storage
-        librg_peers_set(&librg__network.connected_peers, cast(u64)msg->peer, entity);
-        librg_send_to(LIBRG_CONNECTION_ACCEPT, msg->peer, NULL);
+            // assign default compoenents
+            librg_attach_transform(entity, (librg_transform_t){});
+            librg_attach_client(entity, (librg_client_t){ msg->peer });
 
-        librg_event_trigger(LIBRG_CONNECTION_REQUEST, msg->data);
+            // add client peer to storage
+            librg_peers_set(&librg__network.connected_peers, cast(u64)msg->peer, entity);
+            librg_send_to(LIBRG_CONNECTION_ACCEPT, msg->peer, NULL);
+        }
+        else {
+            librg_send_to(LIBRG_CONNECTION_REFUSE, msg->peer, NULL);
+        }
     }
 
+    /**
+     * CLIENT SIDE
+     */
     void librg__connection_refuse(librg_message_t *msg) {
-        librg_event_trigger(LIBRG_CONNECTION_REFUSE, msg->data);
+        librg_event_t event = { .bs = msg->data };
+        librg_event_trigger(LIBRG_CONNECTION_REFUSE, &event);
     }
 
+    /**
+     * CLIENT SIDE
+     */
     void librg__connection_accept(librg_message_t *msg) {
         librg_dbg("librg__connection_accept\n");
 
+        // there is a place i need to add shared id
         librg_entity_t entity = librg_entity_create();
-        // auto guid   = data->read_uint64();
 
         // assign default compoennets
         librg_attach_transform(entity, (librg_transform_t){});
@@ -722,10 +782,13 @@ extern "C" {
         librg_event_trigger(LIBRG_CONNECTION_ACCEPT, msg->data);
     }
 
+    /**
+     * SHARED
+     */
     void librg__connection_disconnect(librg_message_t *msg) {
         librg_dbg("librg__connection_disconnect\n");
 
-        librg_event_trigger(LIBRG_CONNECTION_DISCONNECT, msg->data);
+        // librg_event_trigger(LIBRG_CONNECTION_DISCONNECT, msg->data);
     }
 
     void librg__entity_create(librg_message_t *msg) {
