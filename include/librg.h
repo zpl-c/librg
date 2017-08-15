@@ -242,10 +242,25 @@ extern "C" {
         #define LIBRG__ENTITY_EACH_BREAK break
     #endif
 
+    typedef union librg__entcache_key_t {
+        u64 master;
+        struct {
+            u32 slot;
+            b32 is_local;
+        };
+    } librg__entcache_key_t;
+
+    ZPL_TABLE_DECLARE(extern, librg__entcache_t, librg__entcache_, librg_entity_t);
+
     /**
      * Create entity and return handle
      */
     LIBRG_API librg_entity_t librg_entity_create();
+
+    /**
+     * Create shared entity and return handle
+     */
+    LIBRG_API librg_entity_t librg_entity_create_shared(u32 guid);
 
     /**
      * Auto detach all attached components
@@ -310,8 +325,8 @@ extern "C" {
         ZPL_JOIN3(PREFIX, NAME, _t); \
         \
         typedef struct ZPL_JOIN3(librg_, NAME, _meta_ent_t) { \
-            zple_id_t handle; \
-            ZPLE_ID   used; \
+            librg_entity_t handle; \
+            u32 used; \
         } ZPL_JOIN3(librg_, NAME, _meta_ent_t); \
         \
         typedef struct ZPL_JOIN3(librg__component_, NAME, _pool_t) { \
@@ -325,9 +340,9 @@ extern "C" {
         \
         void ZPL_JOIN2(librg__init_, NAME) (ZPL_JOIN3(librg__component_, NAME, _pool_t) *h, zple_pool *p, zpl_allocator_t a); \
         void ZPL_JOIN2(librg__free_, NAME) (ZPL_JOIN3(librg__component_, NAME, _pool_t) *h); \
-        ZPL_JOIN3(PREFIX, NAME, _t) * ZPL_JOIN2(librg_attach_, NAME) (zple_id_t handle, ZPL_JOIN3(PREFIX, NAME, _t) data); \
-        void ZPL_JOIN2(librg_detach_, NAME) (zple_id_t handle); \
-        ZPL_JOIN3(PREFIX, NAME, _t) * ZPL_JOIN2(librg_fetch_, NAME) (zple_id_t handle); \
+        ZPL_JOIN3(PREFIX, NAME, _t) * ZPL_JOIN2(librg_attach_, NAME) (librg_entity_t handle, ZPL_JOIN3(PREFIX, NAME, _t) data); \
+        void ZPL_JOIN2(librg_detach_, NAME) (librg_entity_t handle); \
+        ZPL_JOIN3(PREFIX, NAME, _t) * ZPL_JOIN2(librg_fetch_, NAME) (librg_entity_t handle); \
         u32 ZPL_JOIN2(librg_index_, NAME) ();
 
     #define librg_component_declare(NAME) librg_component_declare_inner(,NAME)
@@ -525,6 +540,7 @@ extern "C" {
     librg_cfg_t     librg__config;
     zpl_timer_pool  librg__timers;
     librg_network_t librg__network;
+    librg__entcache_t librg__entcache;
 
     zpl_array_t(librg_message_handler_t *) librg__messages;
 
@@ -534,6 +550,7 @@ extern "C" {
     zpl_array_t(void *) librg__component_pool;
 
     ZPL_TABLE_DEFINE(librg_peers_t, librg_peers_, librg_entity_t);
+    ZPL_TABLE_DEFINE(librg__entcache_t, librg__entcache_, librg_entity_t);
 
     /**
      * Create dummy component to
@@ -543,11 +560,42 @@ extern "C" {
 
     void librg__dummy(char const *fmt, ...) {}
 
-    zple_id_t librg_entity_create() {
+    zpl_inline void librg__entity_store(librg_entity_t id, u32 slot, b32 remote) {
+        librg__entcache_key_t key = { .slot = slot, .is_local = !remote };
+        librg__entcache_set(&librg__entcache, key.master, id);
+    }
+
+    librg_entity_t librg_entity_create() {
         return zple_create(&librg__entity_pool);
     }
 
-    void librg_entity_destroy(librg_entity_t entity) {
+    librg_entity_t librg_entity_create_shared(u32 guid) {
+        librg_entity_t id = librg_entity_create();
+
+        librg_entity_t remote_id = id;
+        remote_id.id = guid;
+        librg__entity_store(remote_id, id.id, false);
+
+        id.part[0] = true;
+        librg__entity_store(id, guid, true);
+
+        id.id = guid;
+
+        return id;
+    }
+
+    librg_entity_t librg__entity_get(librg_entity_t id) {
+        librg__entcache_key_t key;
+        key.slot = id.id;
+        key.is_local = !id.part[0];
+
+        librg_entity_t *handle = librg__entcache_get(&librg__entcache, key.master);
+        return (handle) ? *handle : id;
+    }
+
+    void librg_entity_destroy(librg_entity_t id) {
+        librg_entity_t entity = librg__entity_get(id);
+
         for (i32 i = 0; i < zpl_array_count(librg__component_pool); i++) {
             librg__dummy_meta_ent_t *meta_ent = (cast(librg__component__dummy_pool_t*)librg__component_pool[i])->entities+entity.id;
             ZPL_ASSERT(meta_ent);
@@ -629,7 +677,8 @@ extern "C" {
         u32 ZPL_JOIN2(librg_index_, NAME)() { \
             return ZPL_JOIN3(librg__component_, NAME, _pool).index; \
         } \
-        ZPL_JOIN3(PREFIX, NAME, _t) * ZPL_JOIN2(librg_attach_, NAME) (zple_id_t handle, ZPL_JOIN3(PREFIX, NAME, _t) data) { \
+        ZPL_JOIN3(PREFIX, NAME, _t) * ZPL_JOIN2(librg_attach_, NAME) (librg_entity_t id, ZPL_JOIN3(PREFIX, NAME, _t) data) { \
+            librg_entity_t handle = librg__entity_get(id); \
             if (ZPL_JOIN3(librg__component_, NAME, _pool).count == 0) { \
                 ZPL_JOIN2(librg__init_, NAME)(&ZPL_JOIN3(librg__component_, NAME, _pool), &librg__entity_pool, LIBRG_ENTITY_ALLOCATOR()); \
             } \
@@ -639,14 +688,16 @@ extern "C" {
             *(ZPL_JOIN3(librg__component_, NAME, _pool).data+handle.id) = data; \
             return (ZPL_JOIN3(librg__component_, NAME, _pool).data+handle.id); \
         } \
-        void ZPL_JOIN2(librg_detach_, NAME) (zple_id_t handle) { \
+        void ZPL_JOIN2(librg_detach_, NAME) (librg_entity_t id) { \
+            librg_entity_t handle = librg__entity_get(id); \
             if (ZPL_JOIN3(librg__component_, NAME, _pool).count == 0) { \
                 ZPL_JOIN2(librg__init_, NAME)(&ZPL_JOIN3(librg__component_, NAME, _pool), &librg__entity_pool, LIBRG_ENTITY_ALLOCATOR()); \
             } \
             ZPL_JOIN3(librg_, NAME, _meta_ent_t) *meta_ent = (ZPL_JOIN3(librg__component_, NAME, _pool).entities+handle.id); \
             meta_ent->used = false; \
         } \
-        ZPL_JOIN3(PREFIX, NAME, _t) * ZPL_JOIN2(librg_fetch_, NAME) (zple_id_t handle) { \
+        ZPL_JOIN3(PREFIX, NAME, _t) * ZPL_JOIN2(librg_fetch_, NAME) (librg_entity_t id) { \
+            librg_entity_t handle = librg__entity_get(id); \
             if (ZPL_JOIN3(librg__component_, NAME, _pool).count == 0) { \
                 ZPL_JOIN2(librg__init_, NAME)(&ZPL_JOIN3(librg__component_, NAME, _pool), &librg__entity_pool, LIBRG_ENTITY_ALLOCATOR()); \
             } \
@@ -983,6 +1034,7 @@ extern "C" {
         // init entity system
         zple_init(&librg__entity_pool, LIBRG_ENTITY_ALLOCATOR(), librg__config.entity_limit);
         zpl_array_init(librg__component_pool, LIBRG_ENTITY_ALLOCATOR());
+        librg__entcache_init(&librg__entcache, zpl_heap_allocator());
 
         // events
         zplev_init(&librg__events, zpl_heap_allocator());
@@ -1028,6 +1080,7 @@ extern "C" {
 
         // free containers and entity pool
         zpl_array_free(librg__component_pool);
+        librg__entcache_destroy(&librg__entcache);
         zple_free(&librg__entity_pool);
 
         enet_deinitialize();

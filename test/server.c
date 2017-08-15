@@ -30,6 +30,13 @@ int main() {
     librg_event_add(LIBRG_CONNECTION_REQUEST, on_connect_request);
     librg_network_start(&(librg_address_t) { .host = "localhost", .port = 27010 });
 
+
+    librg_entity_t a = librg_entity_create_shared(128);
+    librg_entity_t b = {0, 0, 0};
+
+    librg_log("%u", librg__entity_get(a).id);
+
+
     while (true) {
         librg_tick();
     }
