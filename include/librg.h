@@ -574,6 +574,7 @@ extern "C" {
 
         librg_entity_t remote_id = id;
         remote_id.id = guid;
+        remote_id.part[0] = false;
         librg__entity_store(remote_id, id.id, false);
 
         id.part[0] = true;
@@ -653,8 +654,9 @@ extern "C" {
                 }
             }
 
+            handle.part[0] = 0;
             // component exists for all "contains" conditions
-            if (used) callback(handle);
+            if (used) callback(librg__entity_get(handle));
         }
     }
 
