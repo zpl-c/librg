@@ -17,9 +17,9 @@ While `zpl` is header only library, `enet` is compilable library, with multiple 
 ## Whats new
 (Comparing to previous version of librg)
 
-1. Single header library format, pure c imlementation, and reduced number of depdendencies.
+1. Single header library format, pure c implementation, and reduced number of depdendencies.
 2. Changes in method naming. All types, functions, defines, etc always starts with prefix `librg_`.
-3. Shared entitiy ids for all server-created entities.
+3. Shared entity ids for all server-created entities.
 4. New, more robust event system design, with wrapping event sturct, event rejection.
 5. Changes in sending message interface.
 6. Methods for cleaning up entity pools after disconnection.
