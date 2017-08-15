@@ -22,7 +22,7 @@
   "dependencies": {
     "enet.c": "^1.3.13",
     "zpl.c": "^2.0.3",
-    "zpl_ent.c": "^2.0.0",
+    "zpl_ent.c": "^2.0.2",
     "zpl_event.c": "^1.0.3",
     "zpl_math.c": "^1.0.1"
   }

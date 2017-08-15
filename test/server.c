@@ -7,13 +7,20 @@ typedef struct { bool a; } librg_component(foo);
 void on_connect_request(librg_event_t *event) {
     u32 secret = zpl_bs_read_u32(event->bs);
 
+    librg_log("user sent number: %u\n", secret);
+
     if (secret != 42) {
         return librg_event_reject(event);
     }
 }
 
-void entitycb(librg_entity_t entity) {
-    librg_log("%u\n", entity.id);
+void on_connect_accepted(librg_event_t *event) {
+    librg_log("on_connect_accepted\n");
+    librg_send_all(158, { zpl_bs_write_u64(data, 228); });
+}
+
+void on_connect_refused(librg_event_t *event) {
+    librg_log("on_connect_refused\n");
 }
 
 int main() {
@@ -32,21 +39,9 @@ int main() {
     });
 
     librg_event_add(LIBRG_CONNECTION_REQUEST, on_connect_request);
-    librg_network_start(&(librg_address_t) { .host = "localhost", .port = 27010 });
-
-
-    librg_entity_t a = librg_entity_create_shared(128);
-    librg_entity_t b = librg_entity_create();
-    librg_entity_t c = librg_entity_create_shared(1);
-
-    librg_attach_transform(a, (transform_t){0, 0, 0});
-    librg_attach_transform(b, (transform_t){0, 0, 0});
-    librg_attach_transform(c, (transform_t){0, 0, 0});
-
-    librg_entity_each((librg_entity_filter_t){librg_index_transform()}, entitycb);
-
-    librg_log("bla: %u - %u\n", a.id, c.id);
-    librg_log("cla: %u %u %u\n", librg__entity_get(a).id, librg__entity_get(b).id, librg__entity_get(c).id);
+    librg_event_add(LIBRG_CONNECTION_ACCEPT, on_connect_accepted);
+    librg_event_add(LIBRG_CONNECTION_REFUSE, on_connect_refused);
+    librg_network_start((librg_address_t) { .host = "localhost", .port = 27010 });
 
     while (true) {
         librg_tick();

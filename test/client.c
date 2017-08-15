@@ -2,6 +2,25 @@
 #define LIBRG_DEBUG
 #include <librg.h>
 
+void on_connect_request(librg_event_t *event) {
+    zpl_bs_write_u32(event->bs, 42);
+    librg_log("on_connect_request\n");
+}
+
+void on_connect_accepted(librg_event_t *event) {
+    librg_log("on_connect_accepted\n");
+}
+
+void on_connect_refused(librg_event_t *event) {
+    librg_log("on_connect_refused\n");
+}
+
+void on_customdata(librg_message_t *msg) {
+    u64 aaa = zpl_bs_read_u64(msg->data);
+
+    librg_log("server sent to everyone %llu", aaa);
+}
+
 int main() {
     char *test = "===============      CLIENT      =================\n" \
                  "==                                              ==\n" \
@@ -17,7 +36,13 @@ int main() {
         .entity_limit   = 2048,
     });
 
-    librg_network_start(&(librg_address_t) { .host = "localhost", .port = 27010 });
+    librg_event_add(LIBRG_CONNECTION_REQUEST, on_connect_request);
+    librg_event_add(LIBRG_CONNECTION_ACCEPT, on_connect_accepted);
+    librg_event_add(LIBRG_CONNECTION_REFUSE, on_connect_refused);
+
+    librg_network_add(158, on_customdata);
+
+    librg_network_start((librg_address_t) { .host = "localhost", .port = 27010 });
 
     while (true) {
         librg_tick();
