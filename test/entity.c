@@ -44,6 +44,10 @@ int main() {
     transform_t *d = librg_fetch_transform(t);
     ZPL_ASSERT(d->x == 1 && d->y == 2 && d->z == 3);
 
+    librg_entity_t a = librg_entity_create_shared(128);
+    printf("Remote: %lu, Local: %lu, Remote (from Local): %lu, Local (from Remote): %lu Remote (from Local from Remote): %lu\n", a.id, librg__entity_get(a).id, librg__entity_get(librg__entity_get(a)).id,
+           librg__entity_get(librg__entity_get(librg__entity_get(a))).id, librg__entity_get(librg__entity_get(librg__entity_get(librg__entity_get(a)))).id);
+
     // librg_detach_transform(t);
 
     librg_entity_destroy(t);

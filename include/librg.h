@@ -23,6 +23,7 @@
  * enet.h
  *
  * Version History:
+ * 2.0.1 - Entity ID translation fixes (see test/entity.c)
  * 2.0.0 - Initial C version rewrite
  *
  * Copyright 2017 Vladislav Gritsenko
@@ -603,14 +604,14 @@ extern "C" {
     librg_entity_t librg_entity_create_shared(u32 guid) {
         librg_entity_t id = librg_entity_create();
 
-        librg_entity_t remote_id = id;
+        librg_entity_t remote_id;
         remote_id.id = guid;
-        remote_id.part[0] = false;
+        remote_id.part[0] = true;
         librg__entity_store(remote_id, id.id, false);
 
-        id.part[0] = true;
         librg__entity_store(id, guid, true);
 
+        id.part[0] = true;
         id.id = guid;
 
         return id;
