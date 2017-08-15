@@ -1,4 +1,4 @@
-# librg
+![](https://user-images.githubusercontent.com/2182108/29322933-0be3cb06-81e8-11e7-9cef-aa6be82c9faa.png)
 
 Pure C library for building simple and elegant cross-platform mmo client-server solutions.
 
