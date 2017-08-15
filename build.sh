@@ -1,15 +1,18 @@
 clang -g \
     -I include \
-    -I vendor/zpl/include \
-    -I vendor/enet/include \
+    -I node_modules/zpl.c/include \
+    -I node_modules/zpl_ent.c/include \
+    -I node_modules/zpl_math.c/include \
+    -I node_modules/zpl_event.c/include \
+    -I node_modules/enet.c/include \
     test/$1.c \
-    vendor/enet/callbacks.c \
-    vendor/enet/compress.c \
-    vendor/enet/host.c \
-    vendor/enet/list.c \
-    vendor/enet/packet.c \
-    vendor/enet/peer.c \
-    vendor/enet/protocol.c \
-    vendor/enet/win32.c \
-    vendor/enet/unix.c \
+    node_modules/enet.c/callbacks.c \
+    node_modules/enet.c/compress.c \
+    node_modules/enet.c/host.c \
+    node_modules/enet.c/list.c \
+    node_modules/enet.c/packet.c \
+    node_modules/enet.c/peer.c \
+    node_modules/enet.c/protocol.c \
+    node_modules/enet.c/win32.c \
+    node_modules/enet.c/unix.c \
     -o build/$1 && build/$1

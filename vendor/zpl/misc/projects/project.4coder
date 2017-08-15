@@ -1,4 +1,0 @@
-extensions = ".c.cpp.h.hpp.bat";
-
-fkey_command_win[1] = {"build.bat", "*compilation*", false};
-fkey_command_win[2] = {"test.bat", "*test*", false};

@@ -1,5 +1,6 @@
 # Folders
 build/*
+node_modules/
 
 # Other
 .DS_store
