@@ -1,6 +1,8 @@
 cmake_minimum_required(VERSION 2.8)
 project(librg)
 
+find_package(Threads)
+
 add_subdirectory(node_modules/enet.c)
 
 include_directories(include
@@ -14,5 +16,5 @@ include_directories(include
 add_executable(librg.server test/server.c)
 add_executable(librg.client test/client.c)
 
-target_link_libraries(librg.server enet)
-target_link_libraries(librg.client enet)
+target_link_libraries(librg.server enet ${CMAKE_DL_LIBS} ${CMAKE_THREAD_LIBS_INIT} m)
+target_link_libraries(librg.client enet ${CMAKE_DL_LIBS} ${CMAKE_THREAD_LIBS_INIT} m)
