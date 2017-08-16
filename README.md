@@ -10,7 +10,7 @@ Currently under active development. It is not ready to be used.
 Library has 2 basic dependencies:
 
 * [zpl](https://github.com/zpl-c) - ZPL is a collection of single-file public domain header-only libraries for C and C++.
-* [enet](https://github.com/lsalzman/enet) - ENet reliable UDP networking library.
+* [enet](https://github.com/zpl-c/enet-c) - ENet reliable UDP networking library.
 
 While `zpl` is header only library, which integrates into librg implicitly, 
 `enet` is a standalone dependency that has to be compiled separately and then linked with.
