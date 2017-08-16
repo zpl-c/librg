@@ -1,14 +1,13 @@
 #define LIBRG_IMPLEMENTATION
 #include <librg.h>
 
-typedef struct { i32 x; i32 y; i32 z; } librg_component(transform);
 typedef struct { i32 x; i32 y; i32 z; } librg_component(position);
 typedef struct { i32 x; i32 y; i32 z; } librg_component(waffle);
 typedef struct { b32 cool; } librg_component(zaklaus);
 
 void entitycb(librg_entity_t entity) {
     transform_t *tran = librg_fetch_transform(entity);
-    librg_log("entitycb: %d, %d, %d\n", tran->x, tran->y, tran->z);
+    // librg_log("entitycb: %d, %d, %d\n", tran->x, tran->y, tran->z);
     // librg_log("calling entitycb\n");
 }
 
@@ -42,10 +41,9 @@ int main() {
     librg_attach_zaklaus(t, (zaklaus_t) { true });
 
     transform_t *d = librg_fetch_transform(t);
-    ZPL_ASSERT(d->x == 1 && d->y == 2 && d->z == 3);
 
     librg_entity_t a = librg_entity_create_shared(128);
-    printf("Remote: %lu, Local: %lu, Remote (from Local): %lu, Local (from Remote): %lu Remote (from Local from Remote): %lu\n", a.id, librg__entity_get(a).id, librg__entity_get(librg__entity_get(a)).id,
+    printf("Remote: %lu, Local: %lu, Remote (from Local): %lu, Local (from Remote): %lu, Remote (from Local from Remote): %lu\n", a.id, librg__entity_get(a).id, librg__entity_get(librg__entity_get(a)).id,
            librg__entity_get(librg__entity_get(librg__entity_get(a))).id, librg__entity_get(librg__entity_get(librg__entity_get(librg__entity_get(a)))).id);
 
     // librg_detach_transform(t);
