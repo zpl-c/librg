@@ -4,26 +4,26 @@ Pure C library for building simple and elegant cross-platform mmo client-server 
 
 ## Status
 
-Currently under active development. Not ready to be used.
+Currently under active development. It is not ready to be used.
 
 ## Structure
 Library has 2 basic dependencies:
 
-* [zpl](https://github.com/zaklaus/zpl) - ZPL is a collection of single-file public domain header-only libraries for C and C++.
+* [zpl](https://github.com/zpl-c) - ZPL is a collection of single-file public domain header-only libraries for C and C++.
 * [enet](https://github.com/lsalzman/enet) - ENet reliable UDP networking library.
 
-While `zpl` is header only library, `enet` is compilable library, with multiple source files, so it requires you to compile, and link it.
+While `zpl` is header only library, which integrates into librg implicitly, 
+`enet` is a standalone dependency that has to be compiled separately and then linked with.
 
-## Whats new
-(Comparing to previous version of librg)
+## What is new
+(Comparing to the previous, obsolete version of librg)
 
-1. Single header library format, pure c implementation, and reduced number of depdendencies.
-2. Changes in method naming. All types, functions, defines, etc always starts with prefix `librg_`.
-3. Shared entity ids for all server-created entities.
-4. New, more robust event system design, with wrapping event sturct, event rejection.
-5. Changes in sending message interface.
-6. Methods for cleaning up entity pools after disconnection.
-7. Improved interface for handling basic user interaction events.
+- Single header library format, pure c implementation, and reduced number of depdendencies.
+- Changes in method naming. All types, functions, defines, etc always start with prefix `librg_`.
+- Shared entity ids for all server-created entities.
+- New, more robust event system design, with wrapping event struct and event rejection.
+- Changes in message sending interface. Methods for cleaning up entity pools after disconnection.
+- Improved interface for handling basic user interaction events.
 
 
 ## Example
