@@ -2,6 +2,8 @@
 #define LIBRG_DEBUG
 #include <librg.h>
 
+typedef struct { i32 a; } librg_component(foo);
+
 void on_connect_request(librg_event_t *event) {
     zpl_bs_write_u32(event->bs, 42);
     librg_log("on_connect_request\n");
@@ -15,11 +17,34 @@ void on_connect_refused(librg_event_t *event) {
     librg_log("on_connect_refused\n");
 }
 
-void on_customdata(librg_message_t *msg) {
-    u64 aaa = zpl_bs_read_u64(msg->data);
-
-    librg_log("server sent to everyone %llu", aaa);
+// client
+void damage_car(librg_entity_t entity) {
+    librg_log("client: damanging the car\n");
+    librg_send(21, { zpl_bs_write_u32(data, entity.id); });
 }
+
+void onvehcielcreate(librg_message_t *msg) {
+    u32 guid = zpl_bs_read_u32(msg->data);
+
+    librg_entity_t entity = librg_entity_create_shared(guid);
+    librg_attach_foo(entity, (foo_t) { 123 });
+
+    librg_log("server created vehicle %llu\n", entity.id);
+
+    damage_car(entity);
+}
+
+void on_damage_finished(librg_message_t *msg) {
+    u32 guid = zpl_bs_read_u32(msg->data);
+    librg_entity_t entity = librg_entity_get(guid);
+
+    foo_t *foo = librg_fetch_foo(entity);
+
+    ZPL_ASSERT(foo && foo->a == 123);
+
+    librg_log("damaged car finished\n");
+}
+
 
 int main() {
     char *test = "===============      CLIENT      =================\n" \
@@ -40,7 +65,8 @@ int main() {
     librg_event_add(LIBRG_CONNECTION_ACCEPT, on_connect_accepted);
     librg_event_add(LIBRG_CONNECTION_REFUSE, on_connect_refused);
 
-    librg_network_add(158, on_customdata);
+    librg_network_add(20, onvehcielcreate);
+    librg_network_add(22, on_damage_finished);
 
     librg_network_start((librg_address_t) { .host = "localhost", .port = 27010 });
 

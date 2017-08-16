@@ -9,6 +9,7 @@ include_directories(include
     node_modules/zpl.c/include
     node_modules/zpl_ent.c/include
     node_modules/zpl_math.c/include
+    node_modules/zpl_cull.c/include
     node_modules/zpl_event.c/include
     node_modules/enet.c/include
 )
