@@ -18,7 +18,7 @@ While `zpl` is header only library, which integrates into librg implicitly,
 ## What is new
 (Comparing to the previous, obsolete version of librg)
 
-- Single header library format, pure c implementation, and reduced number of depdendencies.
+- Single header library format, pure c implementation, and reduced number of dependencies.
 - Changes in method naming. All types, functions, defines, etc always start with prefix `librg_`.
 - Shared entity ids for all server-created entities.
 - New, more robust event system design, with wrapping event struct and event rejection.
