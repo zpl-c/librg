@@ -9,7 +9,7 @@ enum {
 typedef struct { i32 a; } librg_component(foo);
 
 void on_connect_request(librg_event_t *event) {
-    u32 secret = zpl_bs_read_u32(event->bs);
+    u32 secret = zpl_bs_read_u32(event->data);
 
     librg_log("user sent number: %u\n", secret);
 

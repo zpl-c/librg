@@ -382,10 +382,7 @@ extern "C" {
 
     typedef struct librg_event_t {
         b32 rejected;
-        union {
-            void *data;
-            zpl_bs_t bs;
-        };
+        void *data;
     } librg_event_t;
 
     /**
@@ -956,7 +953,7 @@ extern "C" {
 
         if (librg_is_client()) {
             librg_send_to(LIBRG_CONNECTION_REQUEST, msg->peer, {
-                librg_event_t event = { .bs = data };
+                librg_event_t event = { .data = data };
                 librg_event_trigger(LIBRG_CONNECTION_REQUEST, &event);
             });
         }
@@ -968,7 +965,7 @@ extern "C" {
     zpl_internal void librg__connection_request(librg_message_t *msg) {
         librg_dbg("librg__connection_request\n");
 
-        librg_event_t event = { 0 }; event.bs = msg->data;
+        librg_event_t event = { 0 }; event.data = msg->data;
         librg_event_trigger(LIBRG_CONNECTION_REQUEST, &event);
 
         if (librg_event_succeeded(&event)) {
@@ -1001,7 +998,7 @@ extern "C" {
      * CLIENT SIDE
      */
     zpl_internal void librg__connection_refuse(librg_message_t *msg) {
-        librg_event_t event = { 0 }; event.bs = msg->data;
+        librg_event_t event = { 0 }; event.data = msg->data;
         librg_event_trigger(LIBRG_CONNECTION_REFUSE, &event);
     }
 
@@ -1020,7 +1017,7 @@ extern "C" {
         // add server peer to storage
         librg_peers_set(&librg__network.connected_peers, cast(u64)msg->peer, entity);
 
-        librg_event_t event = { 0 }; event.bs = msg->data;
+        librg_event_t event = { 0 }; event.data = msg->data;
         librg_event_trigger(LIBRG_CONNECTION_ACCEPT, &event);
     }
 

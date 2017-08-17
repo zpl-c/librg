@@ -5,7 +5,7 @@
 typedef struct { i32 a; } librg_component(foo);
 
 void on_connect_request(librg_event_t *event) {
-    zpl_bs_write_u32(event->bs, 42);
+    zpl_bs_write_u32(event->data, 42);
     librg_log("on_connect_request\n");
 }
 
