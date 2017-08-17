@@ -316,6 +316,50 @@ extern "C" {
      */
     LIBRG_API void librg_entity_each(librg_entity_filter_t filter, librg_entity_cb_t callback);
 
+    #define librg_entity_eachx(filter, NAME, CODE) do {                                                                                        \
+        u32 index = filter.contains1;                                                                                                          \
+        librg_assert(index != 0);                                                                                                              \
+        librg_assert(index <= zpl_array_count(librg__component_pool));                                                                         \
+        librg__component__dummy_pool_t *pool = cast(librg__component__dummy_pool_t*)librg__component_pool[index - 1];                          \
+        librg_assert(pool);                                                                                                                    \
+        for (usize i = 0; i < pool->count; ++i) {                                                                                              \
+            librg__dummy_meta_ent_t meta_ent = pool->entities[i];                                                                              \
+            if (!meta_ent.used) continue;                                                                                                      \
+                                                                                                                                               \
+            librg_entity_t handle = meta_ent.handle;                                                                                           \
+            b32 used = true;                                                                                                                   \
+                                                                                                                                               \
+            for (usize j = 1; j < 8; j++) {                                                                                                    \
+                if (filter.contains[j] == 0) LIBRG__ENTITY_EACH_BREAK;                                                                         \
+                librg__component__dummy_pool_t *sub_pool = cast(librg__component__dummy_pool_t*)librg__component_pool[filter.contains[j] - 1]; \
+                librg_assert(sub_pool);                                                                                                        \
+                                                                                                                                               \
+                librg__dummy_meta_ent_t *sub_meta_ent = cast(librg__dummy_meta_ent_t *)(sub_pool->entities+handle.id);                         \
+                librg_assert(sub_meta_ent);                                                                                                    \
+                                                                                                                                               \
+                if (!sub_meta_ent->used) {                                                                                                     \
+                    used = false; break;                                                                                                       \
+                }                                                                                                                              \
+            }                                                                                                                                  \
+            if (!used) continue;                                                                                                               \
+            for (usize j = 0; j < 4; j++) {                                                                                                    \
+                if (filter.excludes[j] == 0) LIBRG__ENTITY_EACH_BREAK;                                                                         \
+                librg__component__dummy_pool_t *sub_pool = cast(librg__component__dummy_pool_t*)librg__component_pool[filter.excludes[j] - 1]; \
+                librg_assert(sub_pool);                                                                                                        \
+                                                                                                                                               \
+                librg__dummy_meta_ent_t *sub_meta_ent = cast(librg__dummy_meta_ent_t *)(sub_pool->entities+handle.id);                         \
+                librg_assert(sub_meta_ent);                                                                                                    \
+                                                                                                                                               \
+                if (sub_meta_ent->used) {                                                                                                      \
+                    used = false; break;                                                                                                       \
+                }                                                                                                                              \
+            }                                                                                                                                  \
+            handle.is_remote = 0;                                                                                                              \
+            if (used) { librg_entity_t NAME = librg__entity_get(handle); CODE; }                                                               \
+        }                                                                                                                                      \
+    } while(0)
+
+
     /**
      * Macro that declares component structs and methods
      * SHOULD BE called IN ALL c/cpp files that will be using it
@@ -610,7 +654,7 @@ extern "C" {
     } librg_component_declare_inner(librg_, transform);
 
     typedef struct {
-        b32 wut;
+        zpl_array_t(u32) ignored;
     } librg_component_declare_inner(librg_, streamable);
 
     typedef struct {
@@ -760,25 +804,28 @@ extern "C" {
         librg_entity_t entity = *(librg_entity_t *)&id;
 
         librg_attach_transform(entity, (librg_transform_t) { 0 });
+        librg_attach_streamable(entity, (librg_streamable_t) { 0 });
         librg_attach_entitymeta(entity, (librg_entitymeta_t) { 0 });
+
+        zpl_array_init(librg_fetch_streamable(entity)->ignored, zpl_heap_allocator());
 
         return entity;
     }
 
     librg_entity_t librg_entity_create_shared(u32 guid) {
-        librg_entity_t id = librg_entity_create();
+        librg_entity_t entity = librg_entity_create();
 
         librg_entity_t remote_id;
         remote_id.id = guid;
         remote_id.is_remote = true;
 
-        librg__entity_store(remote_id, id.id, false);
-        librg__entity_store(id, guid, true);
+        librg__entity_store(remote_id, entity.id, false);
+        librg__entity_store(entity, guid, true);
 
-        id.is_remote = true;
-        id.id = guid;
+        entity.is_remote = true;
+        entity.id = guid;
 
-        return id;
+        return entity;
     }
 
     librg_entity_t librg_entity_get(u32 id) {
@@ -809,6 +856,10 @@ extern "C" {
     void librg_entity_destroy(librg_entity_t id) {
         librg_entity_t entity = librg__entity_get(id);
 
+        if (librg_fetch_streamable(entity)) {
+            zpl_array_free(librg_fetch_streamable(entity)->ignored);
+        }
+
         for (i32 i = 0; i < zpl_array_count(librg__component_pool); i++) {
             librg__dummy_meta_ent_t *meta_ent = (cast(librg__component__dummy_pool_t*)librg__component_pool[i])->entities+entity.id;
             librg_assert(meta_ent);
@@ -817,53 +868,6 @@ extern "C" {
 
         return zple_destroy(&librg__entity_pool, *(zple_id_t *)&entity);
     }
-
-    #define librg_entity_eachx(filter, NAME, CODE) do {                                                                                              \
-        u32 index = filter.contains1;                                                                                                          \
-        librg_assert(index != 0);                                                                                                              \
-        librg_assert(index <= zpl_array_count(librg__component_pool));                                                                         \
-        librg__component__dummy_pool_t *pool = cast(librg__component__dummy_pool_t*)librg__component_pool[index - 1];                          \
-        librg_assert(pool);                                                                                                                    \
-                                                                                                                                               \
-        for (usize i = 0; i < pool->count; ++i) {                                                                                              \
-            librg__dummy_meta_ent_t meta_ent = pool->entities[i];                                                                              \
-            if (!meta_ent.used) continue;                                                                                                      \
-                                                                                                                                               \
-            librg_entity_t handle = meta_ent.handle;                                                                                           \
-            b32 used = true;                                                                                                                   \
-                                                                                                                                               \
-            for (usize j = 1; j < 8; j++) {                                                                                                    \
-                if (filter.contains[j] == 0) LIBRG__ENTITY_EACH_BREAK;                                                                         \
-                librg__component__dummy_pool_t *sub_pool = cast(librg__component__dummy_pool_t*)librg__component_pool[filter.contains[j] - 1]; \
-                librg_assert(sub_pool);                                                                                                        \
-                                                                                                                                               \
-                librg__dummy_meta_ent_t *sub_meta_ent = cast(librg__dummy_meta_ent_t *)(sub_pool->entities+handle.id);                         \
-                librg_assert(sub_meta_ent);                                                                                                    \
-                                                                                                                                               \
-                if (!sub_meta_ent->used) {                                                                                                     \
-                    used = false; break;                                                                                                       \
-                }                                                                                                                              \
-            }                                                                                                                                  \
-                                                                                                                                               \
-            if (!used) continue;                                                                                                               \
-                                                                                                                                               \
-            for (usize j = 0; j < 4; j++) {                                                                                                    \
-                if (filter.excludes[j] == 0) LIBRG__ENTITY_EACH_BREAK;                                                                         \
-                librg__component__dummy_pool_t *sub_pool = cast(librg__component__dummy_pool_t*)librg__component_pool[filter.excludes[j] - 1]; \
-                librg_assert(sub_pool);                                                                                                        \
-                                                                                                                                               \
-                librg__dummy_meta_ent_t *sub_meta_ent = cast(librg__dummy_meta_ent_t *)(sub_pool->entities+handle.id);                         \
-                librg_assert(sub_meta_ent);                                                                                                    \
-                                                                                                                                               \
-                if (sub_meta_ent->used) {                                                                                                      \
-                    used = false; break;                                                                                                       \
-                }                                                                                                                              \
-            }                                                                                                                                  \
-                                                                                                                                               \
-            handle.is_remote = 0;                                                                                                              \
-            if (used) { librg_entity_t NAME = librg__entity_get(handle); CODE; }                                                             \
-        }                                                                                                                                      \
-    } while(0)
 
     void librg_entity_each(librg_entity_filter_t filter, librg_entity_cb_t callback) {
         librg_entity_eachx(filter, librg_lambda(entity), { callback(entity); });
@@ -927,6 +931,7 @@ extern "C" {
         librg_component_define(NAME)
 
     librg_component_define_inner(librg_, transform);
+    librg_component_define_inner(librg_, streamable);
     librg_component_define_inner(librg_, entitymeta);
     librg_component_define_inner(librg_, client);
 
@@ -1003,7 +1008,6 @@ extern "C" {
             librg_entity_t entity = librg_entity_create();
 
             // assign default compoenents
-            librg_attach_transform(entity, (librg_transform_t){});
             librg_attach_client(entity, (librg_client_t){ msg->peer });
 
             // add client peer to storage
@@ -1041,9 +1045,6 @@ extern "C" {
 
         u32 guid = zpl_bs_read_u32(msg->data);
         librg_entity_t entity = librg_entity_create_shared(guid);
-
-        // assign default compoennets
-        librg_attach_transform(entity, (librg_transform_t){});
 
         // add server peer to storage
         librg_peers_set(&librg__network.connected_peers, cast(u64)msg->peer, entity);
@@ -1204,8 +1205,6 @@ extern "C" {
     librg_internal void librg__streamer_update() {
         librg_entity_filter_t filter = {
             librg_index_streamable(),
-            librg_index_entitymeta(),
-            librg_index_transform(),
         };
 
         // clear
@@ -1270,7 +1269,9 @@ extern "C" {
     }
 
     librg_internal ZPL_TIMER_CB(librg__tick_cb) {
-        // todo: streamer update
+        if (librg_is_server()) {
+            librg__streamer_update();
+        }
     }
 
     void librg_network_start(librg_address_t addr) {
