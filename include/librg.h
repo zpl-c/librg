@@ -1310,7 +1310,37 @@ extern "C" {
 
 
     zpl_array_t(librg_entity_t) librg_streamer_query(librg_entity_t entity) {
-        return NULL;
+        zpl_array_t(zplc_node_t) search_temp;
+        zpl_array_t(librg_entity_t) search_result;
+
+        zpl_array_init(search_temp, zpl_heap_allocator());
+        zpl_array_init(search_result, zpl_heap_allocator());
+
+        librg_transform_t  *transform  = librg_fetch_transform(entity);
+        librg_streamable_t *streamable = librg_fetch_streamable(entity);
+
+        zplc_bounds_t search_bounds = {
+            .centre = transform->position,
+            .half_size = {20, 20, 20},
+        };
+
+        zplc_query(&librg__streamer, search_bounds, search_temp);
+
+        for (isize i = 0; i < zpl_array_count(search_temp); i++) {
+            librg_entity_t target = librg_entity_get(search_temp[i].tag);
+
+            b32 *global = librg__entignore_get(&librg__ignored, target.id);
+            if (!global || !*global) continue;
+
+            if (streamable) {
+                b32 *local = librg__entignore_get(&streamable->ignored, target.id);
+                if (!local || !*local) continue;
+            }
+
+            zpl_array_append(search_result, target);
+        }
+
+        zpl_array_free(search_temp);
     }
 
     void librg_streamer_set_visible(librg_entity_t entity, b32 state) {
