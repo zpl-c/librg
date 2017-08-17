@@ -86,7 +86,8 @@ extern "C" {
     #endif
 
     #define librg_log zpl_printf
-
+    #define librg_assert ZPL_ASSERT
+    #define librg_assert_msg ZPL_ASSERT_MSG
 
     /**
      * OPTIONS
@@ -780,7 +781,7 @@ extern "C" {
 
         for (i32 i = 0; i < zpl_array_count(librg__component_pool); i++) {
             librg__dummy_meta_ent_t *meta_ent = (cast(librg__component__dummy_pool_t*)librg__component_pool[i])->entities+entity.id;
-            ZPL_ASSERT(meta_ent);
+            librg_assert(meta_ent);
             meta_ent->used = false;
         }
 
@@ -789,10 +790,10 @@ extern "C" {
 
     #define librg_entity_eachx(filter, CODE) do {                                                                                              \
         u32 index = filter.contains1;                                                                                                          \
-        ZPL_ASSERT(index != 0);                                                                                                                \
-        ZPL_ASSERT(index <= zpl_array_count(librg__component_pool));                                                                           \
+        librg_assert(index != 0);                                                                                                                \
+        librg_assert(index <= zpl_array_count(librg__component_pool));                                                                           \
         librg__component__dummy_pool_t *pool = cast(librg__component__dummy_pool_t*)librg__component_pool[index - 1];                          \
-        ZPL_ASSERT(pool);                                                                                                                      \
+        librg_assert(pool);                                                                                                                      \
                                                                                                                                                \
         for (usize i = 0; i < pool->count; ++i) {                                                                                              \
             librg__dummy_meta_ent_t meta_ent = pool->entities[i];                                                                              \
@@ -804,10 +805,10 @@ extern "C" {
             for (usize j = 1; j < 8; j++) {                                                                                                    \
                 if (filter.contains[j] == 0) LIBRG__ENTITY_EACH_BREAK;                                                                         \
                 librg__component__dummy_pool_t *sub_pool = cast(librg__component__dummy_pool_t*)librg__component_pool[filter.contains[j] - 1]; \
-                ZPL_ASSERT(sub_pool);                                                                                                          \
+                librg_assert(sub_pool);                                                                                                          \
                                                                                                                                                \
                 librg__dummy_meta_ent_t *sub_meta_ent = cast(librg__dummy_meta_ent_t *)(sub_pool->entities+handle.id);                         \
-                ZPL_ASSERT(sub_meta_ent);                                                                                                      \
+                librg_assert(sub_meta_ent);                                                                                                      \
                                                                                                                                                \
                 if (!sub_meta_ent->used) {                                                                                                     \
                     used = false; break;                                                                                                       \
@@ -819,10 +820,10 @@ extern "C" {
             for (usize j = 0; j < 4; j++) {                                                                                                    \
                 if (filter.excludes[j] == 0) LIBRG__ENTITY_EACH_BREAK;                                                                         \
                 librg__component__dummy_pool_t *sub_pool = cast(librg__component__dummy_pool_t*)librg__component_pool[filter.excludes[j] - 1]; \
-                ZPL_ASSERT(sub_pool);                                                                                                          \
+                librg_assert(sub_pool);                                                                                                          \
                                                                                                                                                \
                 librg__dummy_meta_ent_t *sub_meta_ent = cast(librg__dummy_meta_ent_t *)(sub_pool->entities+handle.id);                         \
-                ZPL_ASSERT(sub_meta_ent);                                                                                                      \
+                librg_assert(sub_meta_ent);                                                                                                      \
                                                                                                                                                \
                 if (sub_meta_ent->used) {                                                                                                      \
                     used = false; break;                                                                                                       \
@@ -842,7 +843,7 @@ extern "C" {
         ZPL_JOIN3(librg__component_, NAME, _pool_t) ZPL_JOIN3(librg__component_, NAME, _pool);                                                 \
                                                                                                                                                \
         void ZPL_JOIN2(librg__init_, NAME) (ZPL_JOIN3(librg__component_, NAME, _pool_t) *h, zple_pool *p, zpl_allocator_t a) {                 \
-            ZPL_ASSERT(h&&p); h->backing = a;                                                                                                  \
+            librg_assert(h&&p); h->backing = a;                                                                                                  \
             h->count = p->count;                                                                                                               \
             zpl_buffer_init(h->entities, a, p->count);                                                                                         \
             zpl_buffer_init(h->data, a, p->count);                                                                                             \
@@ -850,7 +851,7 @@ extern "C" {
             h->index = zpl_array_count(librg__component_pool);                                                                                 \
         }                                                                                                                                      \
         void ZPL_JOIN2(librg__free_, NAME) (ZPL_JOIN3(librg__component_, NAME, _pool_t) *h) {                                                  \
-            ZPL_ASSERT(h);                                                                                                                     \
+            librg_assert(h);                                                                                                                     \
             zpl_buffer_free(h->entities, h->backing);                                                                                          \
             zpl_buffer_free(h->data, h->backing);                                                                                              \
         }                                                                                                                                      \
@@ -917,12 +918,12 @@ extern "C" {
     }
 
     void librg_event_reject(librg_event_t *event) {
-        ZPL_ASSERT(event);
+        librg_assert(event);
         event->rejected = true;
     }
 
     b32 librg_event_succeeded(librg_event_t *event) {
-        ZPL_ASSERT(event);
+        librg_assert(event);
         return !event->rejected;
     }
 
@@ -1133,12 +1134,12 @@ extern "C" {
     }
 
     void librg_message_send_instream(librg_entity_t entity, zpl_bs_t data) {
-        ZPL_ASSERT_MSG(0, "todo");
+        librg_assert_msg(0, "todo");
         zpl_bs_free(data);
     }
 
     void librg_message_send_instream_except(librg_entity_t entity, librg_peer_t peer, zpl_bs_t data) {
-        ZPL_ASSERT_MSG(0, "todo");
+        librg_assert_msg(0, "todo");
         zpl_bs_free(data);
     }
 
@@ -1211,7 +1212,7 @@ extern "C" {
 
             // setup server host
             librg__network.host = enet_host_create(&address, librg__config.max_connections, LIBRG_NETWORK_CHANNELS, 0, 0);
-            ZPL_ASSERT_MSG(librg__network.host, "could not start server at provided port");
+            librg_assert_msg(librg__network.host, "could not start server at provided port");
         }
         else {
             ENetAddress address;
@@ -1221,12 +1222,12 @@ extern "C" {
 
             // setup client host
             librg__network.host = enet_host_create(NULL, 1, LIBRG_NETWORK_CHANNELS, 57600 / 8, 14400 / 8);
-            ZPL_ASSERT_MSG(librg__network.host, "could not start client");
+            librg_assert_msg(librg__network.host, "could not start client");
 
             // create peer connecting to server
             librg_log("connecting to server %s:%u\n", addr.host, addr.port);
             librg__network.peer = enet_host_connect(librg__network.host, &address, LIBRG_NETWORK_CHANNELS, 0);
-            ZPL_ASSERT_MSG(librg__network.peer, "could not setup peer for provided address");
+            librg_assert_msg(librg__network.peer, "could not setup peer for provided address");
         }
     }
 
@@ -1275,7 +1276,7 @@ extern "C" {
         zpl_timer_start(tick_timer, 1000);
 
         // network
-        ZPL_ASSERT_MSG(enet_initialize() == 0, "cannot initialize enet");
+        librg_assert_msg(enet_initialize() == 0, "cannot initialize enet");
 
         // add event handlers for our network stuufz
         librg__messages[LIBRG_CONNECTION_INIT]        = librg__connection_init;
@@ -1299,7 +1300,7 @@ extern "C" {
 
         // free the entity component pools
         for (i32 i = 0; i < zpl_array_count(librg__component_pool); i++) {
-            ZPL_ASSERT(librg__component_pool[i]);
+            librg_assert(librg__component_pool[i]);
             librg__component__dummy_pool_t *h = cast(librg__component__dummy_pool_t*)librg__component_pool[i];
             zpl_buffer_free(h->entities, h->backing);
             zpl_buffer_free(h->data, h->backing);

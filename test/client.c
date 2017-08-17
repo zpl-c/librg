@@ -29,7 +29,7 @@ void onvehcielcreate(librg_message_t *msg) {
     librg_entity_t entity = librg_entity_create_shared(guid);
     librg_attach_foo(entity, (foo_t) { 123 });
 
-    librg_log("server created vehicle %llu\n", entity.id);
+    librg_log("server created vehicle %lu\n", entity.id);
 
     damage_car(entity);
 }
