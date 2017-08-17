@@ -70,7 +70,27 @@
 extern "C" {
 #endif
 
+    /**
+     * BASIC DEFINITOINS
+     */
+
     #define LIBRG_API ZPL_DEF
+    #define LIBRG_ENTITY_ALLOCATOR zpl_heap_allocator
+    #define LIBRG_NETWORK_STREAM_CHANNEL 1
+    #define LIBRG_NETWORK_MESSAGE_CHANNEL 2
+
+    #ifdef LIBRG_DEBUG
+    #define librg_dbg(fmt, ...) zpl_printf(fmt, ##__VA_ARGS__)
+    #else
+    #define librg_dbg(fmt, ...)
+    #endif
+
+    #define librg_log zpl_printf
+
+
+    /**
+     * OPTIONS
+     */
 
     #ifndef LIBRG_PLATFORM_ID
     #define LIBRG_PLATFORM_ID 1
@@ -84,16 +104,27 @@ extern "C" {
     #define LIBRG_PLATFORM_BUILD 1
     #endif
 
-    #define librg_log zpl_printf
-
-    #ifdef LIBRG_DEBUG
-    #define librg_dbg(fmt, ...) zpl_printf(fmt, ##__VA_ARGS__)
-    #else
-    #define librg_dbg(fmt, ...)
-    #endif
-
     #ifndef LIBRG_DEFAULT_BS_SIZE
     #define LIBRG_DEFAULT_BS_SIZE 1024
+    #endif
+
+    #ifndef LIBRG_NETWORK_MESSAGE_CAPACITY
+    #define LIBRG_NETWORK_MESSAGE_CAPACITY 2048
+    #endif
+
+    #ifndef LIBRG_NETWORK_CHANNELS
+    #define LIBRG_NETWORK_CHANNELS 4
+    #endif
+
+    /**
+     * If you dont want to skip filter rules if previous one is empty
+     * make sure you #define LIBRG_ENTITY_UNOPTIMIZED_CYCLES
+     * before including the librg.h
+     */
+    #if defined(LIBRG_ENTITY_UNOPTIMIZED_CYCLES)
+        #define LIBRG__ENTITY_EACH_BREAK continue
+    #else
+        #define LIBRG__ENTITY_EACH_BREAK break
     #endif
 
 
@@ -153,14 +184,6 @@ extern "C" {
     LIBRG_API void librg_free();
 
     /**
-     * @deprecated
-     * Old method, compatibility with
-     * librg-cpp automatic mode, runs blocking while loop
-     * can be used to run on a server side, for simple testing
-     */
-    LIBRG_API void librg_run_blocking();
-
-    /**
      * Is librg instance is running
      * in the server mode
      */
@@ -173,19 +196,10 @@ extern "C" {
     LIBRG_API b32 librg_is_client();
 
 
-
-
     /**
      * ENTITIES
      */
 
-    /**
-     * Allocator that will be used for new Entity System
-     */
-    #define LIBRG_ENTITY_ALLOCATOR zpl_heap_allocator
-
-    // todo: make custom entity handle
-    // to store shared network ids
     typedef zple_id_t librg_entity_t;
 
     /**
@@ -231,29 +245,12 @@ extern "C" {
      * Callback that will be used to pass
      * the entity inside the function-handler
      */
-    #define LIBRG_ENTITY_CB(name) void name(librg_entity_t entity)
-        typedef LIBRG_ENTITY_CB(librg_entity_cb_t);
-    #undef  LIBRG_ENTITY_CB
+    typedef void (librg_entity_cb_t)(librg_entity_t entity);
 
     /**
-     * If you dont want to skip filter rules if previous one is empty
-     * make sure you #define LIBRG_ENTITY_UNOPTIMIZED_CYCLES
-     * before including the librg.h
+     * Table to store remote -> local
+     * entity relation
      */
-    #if defined(LIBRG_ENTITY_UNOPTIMIZED_CYCLES)
-        #define LIBRG__ENTITY_EACH_BREAK continue
-    #else
-        #define LIBRG__ENTITY_EACH_BREAK break
-    #endif
-
-    typedef union librg__entcache_key_t {
-        u64 master;
-        struct {
-            u32 slot;
-            b32 is_local;
-        };
-    } librg__entcache_key_t;
-
     ZPL_TABLE_DECLARE(extern, librg__entcache_t, librg__entcache_, librg_entity_t);
 
     /**
@@ -368,15 +365,11 @@ extern "C" {
         ZPL_JOIN3(PREFIX, NAME, _t) * ZPL_JOIN2(librg_fetch_, NAME) (librg_entity_t handle);                                    \
         u32 ZPL_JOIN2(librg_index_, NAME) ();
 
-    #define librg_component_declare(NAME) librg_component_declare_inner(,NAME)
-    #define librg_component(NAME)                                                                                               \
-        librg_component_declare(NAME)
 
 
     /**
      * EVENTS
      */
-
 
     typedef struct librg_event_t {
         b32 rejected;
@@ -386,8 +379,20 @@ extern "C" {
         };
     } librg_event_t;
 
+    /**
+     * Callback for event
+     */
     typedef void (librg_event_cb_t)(librg_event_t *event);
 
+    /**
+     * Default built-in events
+     * define your events likes this:
+     *     enum {
+     *         MY_NEW_EVENT_1 = LIBRG_LAST_ENUM_NUMBER,
+     *         MY_NEW_EVENT_2,
+     *         MY_NEW_EVENT_3,
+     *     };
+     */
     enum {
         LIBRG_CONNECTION_INIT,
         LIBRG_CONNECTION_REQUEST,
@@ -455,41 +460,51 @@ extern "C" {
      */
     LIBRG_API b32 librg_event_succeeded(librg_event_t *event);
 
+
     /**
      * NETWORK
      */
-
-    #ifndef LIBRG_NETWORK_MESSAGE_CAPACITY
-    #define LIBRG_NETWORK_MESSAGE_CAPACITY 2048
-    #endif
-
-    #ifndef LIBRG_NETWORK_CHANNELS
-    #define LIBRG_NETWORK_CHANNELS 4
-    #endif
-
-    #define LIBRG_NETWORK_STREAM_CHANNEL 1
-    #define LIBRG_NETWORK_MESSAGE_CHANNEL 2
 
     typedef zpl_bs_t    librg_bs_t;
     typedef ENetPeer   *librg_peer_t;
     typedef ENetHost   *librg_host_t;
     typedef ENetPacket *librg_packet_t;
 
+    /**
+     * Simple host address
+     * used to configure network on start
+     */
     typedef struct {
         char *host;
         i32 port;
     } librg_address_t;
 
+    /**
+     * Message strure
+     * gets returned inside network handler
+     * on each incoming message
+     */
     typedef struct {
-        librg_bs_t data;
+        librg_bs_t  data;
         librg_peer_t peer;
         librg_packet_t packet;
     } librg_message_t;
 
+    /**
+     * Callback definition
+     * for network message handler
+     */
     typedef void (librg_message_handler_t)(librg_message_t *msg);
 
+    /**
+     * Storage for entities stored by peer
+     * Hashtable, peer pointer is key, associated entity is value
+     */
     ZPL_TABLE_DECLARE(extern, librg_peers_t, librg_peers_, librg_entity_t);
 
+    /**
+     * Builtin network storage table
+     */
     typedef struct librg_network_t {
         librg_peer_t peer;
         librg_host_t host;
@@ -497,18 +512,128 @@ extern "C" {
         librg_peers_t connected_peers;
     } librg_network_t;
 
+    /**
+     * Check are we connected
+     */
     LIBRG_API b32 librg_is_connected();
 
+    /**
+     * Starts network connection
+     * Requires you to provide .port (if running as server)
+     * or both .port and .host (if running as client)
+     *
+     * For server mode - starts server
+     * For client mode - starts client, and connects to provided host & port
+     */
     LIBRG_API void librg_network_start(librg_address_t address);
+
+    /**
+     * Disconnects (if connected), stops network
+     * and releases resources
+     */
     LIBRG_API void librg_network_stop();
 
+    /**
+     * Can be used to add handler
+     * to a particular message id
+     */
+    LIBRG_API void librg_network_add(u64 id, librg_message_handler_t callback);
+
+    /**
+     * Can be used to remove a handler
+     * from particular message id
+     */
+    LIBRG_API void librg_network_remove(u64 id);
+
+    /**
+     * Part of message API
+     * Used to create message header
+     * Returns initialized bitstream pointer
+     */
     LIBRG_API zpl_bs_t librg_message_start(u64 id, usize size);
 
+    /**
+     * Part of message API
+     * Takes in initialized bitstream pointer with written packet id
+     * ( from call to librg_message_start)
+     * and sends data to all connected peers ( or to server if its client )
+     */
     LIBRG_API void librg_message_send_all(zpl_bs_t data);
+
+    /**
+     * Part of message API
+     * Applies all from previous mehod
+     * But data will be sent only to particular provided peer
+     */
     LIBRG_API void librg_message_send_to(librg_peer_t peer, zpl_bs_t data);
+
+    /**
+     * Part of message API
+     * Applies all from previous mehod
+     * But data will be sent to all except provided peer
+     */
     LIBRG_API void librg_message_send_except(librg_peer_t peer, zpl_bs_t data);
+
+    /**
+     * Part of message API
+     * Applies all from previous mehod
+     * Data will be sent only to entities, which are inside streamzone
+     * for provided entity
+     */
     LIBRG_API void librg_message_send_instream(librg_entity_t entity, zpl_bs_t data);
+
+    /**
+     * Part of message API
+     * Applies all from previous mehod
+     * Data will be sent only to entities, which are inside streamzone
+     * for provided entity except peer
+     */
     LIBRG_API void librg_message_send_instream_except(librg_entity_t entity, librg_peer_t peer, zpl_bs_t data);
+
+
+    /**
+     * COMPONENTS
+     */
+
+    typedef struct {
+        zplm_vec3_t position;
+        zplm_quat_t rotation;
+    } librg_component_declare_inner(librg_, transform);
+
+    typedef struct {
+        b32 wut;
+    } librg_component_declare_inner(librg_, streamable);
+
+    typedef struct {
+        u32 type;
+    } librg_component_declare_inner(librg_, entity_type);
+
+    typedef struct {
+        librg_peer_t peer;
+    } librg_component_declare_inner(librg_, client);
+
+
+
+    /**
+     * STREAMER
+     */
+
+    LIBRG_API void librg_streamer_remove(librg_entity_t entity);
+    LIBRG_API void librg_streamer_set_visible(librg_entity_t entity, b32 state);
+    LIBRG_API void librg_streamer_set_visible_for(librg_entity_t entity, librg_entity_t target, b32 state);
+    LIBRG_API void librg_streamer_client_set(librg_entity_t entity, librg_peer_t peer);
+    LIBRG_API void librg_streamer_client_remove(librg_entity_t entity);
+
+
+
+    /**
+     * EXTENSIONS
+     */
+
+    #ifndef LIBRG_DISABLE_COMPONENT_SHORTCUTS
+        typedef librg_transform_t transform_t;
+        typedef librg_client_t    client_t;
+    #endif
 
     #define librg_send_all(ID, CODE) do {                                   \
             zpl_bs_t data = librg_message_start(ID, LIBRG_DEFAULT_BS_SIZE); \
@@ -537,46 +662,8 @@ extern "C" {
 
     #define librg_send librg_send_all
 
-    LIBRG_API void librg_network_add(u64 id, librg_message_handler_t callback);
-    LIBRG_API void librg_network_remove(u64 id);
-
-    /**
-     * COMPONENTS
-     */
-
-    typedef struct {
-        zplm_vec3_t position;
-        zplm_quat_t rotation;
-    } librg_component_declare_inner(librg_, transform);
-
-    typedef struct {
-        b32 wut;
-    } librg_component_declare_inner(librg_, streamable);
-
-    typedef struct {
-        u32 type;
-    } librg_component_declare_inner(librg_, entity_type);
-
-    typedef struct {
-        librg_peer_t peer;
-    } librg_component_declare_inner(librg_, client);
-
-    #ifndef LIBRG_DISABLE_COMPONENT_SHORTCUTS
-        typedef librg_transform_t transform_t;
-        typedef librg_client_t    client_t;
-    #endif
-
-    /**
-     * STREAMER
-     */
-
-    LIBRG_API void librg_streamer_remove(librg_entity_t entity);
-    LIBRG_API void librg_streamer_set_visible(librg_entity_t entity, b32 state);
-    LIBRG_API void librg_streamer_set_visible_for(librg_entity_t entity, librg_entity_t target, b32 state);
-    LIBRG_API void librg_streamer_client_set(librg_entity_t entity, librg_peer_t peer);
-    LIBRG_API void librg_streamer_client_remove(librg_entity_t entity);
-
-
+    #define librg_component_declare(NAME) librg_component_declare_inner(,NAME)
+    #define librg_component(NAME) librg_component_declare(NAME)
 
 #ifdef __cplusplus
 }
@@ -618,6 +705,14 @@ extern "C" {
      */
     typedef struct {} librg_component_declare(_dummy);
 
+    typedef union librg__entcache_key_t {
+        u64 master;
+        struct {
+            u32 slot;
+            b32 is_local;
+        };
+    } librg__entcache_key_t;
+
     zpl_inline void librg__entity_store(librg_entity_t id, u32 slot, b32 remote) {
         librg__entcache_key_t key = { .slot = slot, .is_local = !remote };
         librg__entcache_set(&librg__entcache, key.master, id);
@@ -654,7 +749,7 @@ extern "C" {
         return (librg_entity_t) { .id = id, .part[0] = 1 };
     }
 
-    librg_entity_t librg__entity_get(librg_entity_t id) {
+    zpl_internal librg_entity_t librg__entity_get(librg_entity_t id) {
         librg__entcache_key_t key;
         key.slot = id.id;
         key.is_local = !id.part[0];
@@ -837,7 +932,7 @@ extern "C" {
     /**
      * SHARED
      */
-    void librg__connection_init(librg_message_t *msg) {
+    zpl_internal void librg__connection_init(librg_message_t *msg) {
         librg_dbg("librg__connection_init\n");
 
         #if defined(LIBRG_DEBUG)
@@ -858,7 +953,7 @@ extern "C" {
     /**
      * SERVER SIDE
      */
-    void librg__connection_request(librg_message_t *msg) {
+    zpl_internal void librg__connection_request(librg_message_t *msg) {
         librg_dbg("librg__connection_request\n");
 
         librg_event_t event = { 0 }; event.bs = msg->data;
@@ -893,7 +988,7 @@ extern "C" {
     /**
      * CLIENT SIDE
      */
-    void librg__connection_refuse(librg_message_t *msg) {
+    zpl_internal void librg__connection_refuse(librg_message_t *msg) {
         librg_event_t event = { 0 }; event.bs = msg->data;
         librg_event_trigger(LIBRG_CONNECTION_REFUSE, &event);
     }
@@ -901,7 +996,7 @@ extern "C" {
     /**
      * CLIENT SIDE
      */
-    void librg__connection_accept(librg_message_t *msg) {
+    zpl_internal void librg__connection_accept(librg_message_t *msg) {
         librg_dbg("librg__connection_accept\n");
 
         u32 guid = zpl_bs_read_u32(msg->data);
@@ -920,13 +1015,13 @@ extern "C" {
     /**
      * SHARED
      */
-    void librg__connection_disconnect(librg_message_t *msg) {
+    zpl_internal void librg__connection_disconnect(librg_message_t *msg) {
         librg_dbg("librg__connection_disconnect\n");
 
         // librg_event_trigger(LIBRG_CONNECTION_DISCONNECT, msg->data);
     }
 
-    void librg__entity_create(librg_message_t *msg) {
+    zpl_internal void librg__entity_create(librg_message_t *msg) {
         u16 query_size = zpl_bs_read_u16(msg->data);
 
         // for (int i = 0; i < query_size; ++i) {
@@ -971,19 +1066,19 @@ extern "C" {
         // }
     }
 
-    void librg__entity_update(librg_message_t *msg) {
+    zpl_internal void librg__entity_update(librg_message_t *msg) {
 
     }
 
-    void librg__entity_client_streamer_add(librg_message_t *msg) {
+    zpl_internal void librg__entity_client_streamer_add(librg_message_t *msg) {
 
     }
 
-    void librg__entity_client_streamer_remove(librg_message_t *msg) {
+    zpl_internal void librg__entity_client_streamer_remove(librg_message_t *msg) {
 
     }
 
-    void librg__entity_client_streamer_update(librg_message_t *msg) {
+    zpl_internal void librg__entity_client_streamer_update(librg_message_t *msg) {
 
     }
 
@@ -1090,7 +1185,7 @@ extern "C" {
         }
     }
 
-    ZPL_TIMER_CB(librg__tick_cb) {
+    zpl_internal ZPL_TIMER_CB(librg__tick_cb) {
         // todo: streamer update
     }
 

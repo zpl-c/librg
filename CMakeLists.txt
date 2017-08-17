@@ -3,15 +3,20 @@ project(librg)
 
 find_package(Threads)
 
-add_subdirectory(node_modules/enet.c)
+if (NOT LIBRG_VENDOR_FOLDER)
+    set(LIBRG_VENDOR_FOLDER node_modules)
+    set(LIBRG_POSTFIX ".c")
+endif()
+
+add_subdirectory(${LIBRG_VENDOR_FOLDER}/enet${LIBRG_POSTFIX})
 
 include_directories(include
-    node_modules/zpl.c/include
-    node_modules/zpl_ent.c/include
-    node_modules/zpl_math.c/include
-    node_modules/zpl_cull.c/include
-    node_modules/zpl_event.c/include
-    node_modules/enet.c/include
+    ${LIBRG_VENDOR_FOLDER}/zpl${LIBRG_POSTFIX}/include
+    ${LIBRG_VENDOR_FOLDER}/zpl_ent${LIBRG_POSTFIX}/include
+    ${LIBRG_VENDOR_FOLDER}/zpl_math${LIBRG_POSTFIX}/include
+    ${LIBRG_VENDOR_FOLDER}/zpl_cull${LIBRG_POSTFIX}/include
+    ${LIBRG_VENDOR_FOLDER}/zpl_event${LIBRG_POSTFIX}/include
+    ${LIBRG_VENDOR_FOLDER}/enet${LIBRG_POSTFIX}/include
 )
 
 add_executable(librg.server test/server.c)
