@@ -71,8 +71,12 @@
 extern "C" {
 #endif
 
+
+
     /**
+     *
      * BASIC DEFINITOINS
+     *
      */
 
     #define LIBRG_API ZPL_DEF
@@ -92,8 +96,13 @@ extern "C" {
     #define librg_internal zpl_internal
     #define librg_lambda(name) name
 
+
+
+
     /**
+     *
      * OPTIONS
+     *
      */
 
     #ifndef LIBRG_PLATFORM_ID
@@ -132,8 +141,13 @@ extern "C" {
     #endif
 
 
+
+
+
     /**
+     *
      * CORE
+     *
      */
 
     typedef enum librg_mode_e {
@@ -200,8 +214,12 @@ extern "C" {
     LIBRG_API b32 librg_is_client();
 
 
+
+
     /**
+     *
      * ENTITIES
+     *
      */
 
     typedef struct librg_entity_t {
@@ -423,8 +441,12 @@ extern "C" {
         u32 ZPL_JOIN2(librg_index_, NAME) ();
 
 
+
+
     /**
+     *
      * EVENTS
+     *
      */
 
     typedef struct librg_event_t {
@@ -514,8 +536,12 @@ extern "C" {
     LIBRG_API b32 librg_event_succeeded(librg_event_t *event);
 
 
+
+
     /**
+     *
      * NETWORK
+     *
      */
 
     typedef zpl_bs_t    librg_bs_t;
@@ -644,32 +670,15 @@ extern "C" {
     LIBRG_API void librg_message_send_instream_except(librg_entity_t entity, librg_peer_t peer, zpl_bs_t data);
 
 
-    /**
-     * COMPONENTS
-     */
-
-    typedef struct {
-        zplm_vec3_t position;
-        zplm_quat_t rotation;
-    } librg_component_declare_inner(librg_, transform);
-
-    typedef struct {
-        zpl_array_t(u32) ignored;
-    } librg_component_declare_inner(librg_, streamable);
-
-    typedef struct {
-        u32 type;
-    } librg_component_declare_inner(librg_, entitymeta);
-
-    typedef struct {
-        librg_peer_t peer;
-    } librg_component_declare_inner(librg_, client);
-
 
 
     /**
+     *
      * STREAMER
+     *
      */
+
+    ZPL_TABLE_DECLARE(extern, librg__entignore_t, librg__entignore_, b32);
 
     /**
      * Query for entities that are in stream zone
@@ -706,8 +715,39 @@ extern "C" {
     LIBRG_API void librg_streamer_client_remove(librg_entity_t entity);
 
 
+
+
     /**
+     *
+     * COMPONENTS
+     *
+     */
+
+    typedef struct {
+        zplm_vec3_t position;
+        zplm_quat_t rotation;
+    } librg_component_declare_inner(librg_, transform);
+
+    typedef struct {
+        librg__entignore_t ignored;
+    } librg_component_declare_inner(librg_, streamable);
+
+    typedef struct {
+        u32 type;
+    } librg_component_declare_inner(librg_, entitymeta);
+
+    typedef struct {
+        librg_peer_t peer;
+    } librg_component_declare_inner(librg_, client);
+
+
+
+
+
+    /**
+     *
      * EXTENSIONS
+     *
      */
 
     #ifndef LIBRG_DISABLE_COMPONENT_SHORTCUTS
@@ -769,6 +809,7 @@ extern "C" {
     zpl_timer_pool      librg__timers;
     librg_network_t     librg__network;
     librg__entcache_t   librg__entcache;
+    librg__entignore_t  librg__ignored;
 
     zpl_buffer_t(librg_message_handler_t *) librg__messages;
 
@@ -779,12 +820,29 @@ extern "C" {
 
     ZPL_TABLE_DEFINE(librg_peers_t, librg_peers_, librg_entity_t);
     ZPL_TABLE_DEFINE(librg__entcache_t, librg__entcache_, librg_entity_t);
+    ZPL_TABLE_DEFINE(librg__entignore_t, librg__entignore_, b32);
 
     /**
      * Create dummy component to
      * use it as template for removal in destroy
      */
     typedef struct {} librg_component_declare(_dummy);
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
     typedef union librg__entcache_key_t {
         u64 master;
@@ -807,7 +865,7 @@ extern "C" {
         librg_attach_streamable(entity, (librg_streamable_t) { 0 });
         librg_attach_entitymeta(entity, (librg_entitymeta_t) { 0 });
 
-        zpl_array_init(librg_fetch_streamable(entity)->ignored, zpl_heap_allocator());
+        librg__entignore_init(&librg_fetch_streamable(entity)->ignored, zpl_heap_allocator());
 
         return entity;
     }
@@ -857,7 +915,7 @@ extern "C" {
         librg_entity_t entity = librg__entity_get(id);
 
         if (librg_fetch_streamable(entity)) {
-            zpl_array_free(librg_fetch_streamable(entity)->ignored);
+            librg__entignore_destroy(&librg_fetch_streamable(entity)->ignored);
         }
 
         for (i32 i = 0; i < zpl_array_count(librg__component_pool); i++) {
@@ -872,6 +930,22 @@ extern "C" {
     void librg_entity_each(librg_entity_filter_t filter, librg_entity_cb_t callback) {
         librg_entity_eachx(filter, librg_lambda(entity), { callback(entity); });
     }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
     #define librg_component_define_inner(PREFIX, NAME)                                                                                         \
         ZPL_JOIN3(librg__component_, NAME, _pool_t) ZPL_JOIN3(librg__component_, NAME, _pool);                                                 \
@@ -935,6 +1009,22 @@ extern "C" {
     librg_component_define_inner(librg_, entitymeta);
     librg_component_define_inner(librg_, client);
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
     u64 librg_event_add(u64 id, librg_event_cb_t callback) {
         return zplev_add(&librg__events, id, (zplev_cb *)callback);
     }
@@ -962,17 +1052,22 @@ extern "C" {
         return !event->rejected;
     }
 
-    b32 librg_is_server() {
-        return librg__config.mode == librg_server_ev;
-    }
 
-    b32 librg_is_client() {
-        return librg__config.mode == librg_client_ev;
-    }
 
-    b32 librg_is_connected() {
-        return librg__network.peer && librg__network.peer->state == ENET_PEER_STATE_CONNECTED;
-    }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
     /**
      * SHARED
@@ -1123,6 +1218,22 @@ extern "C" {
 
     }
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
     zpl_bs_t librg_message_start(u64 id, usize size) {
         zpl_bs_t data;
         zpl_bs_init(data, zpl_heap_allocator(), size + sizeof(u64));
@@ -1182,16 +1293,34 @@ extern "C" {
         librg__messages[id] = NULL;
     }
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
     zpl_array_t(librg_entity_t) librg_streamer_query(librg_entity_t entity) {
         return NULL;
     }
 
     void librg_streamer_set_visible(librg_entity_t entity, b32 state) {
-
+        librg__entignore_set(&librg__ignored, entity.id, !state);
     }
 
     void librg_streamer_set_visible_for(librg_entity_t entity, librg_entity_t target, b32 state) {
-
+        if (librg_fetch_streamable(target)) {
+            librg__entignore_set(&librg_fetch_streamable(target)->ignored, entity.id, !state);
+        }
     }
 
     void librg_streamer_client_set(librg_entity_t entity, librg_peer_t peer) {
@@ -1223,6 +1352,28 @@ extern "C" {
             zplc_insert(&librg__streamer, node);
         });
     }
+
+    librg_internal ZPL_TIMER_CB(librg__tick_cb) {
+        if (librg_is_server()) {
+            librg__streamer_update();
+        }
+    }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
     void librg_tick() {
         zpl_timer_update(librg__timers);
@@ -1265,12 +1416,6 @@ extern "C" {
                 case ENET_EVENT_TYPE_DISCONNECT: librg__messages[LIBRG_CONNECTION_DISCONNECT](&msg); break;
                 case ENET_EVENT_TYPE_NONE: break;
             }
-        }
-    }
-
-    librg_internal ZPL_TIMER_CB(librg__tick_cb) {
-        if (librg_is_server()) {
-            librg__streamer_update();
         }
     }
 
@@ -1323,6 +1468,32 @@ extern "C" {
         librg_peers_destroy(&librg__network.connected_peers);
     }
 
+    b32 librg_is_server() {
+        return librg__config.mode == librg_server_ev;
+    }
+
+    b32 librg_is_client() {
+        return librg__config.mode == librg_client_ev;
+    }
+
+    b32 librg_is_connected() {
+        return librg__network.peer && librg__network.peer->state == ENET_PEER_STATE_CONNECTED;
+    }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
     void librg_init(librg_cfg_t config) {
         librg_dbg("librg_init\n");
         librg__config = config;
@@ -1345,6 +1516,7 @@ extern "C" {
         world.centre = zplm_vec3(0, 0, 0);
         world.half_size = zplm_vec3(librg__config.world_size.x, librg__config.world_size.y, 100);
         zplc_init(&librg__streamer, zpl_heap_allocator(), zplc_dim_2d_ev, world, librg__config.entity_limit);
+        librg__entignore_init(&librg__ignored, zpl_heap_allocator());
 
         // events
         zplev_init(&librg__events, zpl_heap_allocator());
@@ -1382,6 +1554,7 @@ extern "C" {
 
         // streamer
         zplc_free(&librg__streamer);
+        librg__entignore_destroy(&librg__ignored);
 
         // free the entity component pools
         for (i32 i = 0; i < zpl_array_count(librg__component_pool); i++) {
@@ -1398,6 +1571,8 @@ extern "C" {
 
         enet_deinitialize();
     }
+
+
 
 #ifdef __cplusplus
 }
