@@ -729,6 +729,7 @@ extern "C" {
     } librg_component_declare_inner(librg_, transform);
 
     typedef struct {
+        u32 range;
         librg__entignore_t ignored;
     } librg_component_declare_inner(librg_, streamable);
 
@@ -862,7 +863,7 @@ extern "C" {
         librg_entity_t entity = *(librg_entity_t *)&id;
 
         librg_attach_transform(entity, (librg_transform_t) { 0 });
-        librg_attach_streamable(entity, (librg_streamable_t) { 0 });
+        librg_attach_streamable(entity, (librg_streamable_t) { 250 });
         librg_attach_entitymeta(entity, (librg_entitymeta_t) { 0 });
 
         librg__entignore_init(&librg_fetch_streamable(entity)->ignored, zpl_heap_allocator());
@@ -1318,29 +1319,32 @@ extern "C" {
 
         librg_transform_t  *transform  = librg_fetch_transform(entity);
         librg_streamable_t *streamable = librg_fetch_streamable(entity);
+        librg_assert(transform && streamable);
 
         zplc_bounds_t search_bounds = {
             .centre = transform->position,
-            .half_size = {20, 20, 20},
+            .half_size = {streamable->range, streamable->range, streamable->range},
         };
 
+        librg_log("my zone: %d\n", streamable->range);
+
         zplc_query(&librg__streamer, search_bounds, search_temp);
+
+        librg_log("total raw: %tu\n", zpl_array_count(search_temp));
 
         for (isize i = 0; i < zpl_array_count(search_temp); i++) {
             librg_entity_t target = librg_entity_get(search_temp[i].tag);
 
             b32 *global = librg__entignore_get(&librg__ignored, target.id);
-            if (!global || !*global) continue;
+            b32 *local = librg__entignore_get(&streamable->ignored, target.id);
 
-            if (streamable) {
-                b32 *local = librg__entignore_get(&streamable->ignored, target.id);
-                if (!local || !*local) continue;
-            }
+            if ((global && *global) || (local && *local)) continue;
 
             zpl_array_append(search_result, target);
         }
 
         zpl_array_free(search_temp);
+        return search_result;
     }
 
     void librg_streamer_set_visible(librg_entity_t entity, b32 state) {
@@ -1545,7 +1549,7 @@ extern "C" {
         zplc_bounds_t world = {0};
         world.centre = zplm_vec3(0, 0, 0);
         world.half_size = zplm_vec3(librg__config.world_size.x, librg__config.world_size.y, 100);
-        zplc_init(&librg__streamer, zpl_heap_allocator(), zplc_dim_2d_ev, world, librg__config.entity_limit);
+        zplc_init(&librg__streamer, zpl_heap_allocator(), zplc_dim_2d_ev, world, 4);
         librg__entignore_init(&librg__ignored, zpl_heap_allocator());
 
         // events
