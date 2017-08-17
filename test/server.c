@@ -27,7 +27,7 @@ void on_vehicle_create() {
 
     librg_attach_foo(entity, (foo_t) { 42 });
 
-    librg_send(20, { zpl_bs_write_u32(data, entity.id); });
+    librg_send(20, librg_lambda(data), { zpl_bs_write_u32(data, entity.id); });
 }
 
 void on_connect_accepted(librg_event_t *event) {
@@ -51,7 +51,7 @@ void oncardamage(librg_message_t *msg) {
 
     librg_log("damaged car\n");
 
-    librg_send(22, { zpl_bs_write_u32(data, entity.id); });
+    librg_send(22, librg_lambda(data), { zpl_bs_write_u32(data, entity.id); });
 }
 
 int main() {

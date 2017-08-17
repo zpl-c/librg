@@ -54,6 +54,7 @@
 #define ZPL_IMPLEMENTATION
 #define ZPLE_IMPLEMENTATION
 #define ZPLM_IMPLEMENTATION
+#define ZPLC_IMPLEMENTATION
 #define ZPLEV_IMPLEMENTATION
 #endif
 
@@ -88,6 +89,8 @@ extern "C" {
     #define librg_log zpl_printf
     #define librg_assert ZPL_ASSERT
     #define librg_assert_msg ZPL_ASSERT_MSG
+    #define librg_internal zpl_internal
+    #define librg_lambda(name) name
 
     /**
      * OPTIONS
@@ -106,7 +109,7 @@ extern "C" {
     #endif
 
     #ifndef LIBRG_DEFAULT_BS_SIZE
-    #define LIBRG_DEFAULT_BS_SIZE 1024
+    #define LIBRG_DEFAULT_BS_SIZE 64
     #endif
 
     #ifndef LIBRG_NETWORK_MESSAGE_CAPACITY
@@ -122,10 +125,10 @@ extern "C" {
      * make sure you #define LIBRG_ENTITY_UNOPTIMIZED_CYCLES
      * before including the librg.h
      */
-    #if defined(LIBRG_ENTITY_UNOPTIMIZED_CYCLES)
-        #define LIBRG__ENTITY_EACH_BREAK continue
+    #ifdef LIBRG_ENTITY_UNOPTIMIZED_CYCLES
+    #define LIBRG__ENTITY_EACH_BREAK continue
     #else
-        #define LIBRG__ENTITY_EACH_BREAK break
+    #define LIBRG__ENTITY_EACH_BREAK break
     #endif
 
 
@@ -376,7 +379,6 @@ extern "C" {
         u32 ZPL_JOIN2(librg_index_, NAME) ();
 
 
-
     /**
      * EVENTS
      */
@@ -613,7 +615,7 @@ extern "C" {
 
     typedef struct {
         u32 type;
-    } librg_component_declare_inner(librg_, entity_type);
+    } librg_component_declare_inner(librg_, entitymeta);
 
     typedef struct {
         librg_peer_t peer;
@@ -625,12 +627,39 @@ extern "C" {
      * STREAMER
      */
 
-    LIBRG_API void librg_streamer_remove(librg_entity_t entity);
-    LIBRG_API void librg_streamer_set_visible(librg_entity_t entity, b32 state);
-    LIBRG_API void librg_streamer_set_visible_for(librg_entity_t entity, librg_entity_t target, b32 state);
-    LIBRG_API void librg_streamer_client_set(librg_entity_t entity, librg_peer_t peer);
-    LIBRG_API void librg_streamer_client_remove(librg_entity_t entity);
+    /**
+     * Query for entities that are in stream zone
+     * for current entity, and are visible to this entity
+     */
+    LIBRG_API zpl_array_t(librg_entity_t) librg_streamer_query(librg_entity_t entity);
 
+    /**
+     * Set particular entity visible or invisible
+     * for other entities in stream zone
+     */
+    LIBRG_API void librg_streamer_set_visible(librg_entity_t entity, b32 state);
+
+    /**
+     * Set particular entity visible or invisible
+     * for other particular entity
+     */
+    LIBRG_API void librg_streamer_set_visible_for(librg_entity_t entity, librg_entity_t target, b32 state);
+
+    /**
+     * Set some entity as client streamable
+     * Which means, that client will become responsive for sending
+     * updates about this entity
+     *
+     * And this entity wont be sent to the client, until he stops being the streamer
+     *
+     * Setting other client as streamer, will remove previous streamer from entity
+     */
+    LIBRG_API void librg_streamer_client_set(librg_entity_t entity, librg_peer_t peer);
+
+    /**
+     * Remove some entity from stream ownership of the client
+     */
+    LIBRG_API void librg_streamer_client_remove(librg_entity_t entity);
 
 
     /**
@@ -642,29 +671,29 @@ extern "C" {
         typedef librg_client_t    client_t;
     #endif
 
-    #define librg_send_all(ID, CODE) do {                                   \
-            zpl_bs_t data = librg_message_start(ID, LIBRG_DEFAULT_BS_SIZE); \
-            CODE; librg_message_send_all(data);                             \
+    #define librg_send_all(ID, NAME, CODE) do {                             \
+            zpl_bs_t NAME = librg_message_start(ID, LIBRG_DEFAULT_BS_SIZE); \
+            CODE; librg_message_send_all(NAME);                             \
         } while(0);                                                         \
 
-    #define librg_send_to(ID, WHO, CODE) do {                               \
-            zpl_bs_t data = librg_message_start(ID, LIBRG_DEFAULT_BS_SIZE); \
-            CODE; librg_message_send_to(WHO, data);                         \
+    #define librg_send_to(ID, WHO, NAME, CODE) do {                         \
+            zpl_bs_t NAME = librg_message_start(ID, LIBRG_DEFAULT_BS_SIZE); \
+            CODE; librg_message_send_to(WHO, NAME);                         \
         } while(0);                                                         \
 
-    #define librg_send_except(ID, WHO, CODE) do {                           \
-            zpl_bs_t data = librg_message_start(ID, LIBRG_DEFAULT_BS_SIZE); \
-            CODE; librg_message_send_except(WHO, data);                     \
+    #define librg_send_except(ID, WHO, NAME, CODE) do {                     \
+            zpl_bs_t NAME = librg_message_start(ID, LIBRG_DEFAULT_BS_SIZE); \
+            CODE; librg_message_send_except(WHO, NAME);                     \
         } while(0)                                                          \
 
-    #define librg_send_instream(ID, WHO, CODE) do {                         \
-            zpl_bs_t data = librg_message_start(ID, LIBRG_DEFAULT_BS_SIZE); \
-            CODE; librg_message_send_instream(WHO, data);                   \
+    #define librg_send_instream(ID, WHO, NAME, CODE) do {                   \
+            zpl_bs_t NAME = librg_message_start(ID, LIBRG_DEFAULT_BS_SIZE); \
+            CODE; librg_message_send_instream(WHO, NAME);                   \
         } while(0)                                                          \
 
-    #define librg_send_instream_except(ID, HOW, WHO, CODE) do {             \
-            zpl_bs_t data = librg_message_start(ID, LIBRG_DEFAULT_BS_SIZE); \
-            CODE; librg_message_send_instream_except(HOW, WHO, data);       \
+    #define librg_send_instream_except(ID, HOW, WHO, NAME, CODE) do {       \
+            zpl_bs_t NAME = librg_message_start(ID, LIBRG_DEFAULT_BS_SIZE); \
+            CODE; librg_message_send_instream_except(HOW, WHO, NAME);       \
         } while(0)                                                          \
 
     #define librg_send librg_send_all
@@ -689,12 +718,13 @@ extern "C" {
      * Storage containers
      * for inner librg stuff
      */
-    zple_pool       librg__entity_pool;
-    zplev_pool      librg__events;
-    librg_cfg_t     librg__config;
-    zpl_timer_pool  librg__timers;
-    librg_network_t librg__network;
-    librg__entcache_t librg__entcache;
+    zplc_t              librg__streamer;
+    zple_pool           librg__entity_pool;
+    zplev_pool          librg__events;
+    librg_cfg_t         librg__config;
+    zpl_timer_pool      librg__timers;
+    librg_network_t     librg__network;
+    librg__entcache_t   librg__entcache;
 
     zpl_buffer_t(librg_message_handler_t *) librg__messages;
 
@@ -730,7 +760,7 @@ extern "C" {
         librg_entity_t entity = *(librg_entity_t *)&id;
 
         librg_attach_transform(entity, (librg_transform_t) { 0 });
-        librg_attach_entity_type(entity, (librg_entity_type_t) { 0 });
+        librg_attach_entitymeta(entity, (librg_entitymeta_t) { 0 });
 
         return entity;
     }
@@ -756,10 +786,10 @@ extern "C" {
     }
 
     b32 librg_entity_valid(librg_entity_t entity) {
-        return (librg_fetch_entity_type(entity) != NULL);
+        return (librg_fetch_entitymeta(entity) != NULL);
     }
 
-    zpl_internal librg_entity_t librg__entity_get(librg_entity_t id) {
+    librg_internal librg_entity_t librg__entity_get(librg_entity_t id) {
         librg__entcache_key_t key;
         key.slot = id.id;
         key.is_local = !id.is_remote;
@@ -769,11 +799,11 @@ extern "C" {
     }
 
     void librg_entity_set_type(librg_entity_t entity, u32 type) {
-        librg_fetch_entity_type(entity)->type = type;
+        librg_fetch_entitymeta(entity)->type = type;
     }
 
     u32 librg_entity_get_type(librg_entity_t entity) {
-        return librg_fetch_entity_type(entity)->type;
+        return librg_fetch_entitymeta(entity)->type;
     }
 
     void librg_entity_destroy(librg_entity_t id) {
@@ -788,12 +818,12 @@ extern "C" {
         return zple_destroy(&librg__entity_pool, *(zple_id_t *)&entity);
     }
 
-    #define librg_entity_eachx(filter, CODE) do {                                                                                              \
+    #define librg_entity_eachx(filter, NAME, CODE) do {                                                                                              \
         u32 index = filter.contains1;                                                                                                          \
-        librg_assert(index != 0);                                                                                                                \
-        librg_assert(index <= zpl_array_count(librg__component_pool));                                                                           \
+        librg_assert(index != 0);                                                                                                              \
+        librg_assert(index <= zpl_array_count(librg__component_pool));                                                                         \
         librg__component__dummy_pool_t *pool = cast(librg__component__dummy_pool_t*)librg__component_pool[index - 1];                          \
-        librg_assert(pool);                                                                                                                      \
+        librg_assert(pool);                                                                                                                    \
                                                                                                                                                \
         for (usize i = 0; i < pool->count; ++i) {                                                                                              \
             librg__dummy_meta_ent_t meta_ent = pool->entities[i];                                                                              \
@@ -805,10 +835,10 @@ extern "C" {
             for (usize j = 1; j < 8; j++) {                                                                                                    \
                 if (filter.contains[j] == 0) LIBRG__ENTITY_EACH_BREAK;                                                                         \
                 librg__component__dummy_pool_t *sub_pool = cast(librg__component__dummy_pool_t*)librg__component_pool[filter.contains[j] - 1]; \
-                librg_assert(sub_pool);                                                                                                          \
+                librg_assert(sub_pool);                                                                                                        \
                                                                                                                                                \
                 librg__dummy_meta_ent_t *sub_meta_ent = cast(librg__dummy_meta_ent_t *)(sub_pool->entities+handle.id);                         \
-                librg_assert(sub_meta_ent);                                                                                                      \
+                librg_assert(sub_meta_ent);                                                                                                    \
                                                                                                                                                \
                 if (!sub_meta_ent->used) {                                                                                                     \
                     used = false; break;                                                                                                       \
@@ -820,30 +850,30 @@ extern "C" {
             for (usize j = 0; j < 4; j++) {                                                                                                    \
                 if (filter.excludes[j] == 0) LIBRG__ENTITY_EACH_BREAK;                                                                         \
                 librg__component__dummy_pool_t *sub_pool = cast(librg__component__dummy_pool_t*)librg__component_pool[filter.excludes[j] - 1]; \
-                librg_assert(sub_pool);                                                                                                          \
+                librg_assert(sub_pool);                                                                                                        \
                                                                                                                                                \
                 librg__dummy_meta_ent_t *sub_meta_ent = cast(librg__dummy_meta_ent_t *)(sub_pool->entities+handle.id);                         \
-                librg_assert(sub_meta_ent);                                                                                                      \
+                librg_assert(sub_meta_ent);                                                                                                    \
                                                                                                                                                \
                 if (sub_meta_ent->used) {                                                                                                      \
                     used = false; break;                                                                                                       \
                 }                                                                                                                              \
             }                                                                                                                                  \
                                                                                                                                                \
-            handle.is_remote = 0;                                                                                                                \
-            if (used) { librg_entity_t entity = librg__entity_get(handle); CODE; }                                                             \
+            handle.is_remote = 0;                                                                                                              \
+            if (used) { librg_entity_t NAME = librg__entity_get(handle); CODE; }                                                             \
         }                                                                                                                                      \
     } while(0)
 
     void librg_entity_each(librg_entity_filter_t filter, librg_entity_cb_t callback) {
-        librg_entity_eachx(filter, { callback(entity); });
+        librg_entity_eachx(filter, librg_lambda(entity), { callback(entity); });
     }
 
     #define librg_component_define_inner(PREFIX, NAME)                                                                                         \
         ZPL_JOIN3(librg__component_, NAME, _pool_t) ZPL_JOIN3(librg__component_, NAME, _pool);                                                 \
                                                                                                                                                \
         void ZPL_JOIN2(librg__init_, NAME) (ZPL_JOIN3(librg__component_, NAME, _pool_t) *h, zple_pool *p, zpl_allocator_t a) {                 \
-            librg_assert(h&&p); h->backing = a;                                                                                                  \
+            librg_assert(h&&p); h->backing = a;                                                                                                \
             h->count = p->count;                                                                                                               \
             zpl_buffer_init(h->entities, a, p->count);                                                                                         \
             zpl_buffer_init(h->data, a, p->count);                                                                                             \
@@ -851,7 +881,7 @@ extern "C" {
             h->index = zpl_array_count(librg__component_pool);                                                                                 \
         }                                                                                                                                      \
         void ZPL_JOIN2(librg__free_, NAME) (ZPL_JOIN3(librg__component_, NAME, _pool_t) *h) {                                                  \
-            librg_assert(h);                                                                                                                     \
+            librg_assert(h);                                                                                                                   \
             zpl_buffer_free(h->entities, h->backing);                                                                                          \
             zpl_buffer_free(h->data, h->backing);                                                                                              \
         }                                                                                                                                      \
@@ -897,7 +927,7 @@ extern "C" {
         librg_component_define(NAME)
 
     librg_component_define_inner(librg_, transform);
-    librg_component_define_inner(librg_, entity_type);
+    librg_component_define_inner(librg_, entitymeta);
     librg_component_define_inner(librg_, client);
 
     u64 librg_event_add(u64 id, librg_event_cb_t callback) {
@@ -942,7 +972,7 @@ extern "C" {
     /**
      * SHARED
      */
-    zpl_internal void librg__connection_init(librg_message_t *msg) {
+    librg_internal void librg__connection_init(librg_message_t *msg) {
         librg_dbg("librg__connection_init\n");
 
         #if defined(LIBRG_DEBUG)
@@ -953,7 +983,7 @@ extern "C" {
         #endif
 
         if (librg_is_client()) {
-            librg_send_to(LIBRG_CONNECTION_REQUEST, msg->peer, {
+            librg_send_to(LIBRG_CONNECTION_REQUEST, msg->peer, librg_lambda(data), {
                 librg_event_t event = { .data = data };
                 librg_event_trigger(LIBRG_CONNECTION_REQUEST, &event);
             });
@@ -963,7 +993,7 @@ extern "C" {
     /**
      * SERVER SIDE
      */
-    zpl_internal void librg__connection_request(librg_message_t *msg) {
+    librg_internal void librg__connection_request(librg_message_t *msg) {
         librg_dbg("librg__connection_request\n");
 
         librg_event_t event = { 0 }; event.data = msg->data;
@@ -980,7 +1010,7 @@ extern "C" {
             librg_peers_set(&librg__network.connected_peers, cast(u64)msg->peer, entity);
 
             // send accept
-            librg_send_to(LIBRG_CONNECTION_ACCEPT, msg->peer, {
+            librg_send_to(LIBRG_CONNECTION_ACCEPT, msg->peer, librg_lambda(data), {
                 zpl_bs_write_u32(data, entity.id);
             });
 
@@ -988,7 +1018,7 @@ extern "C" {
             librg_event_trigger(LIBRG_CONNECTION_ACCEPT, &acptevt);
         }
         else {
-            librg_send_to(LIBRG_CONNECTION_REFUSE, msg->peer, {});
+            librg_send_to(LIBRG_CONNECTION_REFUSE, msg->peer, librg_lambda(data), {});
 
             librg_event_t rfsevt = { 0 };
             librg_event_trigger(LIBRG_CONNECTION_REFUSE, &rfsevt);
@@ -998,7 +1028,7 @@ extern "C" {
     /**
      * CLIENT SIDE
      */
-    zpl_internal void librg__connection_refuse(librg_message_t *msg) {
+    librg_internal void librg__connection_refuse(librg_message_t *msg) {
         librg_event_t event = { 0 }; event.data = msg->data;
         librg_event_trigger(LIBRG_CONNECTION_REFUSE, &event);
     }
@@ -1006,7 +1036,7 @@ extern "C" {
     /**
      * CLIENT SIDE
      */
-    zpl_internal void librg__connection_accept(librg_message_t *msg) {
+    librg_internal void librg__connection_accept(librg_message_t *msg) {
         librg_dbg("librg__connection_accept\n");
 
         u32 guid = zpl_bs_read_u32(msg->data);
@@ -1025,13 +1055,13 @@ extern "C" {
     /**
      * SHARED
      */
-    zpl_internal void librg__connection_disconnect(librg_message_t *msg) {
+    librg_internal void librg__connection_disconnect(librg_message_t *msg) {
         librg_dbg("librg__connection_disconnect\n");
 
         // librg_event_trigger(LIBRG_CONNECTION_DISCONNECT, msg->data);
     }
 
-    zpl_internal void librg__entity_create(librg_message_t *msg) {
+    librg_internal void librg__entity_create(librg_message_t *msg) {
         u16 query_size = zpl_bs_read_u16(msg->data);
 
         // for (int i = 0; i < query_size; ++i) {
@@ -1076,19 +1106,19 @@ extern "C" {
         // }
     }
 
-    zpl_internal void librg__entity_update(librg_message_t *msg) {
+    librg_internal void librg__entity_update(librg_message_t *msg) {
 
     }
 
-    zpl_internal void librg__entity_client_streamer_add(librg_message_t *msg) {
+    librg_internal void librg__entity_client_streamer_add(librg_message_t *msg) {
 
     }
 
-    zpl_internal void librg__entity_client_streamer_remove(librg_message_t *msg) {
+    librg_internal void librg__entity_client_streamer_remove(librg_message_t *msg) {
 
     }
 
-    zpl_internal void librg__entity_client_streamer_update(librg_message_t *msg) {
+    librg_internal void librg__entity_client_streamer_update(librg_message_t *msg) {
 
     }
 
@@ -1120,8 +1150,8 @@ extern "C" {
 
         if (librg_index_client() == 0) return;
 
-        librg_entity_eachx(filter, {
-            librg_client_t *client = librg_fetch_client(entity);
+        librg_entity_eachx(filter, librg_lambda(entity2), {
+            librg_client_t *client = librg_fetch_client(entity2);
 
             if (client->peer != peer) {
                 enet_peer_send(client->peer, LIBRG_NETWORK_MESSAGE_CHANNEL, enet_packet_create(
@@ -1149,6 +1179,50 @@ extern "C" {
 
     void librg_network_remove(u64 id) {
         librg__messages[id] = NULL;
+    }
+
+    zpl_array_t(librg_entity_t) librg_streamer_query(librg_entity_t entity) {
+        return NULL;
+    }
+
+    void librg_streamer_set_visible(librg_entity_t entity, b32 state) {
+
+    }
+
+    void librg_streamer_set_visible_for(librg_entity_t entity, librg_entity_t target, b32 state) {
+
+    }
+
+    void librg_streamer_client_set(librg_entity_t entity, librg_peer_t peer) {
+
+    }
+
+    void librg_streamer_client_remove(librg_entity_t entity) {
+
+    }
+
+    librg_internal void librg__streamer_update() {
+        librg_entity_filter_t filter = {
+            librg_index_streamable(),
+            librg_index_entitymeta(),
+            librg_index_transform(),
+        };
+
+        // clear
+        if (librg_index_streamable() == 0) return;
+        zplc_clear(&librg__streamer);
+
+        // fill up
+        librg_entity_eachx(filter, librg_lambda(entity), {
+            librg_transform_t *transform = librg_fetch_transform(entity);
+
+            zplc_node_t node = { 0 };
+
+            node.tag      = entity.id;
+            node.position = transform->position;
+
+            zplc_insert(&librg__streamer, node);
+        });
     }
 
     void librg_tick() {
@@ -1195,7 +1269,7 @@ extern "C" {
         }
     }
 
-    zpl_internal ZPL_TIMER_CB(librg__tick_cb) {
+    librg_internal ZPL_TIMER_CB(librg__tick_cb) {
         // todo: streamer update
     }
 
@@ -1265,6 +1339,12 @@ extern "C" {
         zpl_array_init(librg__component_pool, LIBRG_ENTITY_ALLOCATOR());
         librg__entcache_init(&librg__entcache, zpl_heap_allocator());
 
+        // streamer
+        zplc_bounds_t world = {0};
+        world.centre = zplm_vec3(0, 0, 0);
+        world.half_size = zplm_vec3(librg__config.world_size.x, librg__config.world_size.y, 100);
+        zplc_init(&librg__streamer, zpl_heap_allocator(), zplc_dim_2d_ev, world, librg__config.entity_limit);
+
         // events
         zplev_init(&librg__events, zpl_heap_allocator());
         zpl_buffer_init(librg__messages, zpl_heap_allocator(), LIBRG_NETWORK_MESSAGE_CAPACITY);
@@ -1293,10 +1373,14 @@ extern "C" {
 
     void librg_free() {
         librg_dbg("librg_free\n");
+
         // free all timers and events first
         zpl_array_free(librg__timers);
         zpl_buffer_free(librg__messages, zpl_heap_allocator());
         zplev_destroy(&librg__events);
+
+        // streamer
+        zplc_free(&librg__streamer);
 
         // free the entity component pools
         for (i32 i = 0; i < zpl_array_count(librg__component_pool); i++) {

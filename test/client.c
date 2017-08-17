@@ -20,7 +20,7 @@ void on_connect_refused(librg_event_t *event) {
 // client
 void damage_car(librg_entity_t entity) {
     librg_log("client: damanging the car\n");
-    librg_send(21, { zpl_bs_write_u32(data, entity.id); });
+    librg_send(21, librg_lambda(data), { zpl_bs_write_u32(data, entity.id); });
 }
 
 void onvehcielcreate(librg_message_t *msg) {
