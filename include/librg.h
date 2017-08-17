@@ -200,7 +200,11 @@ extern "C" {
      * ENTITIES
      */
 
-    typedef zple_id_t librg_entity_t;
+    typedef struct librg_entity_t {
+        u32 id;
+        u16 generation;
+        u16 is_remote;
+    } librg_entity_t;
 
     /**
      * Entity filter
@@ -267,6 +271,11 @@ extern "C" {
      * Get entity from the numeric id
      */
     LIBRG_API librg_entity_t librg_entity_get(u32 guid);
+
+    /**
+     * Check if provided entity is a valid entity
+     */
+    LIBRG_API b32 librg_entity_valid(librg_entity_t entity);
 
     /**
      * Set entity type
@@ -719,12 +728,11 @@ extern "C" {
     }
 
     librg_entity_t librg_entity_create() {
-        librg_entity_t entity = zple_create(&librg__entity_pool);
+        zple_id_t id = zple_create(&librg__entity_pool);
+        librg_entity_t entity = *(librg_entity_t *)&id;
 
-        #ifndef LIBRG_ENTITY_DISABLE_DEFAULT_COMPONENT_ATTACHMENT
         librg_attach_transform(entity, (librg_transform_t) { 0 });
         librg_attach_entity_type(entity, (librg_entity_type_t) { 0 });
-        #endif
 
         return entity;
     }
@@ -734,25 +742,29 @@ extern "C" {
 
         librg_entity_t remote_id;
         remote_id.id = guid;
-        remote_id.part[0] = true;
-        librg__entity_store(remote_id, id.id, false);
+        remote_id.is_remote = true;
 
+        librg__entity_store(remote_id, id.id, false);
         librg__entity_store(id, guid, true);
 
-        id.part[0] = true;
+        id.is_remote = true;
         id.id = guid;
 
         return id;
     }
 
     librg_entity_t librg_entity_get(u32 id) {
-        return (librg_entity_t) { .id = id, .part[0] = 1 };
+        return (librg_entity_t) { .id = id, .is_remote = 1 };
+    }
+
+    b32 librg_entity_valid(librg_entity_t entity) {
+        return (librg_fetch_entity_type(entity) != NULL);
     }
 
     zpl_internal librg_entity_t librg__entity_get(librg_entity_t id) {
         librg__entcache_key_t key;
         key.slot = id.id;
-        key.is_local = !id.part[0];
+        key.is_local = !id.is_remote;
 
         librg_entity_t *handle = librg__entcache_get(&librg__entcache, key.master);
         return (handle) ? *handle : id;
@@ -775,7 +787,7 @@ extern "C" {
             meta_ent->used = false;
         }
 
-        return zple_destroy(&librg__entity_pool, entity);
+        return zple_destroy(&librg__entity_pool, *(zple_id_t *)&entity);
     }
 
     #define librg_entity_eachx(filter, CODE) do {                                                                                              \
@@ -820,7 +832,7 @@ extern "C" {
                 }                                                                                                                              \
             }                                                                                                                                  \
                                                                                                                                                \
-            handle.part[0] = 0;                                                                                                                \
+            handle.is_remote = 0;                                                                                                                \
             if (used) { librg_entity_t entity = librg__entity_get(handle); CODE; }                                                             \
         }                                                                                                                                      \
     } while(0)
