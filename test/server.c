@@ -79,6 +79,7 @@ int main() {
 
     while (true) {
         librg_tick();
+        zpl_sleep_ms(1);
     }
 
     librg_network_stop();

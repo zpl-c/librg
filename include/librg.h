@@ -452,6 +452,7 @@ extern "C" {
     typedef struct librg_event_t {
         b32 rejected;
         void *data;
+        librg_entity_t entity;
     } librg_event_t;
 
     /**
@@ -477,6 +478,7 @@ extern "C" {
 
         LIBRG_ENTITY_CREATE,
         LIBRG_ENTITY_UPDATE,
+        LIBRG_ENTITY_REMOVE,
         LIBRG_CLIENT_STREAMER_ADD,
         LIBRG_CLIENT_STREAMER_REMOVE,
         LIBRG_CLIENT_STREAMER_UPDATE,
@@ -798,7 +800,17 @@ extern "C" {
 extern "C" {
 #endif
 
+    /**
+     * Create dummy component to
+     * use it as template for removal in destroy
+     */
+    typedef struct {} librg_component_declare(_dummy);
+
     #define librg__set_default(expr, value) if (!expr) expr = value
+
+    ZPL_TABLE_DEFINE(librg_peers_t, librg_peers_, librg_entity_t);
+    ZPL_TABLE_DEFINE(librg__entcache_t, librg__entcache_, librg_entity_t);
+    ZPL_TABLE_DEFINE(librg__entbool_t, librg__entbool_, b32);
 
     /**
      * Storage containers
@@ -810,25 +822,13 @@ extern "C" {
     librg_cfg_t         librg__config;
     zpl_timer_pool      librg__timers;
     librg_network_t     librg__network;
+    librg__entbool_t    librg__ignored;
     librg__entcache_t   librg__entcache;
-    librg__entbool_t  librg__ignored;
 
+    zpl_array_t(void *) librg__component_pool;
+    zpl_array_t(librg_entity_t) librg__entity_remove_queue;
     zpl_buffer_t(librg_message_handler_t *) librg__messages;
 
-    /**
-     * Global variable with array of component pools
-     */
-    zpl_array_t(void *) librg__component_pool;
-
-    ZPL_TABLE_DEFINE(librg_peers_t, librg_peers_, librg_entity_t);
-    ZPL_TABLE_DEFINE(librg__entcache_t, librg__entcache_, librg_entity_t);
-    ZPL_TABLE_DEFINE(librg__entbool_t, librg__entbool_, b32);
-
-    /**
-     * Create dummy component to
-     * use it as template for removal in destroy
-     */
-    typedef struct {} librg_component_declare(_dummy);
 
 
 
@@ -913,7 +913,11 @@ extern "C" {
         return librg_fetch_entitymeta(entity)->type;
     }
 
-    void librg_entity_destroy(librg_entity_t id) {
+    void librg_entity_each(librg_entity_filter_t filter, librg_entity_cb_t callback) {
+        librg_entity_eachx(filter, librg_lambda(entity), { callback(entity); });
+    }
+
+    void librg__entity_destroy(librg_entity_t id) {
         librg_entity_t entity = librg__entity_get(id);
 
         librg_streamer_set_visible(entity, true);
@@ -930,9 +934,22 @@ extern "C" {
         return zple_destroy(&librg__entity_pool, *(zple_id_t *)&entity);
     }
 
-    void librg_entity_each(librg_entity_filter_t filter, librg_entity_cb_t callback) {
-        librg_entity_eachx(filter, librg_lambda(entity), { callback(entity); });
+    void librg__entity_execute_destroy() {
+        for (isize i = 0; i < zpl_array_count(librg__entity_remove_queue); i++) {
+            librg__entity_destroy(librg__entity_remove_queue[i]);
+        }
+
+        zpl_array_clear(librg__entity_remove_queue);
     }
+
+    void librg_entity_destroy(librg_entity_t id) {
+        if (librg_is_client()) {
+            return librg__entity_destroy(id);
+        }
+
+        zpl_array_append(librg__entity_remove_queue, id);
+    }
+
 
 
 
@@ -1162,6 +1179,7 @@ extern "C" {
             librg_entity_t entity = *librg_peers_get(&librg__network.connected_peers, cast(u64)msg->peer);
             if (!librg_entity_valid(entity)) return;
             librg__entbool_destroy(&librg_fetch_client(entity)->last_snapshot);
+            librg_detach_client(entity);
             librg_entity_destroy(entity);
         }
     }
@@ -1410,6 +1428,8 @@ extern "C" {
             return;
         }
 
+        if (librg_index_client() == 0) return;
+
         // server streamer
         librg__streamer_update();
 
@@ -1420,92 +1440,101 @@ extern "C" {
         librg_entity_eachx(filter, librg_lambda(player), {
             librg_client_t *client = librg_fetch_client(player);
 
-            // // copy last to local last, alias next snapshot as last and clear it
-            // librg__entbool_t *next_snapshot = &client->last_snapshot;
-            // librg__entbool_t  last_snapshot =  client->last_snapshot;
+            librg__entbool_t *last_snapshot = &client->last_snapshot;
+            librg__entbool_t next_snapshot = { 0 };
+            librg__entbool_init(&next_snapshot, zpl_heap_allocator());
 
-            // next_snapshot->clear();
-            // auto queue = streamer::query(player);
+            zpl_array_t(librg_entity_t) queue = librg_streamer_query(player);
 
-            // uint16_t created_entities = 0;
-            // uint16_t updated_entities = (uint16_t) queue.size();
+            u32 created_entities = 0;
+            u32 updated_entities = (u32) zpl_array_count(queue);
+            u32 removed_entities = 0;
 
-            // // create data and write inital stuff
-            // network::bitstream_t for_create;
-            // network::bitstream_t for_update;
+            // create data and write inital stuff
+            zpl_bs_t for_create;
+            zpl_bs_t for_update;
 
-            // for_create.write_uint16(network::entity_create);
-            // for_create.write_uint16(created_entities);
+            zpl_bs_init(for_create, zpl_heap_allocator(), 64);
+            zpl_bs_init(for_update, zpl_heap_allocator(), 128);
 
-            // for_update.write_uint16(network::entity_update);
-            // for_update.write_uint16(updated_entities);
+            zpl_bs_write_u64(for_create, LIBRG_ENTITY_CREATE);
+            zpl_bs_write_u32(for_create, created_entities);
 
-            // // add entity creates and updates
-            // for (auto entity : queue) {
-            //     uint64_t guid = entity.id().id();
+            zpl_bs_write_u64(for_update, LIBRG_ENTITY_UPDATE);
+            zpl_bs_write_u32(for_update, updated_entities);
 
-            //     auto streamable = entity.component<streamable_t>();
-            //     auto transform  = entity.component<transform_t>();
-            //     auto cli_stream = entity.component<client_streamable_t>();
+            // add entity creates and updates
+            for (isize i = 0; i < zpl_array_count(queue); ++i) {
+                librg_entity_t entity = queue[i];
 
-            //     // write create
-            //     if (last_snapshot.erase(guid) == 0) {
-            //         created_entities++;
-            //         updated_entities--;
+                b32 *existed_in_last = librg__entbool_get(last_snapshot, entity.id);
 
-            //         for_create.write_uint64(guid);
-            //         for_create.write_uint8(streamable->type);
-            //         for_create.write(*transform);
+                // write create
+                if (!existed_in_last) {
+                    created_entities++;
+                    updated_entities--;
 
-            //         events::trigger(events::on_create, new events::event_bs_entity_t(
-            //             &for_create, entity, guid, streamable->type
-            //         ));
-            //     }
-            //     else {
-            //         // if this entity is client streamable and this client is owner
-            //         if (cli_stream && cli_stream->peer == client.peer) {
-            //             updated_entities--;
-            //         }
-            //         // write update
-            //         else {
-            //             for_update.write_uint64(guid);
-            //             for_update.write_uint8(streamable->type);
-            //             for_update.write(*transform);
+                    zpl_bs_write_u32(for_create, entity.id);
+                    zpl_bs_write_u32(for_create, librg_fetch_entitymeta(entity)->type);
+                    zpl_bs_write_size(for_create, librg_fetch_transform(entity), sizeof(librg_transform_t));
 
-            //             events::trigger(events::on_update, new events::event_bs_entity_t(
-            //                 &for_update, entity, guid, streamable->type
-            //             ));
-            //         }
-            //     }
+                    librg_event_t event = {0};
+                    event.data = for_create; event.entity = entity;
+                    librg_event_trigger(LIBRG_ENTITY_CREATE, &event);
+                }
+                else {
+                    librg__entbool_set(last_snapshot, entity.id, 0);
 
-            //     next_snapshot->insert(std::make_pair(guid, true));
-            // }
+                    // if this entity is client streamable and this client is owner
+                    // if (cli_stream && cli_stream->peer == client.peer) {
+                    //     updated_entities--;
+                    // }
+                    // TODO
+                    // write update
+                    // else {
+                        zpl_bs_write_u32(for_update, entity.id);
+                        zpl_bs_write_u32(for_update, librg_fetch_entitymeta(entity)->type);
+                        zpl_bs_write_size(for_update, librg_fetch_transform(entity), sizeof(librg_transform_t));
 
-            // for_create.write_at(created_entities, sizeof(uint16_t));
-            // for_update.write_at(updated_entities, sizeof(uint16_t));
+                        librg_event_t event = {0};
+                        event.data = for_update; event.entity = entity;
+                        librg_event_trigger(LIBRG_ENTITY_UPDATE, &event);
+                    // }
+                }
 
-            // for_create.write_uint16(last_snapshot.size());
+                librg__entbool_set(&next_snapshot, entity.id, 1);
+            }
 
-            // // add entity removes
-            // for (auto pair : last_snapshot) {
-            //     for_create.write_uint64(pair.first);
+            zpl_bs_write_u32_at(for_create, created_entities, sizeof(u64));
+            zpl_bs_write_u32_at(for_update, updated_entities, sizeof(u64));
 
-            //     // skip calling callback, if the entity is destroyed already.
-            //     if (!entities->valid((entityx::Entity::Id)pair.first)) continue;
+            usize write_pos = zpl_bs_write_pos(for_create);
 
-            //     auto entity     = entities->get(entity_t::Id(pair.first));
-            //     auto streamable = entity.component<streamable_t>();
-            //     auto type       = streamable ? streamable->type : -1;
+            // add entity removes
+            for (isize i = 0; i < zpl_array_count(last_snapshot->entries); ++i, ++removed_entities) {
+                u64 id = last_snapshot->entries[i].key;
+                b32 not_existed = last_snapshot->entries[i].value;
+                if (not_existed == 0) continue;
 
-            //     events::trigger(events::on_remove, new events::event_bs_entity_t(
-            //         &for_create, entity, pair.first, type
-            //     ));
-            // }
+                zpl_bs_write_u32(for_create, id);
 
-            // enet_peer_send(client.peer, 0, enet_packet_create( for_create.raw(), for_create.raw_size(), ENET_PACKET_FLAG_RELIABLE ));
-            // enet_peer_send(client.peer, 1, enet_packet_create( for_update.raw(), for_update.raw_size(), ENET_PACKET_FLAG_UNRELIABLE_FRAGMENT ));
+                librg_event_t event = {0};
+                event.data = for_create;
+                event.entity = librg_entity_get(id);
+                librg_event_trigger(LIBRG_ENTITY_REMOVE, &event);
+            }
+
+            zpl_bs_write_u32_at(for_create, removed_entities, write_pos);
+
+            librg__entbool_destroy(last_snapshot);
+            *last_snapshot = next_snapshot;
+
+            enet_peer_send(client->peer, 0, enet_packet_create( for_create, zpl_bs_size(for_create), ENET_PACKET_FLAG_RELIABLE ));
+            enet_peer_send(client->peer, 1, enet_packet_create( for_update, zpl_bs_size(for_update), ENET_PACKET_FLAG_UNRELIABLE_FRAGMENT ));
         });
 
+        // destroy entities queued for removal
+        librg__entity_execute_destroy();
     }
 
     void librg_streamer_client_set(librg_entity_t entity, librg_peer_t peer) {
@@ -1667,6 +1696,7 @@ extern "C" {
         zple_init(&librg__entity_pool, LIBRG_ENTITY_ALLOCATOR(), librg__config.entity_limit);
         zpl_array_init(librg__component_pool, LIBRG_ENTITY_ALLOCATOR());
         librg__entcache_init(&librg__entcache, zpl_heap_allocator());
+        zpl_array_init(librg__entity_remove_queue, zpl_heap_allocator());
 
         // streamer
         zplc_bounds_t world = {0};
@@ -1708,6 +1738,7 @@ extern "C" {
         zpl_array_free(librg__timers);
         zpl_buffer_free(librg__messages, zpl_heap_allocator());
         zplev_destroy(&librg__events);
+        zpl_array_free(librg__entity_remove_queue);
 
         // streamer
         zplc_free(&librg__streamer);

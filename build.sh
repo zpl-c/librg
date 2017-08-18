@@ -1,4 +1,4 @@
-clang -g \
+clang -g  \
     -I include \
     -I node_modules/zpl.c/include \
     -I node_modules/zpl_ent.c/include \
