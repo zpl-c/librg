@@ -1277,12 +1277,32 @@ extern "C" {
     }
 
     void librg_message_send_instream(librg_entity_t entity, zpl_bs_t data) {
-        librg_assert_msg(0, "todo");
-        zpl_bs_free(data);
+        librg_message_send_instream_except(entity, NULL, data);
     }
 
-    void librg_message_send_instream_except(librg_entity_t entity, librg_peer_t peer, zpl_bs_t data) {
-        librg_assert_msg(0, "todo");
+    void librg_message_send_instream_except(librg_entity_t entity, librg_peer_t ignored, zpl_bs_t data) {
+        zpl_array_t(librg_entity_t) queue = librg_streamer_query(entity);
+
+        for (isize i = 0; i < zpl_array_count(queue); i++) {
+            librg_entity_t target = queue[i];
+
+            librg_assert(
+                librg_fetch_client(target) &&
+                librg_fetch_client(target)->peer
+            );
+
+            librg_peer_t peer = librg_fetch_client(target)->peer;
+
+            if (peer == ignored) {
+                continue;
+            }
+
+            enet_peer_send(peer, LIBRG_NETWORK_MESSAGE_CHANNEL, enet_packet_create(
+                data, zpl_bs_size(data), ENET_PACKET_FLAG_RELIABLE
+            ));
+        }
+
+        zpl_array_free(queue);
         zpl_bs_free(data);
     }
 
@@ -1309,6 +1329,16 @@ extern "C" {
 
 
 
+
+    void librg_streamer_set_visible(librg_entity_t entity, b32 state) {
+        librg__entignore_set(&librg__ignored, entity.id, !state);
+    }
+
+    void librg_streamer_set_visible_for(librg_entity_t entity, librg_entity_t target, b32 state) {
+        if (librg_fetch_streamable(target)) {
+            librg__entignore_set(&librg_fetch_streamable(target)->ignored, entity.id, !state);
+        }
+    }
 
     zpl_array_t(librg_entity_t) librg_streamer_query(librg_entity_t entity) {
         zpl_array_t(zplc_node_t) search_temp;
@@ -1343,24 +1373,6 @@ extern "C" {
         return search_result;
     }
 
-    void librg_streamer_set_visible(librg_entity_t entity, b32 state) {
-        librg__entignore_set(&librg__ignored, entity.id, !state);
-    }
-
-    void librg_streamer_set_visible_for(librg_entity_t entity, librg_entity_t target, b32 state) {
-        if (librg_fetch_streamable(target)) {
-            librg__entignore_set(&librg_fetch_streamable(target)->ignored, entity.id, !state);
-        }
-    }
-
-    void librg_streamer_client_set(librg_entity_t entity, librg_peer_t peer) {
-
-    }
-
-    void librg_streamer_client_remove(librg_entity_t entity) {
-
-    }
-
     librg_internal void librg__streamer_update() {
         librg_entity_filter_t filter = {
             librg_index_streamable(),
@@ -1373,6 +1385,7 @@ extern "C" {
         // fill up
         librg_entity_eachx(filter, librg_lambda(entity), {
             librg_transform_t *transform = librg_fetch_transform(entity);
+            librg_assert(transform);
 
             zplc_node_t node = { 0 };
 
@@ -1387,6 +1400,14 @@ extern "C" {
         if (librg_is_server()) {
             librg__streamer_update();
         }
+    }
+
+    void librg_streamer_client_set(librg_entity_t entity, librg_peer_t peer) {
+
+    }
+
+    void librg_streamer_client_remove(librg_entity_t entity) {
+
     }
 
 
@@ -1436,7 +1457,7 @@ extern "C" {
                         librg__messages[id](&msg);
                     }
                     else {
-                        librg_log("network: unknown message: %llu", id);
+                        librg_dbg("network: unknown message: %llu\n", id);
                     }
 
                     zpl_bs_free(data);
