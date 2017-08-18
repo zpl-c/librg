@@ -1326,17 +1326,13 @@ extern "C" {
             .half_size = {streamable->range, streamable->range, streamable->range},
         };
 
-        librg_log("my zone: %d\n", streamable->range);
-
-        zplc_query(&librg__streamer, search_bounds, search_temp);
-
-        librg_log("total raw: %tu\n", zpl_array_count(search_temp));
+        zplc_query(&librg__streamer, search_bounds, &search_temp);
 
         for (isize i = 0; i < zpl_array_count(search_temp); i++) {
             librg_entity_t target = librg_entity_get(search_temp[i].tag);
 
             b32 *global = librg__entignore_get(&librg__ignored, target.id);
-            b32 *local = librg__entignore_get(&streamable->ignored, target.id);
+            b32 *local  = librg__entignore_get(&streamable->ignored, target.id);
 
             if ((global && *global) || (local && *local)) continue;
 

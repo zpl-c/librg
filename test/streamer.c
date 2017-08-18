@@ -8,7 +8,7 @@ int main() {
         .tick_delay     = 32,
         .mode           = librg_server_ev,
         .world_size     = zplm_vec2(5000.0f, 5000.0f),
-        .entity_limit   = 2048,
+        .entity_limit   = 128000,
     });
 
 
@@ -20,30 +20,30 @@ int main() {
 
     {
         zpl_array_t(librg_entity_t) queue = librg_streamer_query(entity);
-        librg_assert(zpl_buffer_count(queue) == 0);
+        librg_assert(zpl_array_count(queue) == 0);
         zpl_array_free(queue);
     }
 
+    zplc_clear(&librg__streamer);
+
     // should be able to return exactly 1 entity
     {
-        zplc_clear(&librg__streamer);
-
         librg_entity_t friendly = librg_entity_create();
         librg_fetch_transform(friendly)->position = zplm_vec3(30, 20, 10);
 
         librg__streamer_update();
 
         zpl_array_t(librg_entity_t) queue = librg_streamer_query(entity);
-        librg_assert(zpl_buffer_count(queue) == 2);
+        librg_assert(zpl_array_count(queue) == 2);
         zpl_array_free(queue);
 
         librg_entity_destroy(friendly);
     }
 
+    zplc_clear(&librg__streamer);
+
     // should be able to return exactly 666 entities
     {
-        zplc_clear(&librg__streamer);
-
         for (int i = 0; i < 666; i++) {
             librg_entity_t enemy = librg_entity_create();
             librg_fetch_transform(enemy)->position = zplm_vec3(i, 20, 10);
@@ -52,79 +52,81 @@ int main() {
         librg__streamer_update();
 
         zpl_array_t(librg_entity_t) queue = librg_streamer_query(entity);
-        librg_log("amount: %tu\n", zpl_buffer_count(queue));
-        librg_assert(zpl_buffer_count(queue) == 668);
+        librg_assert(zpl_array_count(queue) == 667);
         zpl_array_free(queue);
+
+        for (int i = 1; i <= 666; i++) {
+            librg_entity_destroy(librg_entity_get(i));
+        }
     }
 
-    // librg::streamer::clear();
+    zplc_clear(&librg__streamer);
 
-    // it("should be able to return less than 32k entities", [entity](vald_t validate) {
-    //     auto newEntity = librg::entities->create();
-    //     newEntity.assign<librg::streamable_t>(hmm_vec3{ 30000, 30000, 30000 });
-    //     newEntity.assign<librg::transform_t>();
-    //     for (int i = 0; i < 48000; i++) {
-    //         auto enemy = librg::entities->create();
-    //         enemy.assign<librg::streamable_t>(hmm_vec3{ 300, 300, 300 });
-    //         auto ft = librg::transform_t();
-    //         ft.position = hmm_vec3{ (float)i,30.f,10 };
-    //         enemy.assign<librg::transform_t>(ft);
+    // should be able to return less than 32k entities
+    {
+        for (int i = 0; i < 48000; i++) {
+            librg_entity_t enemy = librg_entity_create();
+            librg_fetch_transform(enemy)->position = zplm_vec3((float)i, 20, 10);
+        }
 
-    //         librg::streamer::insert(enemy);
-    //     }
-    //     auto queue = librg::streamer::query(newEntity);
-    //     validate(queue.size() <= 32000);
-    // });
+        librg__streamer_update();
 
-    // librg::streamer::clear();
+        zpl_array_t(librg_entity_t) queue = librg_streamer_query(entity);
+        librg_assert(zpl_array_count(queue) <= 32000);
+        zpl_array_free(queue);
 
-    // it("should be able to blacklist 1 entity globally", [entity](vald_t validate) {
-    //     auto badEntity = librg::entities->create();
-    //     badEntity.assign<librg::streamable_t>(hmm_vec3{ 100, 100, 100 });
-    //     badEntity.assign<librg::transform_t>();
-    //     librg::streamer::set_visible(badEntity, false);
+        for (int i = 1; i <= 48000; i++) {
+            librg_entity_destroy(librg_entity_get(i));
+        }
+    }
 
-    //     auto goodEntity = librg::entities->create();
-    //     goodEntity.assign<librg::streamable_t>(hmm_vec3{ 100, 100, 100 });
-    //     goodEntity.assign<librg::transform_t>();
+    zplc_clear(&librg__streamer);
 
-    //     librg::streamer::insert(badEntity);
-    //     librg::streamer::insert(goodEntity);
+    // should be able to blacklist 1 entity globally
+    {
+        librg_entity_t badentity = librg_entity_create();
+        librg_fetch_transform(badentity)->position = zplm_vec3(30, 20, 10);
+        librg__streamer_update();
 
-    //     auto queue = librg::streamer::query(entity);
-    //     validate(queue.size() == 1);
-    // });
+        librg_streamer_set_visible(badentity, false);
+        {
+            zpl_array_t(librg_entity_t) queue = librg_streamer_query(entity);
+            librg_assert(zpl_array_count(queue) == 1);
+            zpl_array_free(queue);
+        }
 
-    // librg::streamer::clear();
+        librg_streamer_set_visible(badentity, true);
+        {
+            zpl_array_t(librg_entity_t) queue = librg_streamer_query(entity);
+            librg_assert(zpl_array_count(queue) == 2);
+            zpl_array_free(queue);
+        }
 
-    // it("should be able to ignore 1 entity for target entity", [entity](vald_t validate) {
-    //     auto badEntity = librg::entities->create();
-    //     badEntity.assign<librg::streamable_t>(hmm_vec3{ 100, 100, 100 });
-    //     badEntity.assign<librg::transform_t>();
-    //     //librg::streamer::set_visible(badEntity, false);
+        librg_entity_destroy(badentity);
+    }
 
-    //     auto goodEntity = librg::entities->create();
-    //     goodEntity.assign<librg::streamable_t>(hmm_vec3{ 100, 100, 100 });
-    //     goodEntity.assign<librg::transform_t>();
+    zplc_clear(&librg__streamer);
 
-    //     auto targetEntity = librg::entities->create();
-    //     targetEntity.assign<librg::streamable_t>(hmm_vec3{ 100, 100, 100 });
-    //     targetEntity.assign<librg::transform_t>();
+    // should be able to ignore 1 entity for target entity
+    {
+        librg_entity_t badentity = librg_entity_create();
+        librg_entity_t tarentity = librg_entity_create();
+        librg__streamer_update();
 
-    //     librg::streamer::insert(badEntity);
-    //     librg::streamer::insert(goodEntity);
-    //     librg::streamer::insert(targetEntity);
+        librg_streamer_set_visible_for(badentity, tarentity, false);
+        {
+            zpl_array_t(librg_entity_t) queue = librg_streamer_query(tarentity);
+            zpl_array_t(librg_entity_t) bigge = librg_streamer_query(entity);
 
-    //     librg::streamer::set_visible_for(targetEntity, badEntity, false);
+            librg_assert(zpl_array_count(queue) == 2 && zpl_array_count(bigge) == 3);
 
-    //     auto queue = librg::streamer::query(targetEntity);
-    //     auto biggerQueue = librg::streamer::query(goodEntity);
-    //     validate(queue.size() == 1 && biggerQueue.size() == 2);
-    // });
+            zpl_array_free(queue);
+            zpl_array_free(bigge);
+        }
 
-    // while (true) {
-    //     librg_tick();
-    // }
+        librg_entity_destroy(badentity);
+        librg_entity_destroy(tarentity);
+    }
 
     librg_free();
     return 0;
