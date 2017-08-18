@@ -17,33 +17,33 @@ void on_connect_refused(librg_event_t *event) {
     librg_log("on_connect_refused\n");
 }
 
-// client
-void damage_car(librg_entity_t entity) {
-    librg_log("client: damanging the car\n");
-    librg_send(21, librg_lambda(data), { zpl_bs_write_u32(data, entity.id); });
-}
+// // client
+// void damage_car(librg_entity_t entity) {
+//     librg_log("client: damanging the car\n");
+//     librg_send(21, librg_lambda(data), { zpl_bs_write_u32(data, entity.id); });
+// }
 
-void onvehcielcreate(librg_message_t *msg) {
-    u32 guid = zpl_bs_read_u32(msg->data);
+// void onvehcielcreate(librg_message_t *msg) {
+//     u32 guid = zpl_bs_read_u32(msg->data);
 
-    librg_entity_t entity = librg_entity_create_shared(guid);
-    librg_attach_foo(entity, (foo_t) { 123 });
+//     librg_entity_t entity = librg_entity_create_shared(guid);
+//     librg_attach_foo(entity, (foo_t) { 123 });
 
-    librg_log("server created vehicle %lu\n", entity.id);
+//     librg_log("server created vehicle %lu\n", entity.id);
 
-    damage_car(entity);
-}
+//     damage_car(entity);
+// }
 
-void on_damage_finished(librg_message_t *msg) {
-    u32 guid = zpl_bs_read_u32(msg->data);
-    librg_entity_t entity = librg_entity_get(guid);
+// void on_damage_finished(librg_message_t *msg) {
+//     u32 guid = zpl_bs_read_u32(msg->data);
+//     librg_entity_t entity = librg_entity_get(guid);
 
-    foo_t *foo = librg_fetch_foo(entity);
+//     foo_t *foo = librg_fetch_foo(entity);
 
-    ZPL_ASSERT(foo && foo->a == 123);
+//     ZPL_ASSERT(foo && foo->a == 123);
 
-    librg_log("damaged car finished\n");
-}
+//     librg_log("damaged car finished\n");
+// }
 
 
 int main() {
@@ -65,8 +65,8 @@ int main() {
     librg_event_add(LIBRG_CONNECTION_ACCEPT, on_connect_accepted);
     librg_event_add(LIBRG_CONNECTION_REFUSE, on_connect_refused);
 
-    librg_network_add(20, onvehcielcreate);
-    librg_network_add(22, on_damage_finished);
+    // librg_network_add(20, onvehcielcreate);
+    // librg_network_add(22, on_damage_finished);
 
     librg_network_start((librg_address_t) { .host = "localhost", .port = 27010 });
 
