@@ -547,23 +547,26 @@ extern "C" {
 
     typedef void *librg_data_t;
 
-    LIBRG_API void librg_data_init(librg_data_t data);
-    LIBRG_API void librg_data_free(librg_data_t data);
-    LIBRG_API void librg_data_grow(librg_data_t data, usize min_size);
+    LIBRG_API void librg_data_init(librg_data_t *data);
+    LIBRG_API void librg_data_init_size(librg_data_t *data, usize size);
+    LIBRG_API void librg_data_free(librg_data_t *data);
+    LIBRG_API void librg_data_grow(librg_data_t *data, usize min_size);
 
-    LIBRG_API usize librg_data_capacity(librg_data_t data);
-    LIBRG_API usize librg_data_get_rpos(librg_data_t data);
-    LIBRG_API usize librg_data_get_wpos(librg_data_t data);
+    LIBRG_API usize librg_data_capacity(librg_data_t *data);
+    LIBRG_API usize librg_data_get_rpos(librg_data_t *data);
+    LIBRG_API usize librg_data_get_wpos(librg_data_t *data);
 
-    LIBRG_API void librg_data_read(librg_data_t data, void *ptr, usize size);
-    LIBRG_API void librg_data_write(librg_data_t data, void *ptr, usize size);
+    LIBRG_API void librg_data_rptr(librg_data_t *data, void *ptr, usize size);
+    LIBRG_API void librg_data_wptr(librg_data_t *data, void *ptr, usize size);
 
-    LIBRG_API void librg_data_read_at(librg_data_t data, void *ptr, usize size, usize offset);
-    LIBRG_API void librg_data_write_at(librg_data_t data, void *ptr, usize size, usize offset);
+    LIBRG_API void librg_data_rptr_at(librg_data_t *data, void *ptr, usize size, isize position);
+    LIBRG_API void librg_data_wptr_at(librg_data_t *data, void *ptr, usize size, isize position);
 
     #define LIBRG_GEN_DATA_READWRITE(TYPE) \
-        LIBRG_API TYPE librg_data_r##TYPE(librg_data_t data); \
-        LIBRG_API void librg_data_w##TYPE(librg_data_t data, TYPE value);
+        LIBRG_API TYPE ZPL_JOIN2(librg_data_r,TYPE)(librg_data_t *data); \
+        LIBRG_API void ZPL_JOIN2(librg_data_w,TYPE)(librg_data_t *data, TYPE value); \
+        LIBRG_API TYPE ZPL_JOIN3(librg_data_r,TYPE,_at)(librg_data_t *data, isize position); \
+        LIBRG_API void ZPL_JOIN3(librg_data_w,TYPE,_at)(librg_data_t *data, TYPE value, isize position); \
 
         LIBRG_GEN_DATA_READWRITE( i8);
         LIBRG_GEN_DATA_READWRITE( u8);
@@ -581,8 +584,8 @@ extern "C" {
 
     #undef LIBRG_GEN_DATA_READWRITE
 
-    LIBRG_API librg_entity_t librg_data_rentity(librg_data_t data);
-    LIBRG_API void librg_data_wentity(librg_data_t data, librg_entity_t entity);
+    LIBRG_API librg_entity_t librg_data_rentity(librg_data_t *data);
+    LIBRG_API void librg_data_wentity(librg_data_t *data, librg_entity_t entity);
 
 
 
@@ -1135,6 +1138,122 @@ extern "C" {
     b32 librg_event_succeeded(librg_event_t *event) {
         librg_assert(event);
         return !event->rejected;
+    }
+
+
+
+    /**
+     *
+     * DATA STREAM (BITSREAM)
+     *
+     */
+
+    void librg_data_init(librg_data_t *data) {
+        librg_assert_msg(data, "librg_data_init: you need to provide data with &");
+        zpl_bs_init(*data, zpl_heap_allocator(), LIBRG_DEFAULT_BS_SIZE);
+    }
+
+    void librg_data_init_size(librg_data_t *data, usize size) {
+        librg_assert_msg(data, "librg_data_init: you need to provide data with &");
+        zpl_bs_init(*data, zpl_heap_allocator(), size);
+    }
+
+    void librg_data_free(librg_data_t *data) {
+        zpl_bs_free(*data);
+    }
+
+    void librg_data_grow(librg_data_t *data, usize min_size) {
+        zpl_bs_grow(*data, min_size);
+    }
+
+    usize librg_data_capacity(librg_data_t *data) {
+        return ZPL_BS_HEADER(*data)->capacity;
+    }
+
+    usize librg_data_get_rpos(librg_data_t *data) {
+        return ZPL_BS_HEADER(*data)->read_pos;
+    }
+
+    usize librg_data_get_wpos(librg_data_t *data) {
+        return ZPL_BS_HEADER(*data)->write_pos;
+    }
+
+    /**
+     * Pointer writers and readers
+     */
+
+    void librg_data_rptr(librg_data_t *data, void *ptr, usize size) {
+        librg_data_rptr_at(data, ptr, size, librg_data_get_rpos(data));
+        ZPL_BS_HEADER(*data)->read_pos += size;
+    }
+
+    void librg_data_wptr(librg_data_t *data, void *ptr, usize size) {
+        librg_data_wptr_at(data, ptr, size, librg_data_get_wpos(data));
+        ZPL_BS_HEADER(*data)->write_pos += size;
+    }
+
+    void librg_data_rptr_at(librg_data_t *data, void *ptr, usize size, isize position) {
+        librg_assert(*data);
+        librg_assert_msg(position + size <= librg_data_capacity(data),
+            "librg_data: trying to read from outside of the bounds");
+
+        zpl_memcopy(ptr, *data + position, size);
+    }
+
+    void librg_data_wptr_at(librg_data_t *data, void *ptr, usize size, isize position) {
+        librg_assert(*data);
+        if (position + size > librg_data_capacity(data)) {
+            librg_data_grow(data, librg_data_capacity(data) + size + position);
+        }
+
+        zpl_memcopy(*data + position, ptr, size);
+    }
+
+    /**
+     * Value writers and readers
+     */
+
+    #define LIBRG_GEN_DATA_READWRITE(TYPE) \
+        TYPE ZPL_JOIN2(librg_data_r,TYPE)(librg_data_t *data) { \
+            TYPE value; librg_data_rptr(data, &value, sizeof(value)); return value; \
+        } \
+        void ZPL_JOIN2(librg_data_w,TYPE)(librg_data_t *data, TYPE value) { \
+            librg_data_wptr(data, &value, sizeof(value)); \
+        } \
+        TYPE ZPL_JOIN3(librg_data_r,TYPE,_at)(librg_data_t *data, isize position) { \
+            TYPE value; librg_data_rptr_at(data, &value, sizeof(value), position); return value; \
+        } \
+        void ZPL_JOIN3(librg_data_w,TYPE,_at)(librg_data_t *data, TYPE value, isize position) { \
+            librg_data_wptr_at(data, &value, sizeof(value), position); \
+        } \
+
+
+        LIBRG_GEN_DATA_READWRITE( i8);
+        LIBRG_GEN_DATA_READWRITE( u8);
+        LIBRG_GEN_DATA_READWRITE(i16);
+        LIBRG_GEN_DATA_READWRITE(u16);
+        LIBRG_GEN_DATA_READWRITE(i32);
+        LIBRG_GEN_DATA_READWRITE(u32);
+        LIBRG_GEN_DATA_READWRITE(i64);
+        LIBRG_GEN_DATA_READWRITE(u64);
+        LIBRG_GEN_DATA_READWRITE(f32);
+        LIBRG_GEN_DATA_READWRITE(f64);
+        LIBRG_GEN_DATA_READWRITE( b8);
+        LIBRG_GEN_DATA_READWRITE(b16);
+        LIBRG_GEN_DATA_READWRITE(b32);
+
+    #undef LIBRG_GEN_DATA_READWRITE
+
+    /**
+     * Custom writers and readers
+     */
+
+    librg_entity_t librg_data_rentity(librg_data_t *data) {
+        return librg_entity_get(librg_data_ru32(data));
+    }
+
+    void librg_data_wentity(librg_data_t *data, librg_entity_t entity) {
+        librg_data_wu32(data, entity.id);
     }
 
 
@@ -1892,6 +2011,17 @@ librg_log("after size write: %zu\n", zpl_bs_size(for_create));
     }
 
 
+    /**
+     *
+     * EXTENSIONS
+     *
+     */
+
+    #define librg_component_define(NAME) librg_component_define_inner(,NAME)
+    #undef librg_component
+    #define librg_component(NAME)                                                                                                              \
+        librg_component_declare(NAME)                                                                                                          \
+        librg_component_define(NAME)
 
 #ifdef __cplusplus
 }
