@@ -1191,7 +1191,7 @@ extern "C" {
 
     librg_internal void librg__entity_create(librg_message_t *msg) {
         u32 query_size = zpl_bs_read_u32(msg->data);
-        librg_log("create query_size: %zu\n", query_size);
+        librg_log("create query_size: %u\n", query_size);
 
         for (int i = 0; i < query_size; ++i) {
             u32 guid = zpl_bs_read_u32(msg->data);
@@ -1534,15 +1534,12 @@ extern "C" {
 
             zpl_bs_init(for_create, zpl_heap_allocator(), 64);
             zpl_bs_init(for_update, zpl_heap_allocator(), 128);
-            librg_log("---------------------------");
-            librg_log("overall packet size: %zu\n", zpl_bs_size(for_create));
 
             zpl_bs_write_u64(for_create, LIBRG_ENTITY_CREATE);
             zpl_bs_write_u32(for_create, created_entities);
 
             zpl_bs_write_u64(for_update, LIBRG_ENTITY_UPDATE);
             zpl_bs_write_u32(for_update, updated_entities);
-            librg_log("overall packet size: %zu\n", zpl_bs_size(for_create));
 
             // add entity creates and updates
             for (isize i = 0; i < zpl_array_count(queue); ++i) {
@@ -1563,9 +1560,7 @@ extern "C" {
 
                     zpl_bs_write_u32(for_create, entity.id);
                     zpl_bs_write_u32(for_create, librg_fetch_entitymeta(entity)->type);
-            librg_log("overall packet size: %zu\n", zpl_bs_size(for_create));
                     zpl_bs_write_size(for_create, librg_fetch_transform(entity), sizeof(librg_transform_t));
-            librg_log("overall packet size: %zu\n", zpl_bs_size(for_create));
 
                     librg_event_t event = {0};
                     event.data = for_create; event.entity = entity;
@@ -1595,10 +1590,8 @@ extern "C" {
                 librg__entbool_set(&next_snapshot, entity.id, 1);
             }
 
-            librg_log("overall packet size: %zu\n", zpl_bs_size(for_create));
             zpl_bs_write_u32_at(for_create, created_entities, sizeof(u64));
             zpl_bs_write_u32_at(for_update, updated_entities, sizeof(u64));
-            librg_log("overall packet size: %zu\n", zpl_bs_size(for_create));
 
             usize write_pos = zpl_bs_write_pos(for_create);
             zpl_bs_write_u32(for_create, 0);
@@ -1618,6 +1611,7 @@ extern "C" {
             }
 
             zpl_bs_write_u32_at(for_create, removed_entities, write_pos);
+            librg_log("--- for_create: %u, for_remove: %u\n", created_entities, removed_entities);
 
             librg__entbool_destroy(last_snapshot);
             *last_snapshot = next_snapshot;

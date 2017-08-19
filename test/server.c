@@ -63,7 +63,7 @@ int main() {
     librg_log("%s\n\n", test);
 
     librg_init((librg_cfg_t) {
-        .tick_delay     = 32,
+        .tick_delay     = 1000,
         .mode           = librg_server_ev,
         .world_size     = zplm_vec2(5000.0f, 5000.0f),
         .entity_limit   = 2048,
