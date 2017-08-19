@@ -86,8 +86,14 @@ extern "C" {
 
     #ifdef LIBRG_DEBUG
     #define librg_dbg(fmt, ...) zpl_printf(fmt, ##__VA_ARGS__)
+    #define librg_measure(TITLE, CODE) do { \
+            u64 start  = zpl_utc_time_now(); CODE; \
+            f32 result = (zpl_utc_time_now() - start) / 1000.0; \
+            librg_log("%s: took %f ms.\n", TITLE, result); \
+        } while(0)
     #else
     #define librg_dbg(fmt, ...)
+    #define librg_measure(TITLE, CODE)
     #endif
 
     #define librg_log zpl_printf
@@ -1046,8 +1052,8 @@ extern "C" {
         void ZPL_JOIN2(librg__init_, NAME) (ZPL_JOIN3(librg__component_, NAME, _pool_t) *h, zple_pool *p, zpl_allocator_t a) {                 \
             librg_assert(h&&p); h->backing = a;                                                                                                \
             h->count = p->count;                                                                                                               \
-            zpl_buffer_init(h->entities, a, p->count);                                                                                         \
-            zpl_buffer_init(h->data, a, p->count);                                                                                             \
+            zpl_buffer_init(h->entities, a, zpl_size_of(ZPL_JOIN3(librg_, NAME, _meta_ent_t))*p->count);                                       \
+            zpl_buffer_init(h->data, a, zpl_size_of(ZPL_JOIN3(librg_, NAME, _meta_ent_t))*p->count);                                           \
             zpl_array_append(librg__component_pool, cast(void *)h);                                                                            \
             h->index = zpl_array_count(librg__component_pool);                                                                                 \
         }                                                                                                                                      \
@@ -1566,11 +1572,11 @@ extern "C" {
         librg_dbg("librg__connection_disconnect\n");
 
         if (librg_is_server()) {
-            librg_entity_t entity = *librg_peers_get(&librg__network.connected_peers, cast(u64)msg->peer);
-            if (!librg_entity_valid(entity)) return;
-            librg__entbool_destroy(&librg_fetch_client(entity)->last_snapshot);
-            librg_detach_client(entity);
-            librg_entity_destroy(entity);
+            librg_entity_t *entity = librg_peers_get(&librg__network.connected_peers, cast(u64)msg->peer);
+            if (!entity || !librg_entity_valid(*entity)) return;
+            librg__entbool_destroy(&librg_fetch_client(*entity)->last_snapshot);
+            librg_detach_client(*entity);
+            librg_entity_destroy(*entity);
         }
     }
 
@@ -1787,6 +1793,8 @@ extern "C" {
     }
 
     librg_internal ZPL_TIMER_CB(librg__tick_cb) {
+        u64 start = zpl_utc_time_now();
+
         if (librg_is_client()) {
             return;
         }
@@ -1829,12 +1837,6 @@ extern "C" {
             // add entity creates and updates
             for (isize i = 0; i < zpl_array_count(queue); ++i) {
                 librg_entity_t entity = queue[i];
-
-                // dont send myself
-                // if (player.id == entity.id) {
-                //     updated_entities--;
-                //     continue;
-                // }
 
                 b32 *existed_in_last = librg__entbool_get(last_snapshot, entity.id);
 
@@ -1910,6 +1912,8 @@ extern "C" {
 
         // destroy entities queued for removal
         librg__entity_execute_destroy();
+
+        librg_dbg("-update took :%f ms\n", (zpl_utc_time_now() - start) / 1000.f);
     }
 
     void librg_streamer_client_set(librg_entity_t entity, librg_peer_t peer) {

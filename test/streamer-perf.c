@@ -2,12 +2,6 @@
 #define LIBRG_DEBUG
 #include <librg.h>
 
-#define measure(TITLE, CODE) do { \
-        u64 start  = zpl_utc_time_now(); CODE; \
-        f32 result = (zpl_utc_time_now() - start) / 1000.0; \
-        librg_log("%s: took %f ms.\n", TITLE, result); \
-    } while(0)
-
 int main() {
 
     librg_init((librg_cfg_t) {
