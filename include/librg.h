@@ -1576,7 +1576,6 @@ extern "C" {
 
     librg_internal void librg__entity_create(librg_message_t *msg) {
         u32 query_size = zpl_bs_read_u32(msg->data);
-        librg_log("create query_size: %u\n", query_size);
 
         for (int i = 0; i < query_size; ++i) {
             u32 guid = zpl_bs_read_u32(msg->data);
@@ -1594,22 +1593,22 @@ extern "C" {
             librg_event_trigger(LIBRG_ENTITY_CREATE, &event);
         }
 
-        // u32 remove_size = zpl_bs_read_u32(msg->data);
+        u32 remove_size = zpl_bs_read_u32(msg->data);
 
-        // for (int i = 0; i < remove_size; ++i) {
-        //     u32 guid = zpl_bs_read_u32(msg->data);
-        //     librg_entity_t entity = librg_entity_get(guid);
+        for (int i = 0; i < remove_size; ++i) {
+            u32 guid = zpl_bs_read_u32(msg->data);
+            librg_entity_t entity = librg_entity_get(guid);
 
-        //     if (librg_entity_valid(entity)) {
-        //         librg_event_t event = {0};
-        //         event.data = msg->data; event.entity = entity;
-        //         librg_event_trigger(LIBRG_ENTITY_REMOVE, &event);
-        //         librg_entity_destroy(entity);
-        //     }
-        //     else {
-        //         librg_dbg("unexpected entity %u on remove", guid);
-        //     }
-        // }
+            if (librg_entity_valid(entity)) {
+                librg_event_t event = {0};
+                event.data = msg->data; event.entity = entity;
+                librg_event_trigger(LIBRG_ENTITY_REMOVE, &event);
+                librg_entity_destroy(entity);
+            }
+            else {
+                librg_dbg("unexpected entity %u on remove", guid);
+            }
+        }
     }
 
     librg_internal void librg__entity_update(librg_message_t *msg) {
@@ -1878,9 +1877,9 @@ extern "C" {
 
             zpl_bs_write_u32_at(for_create, created_entities, sizeof(u64));
             zpl_bs_write_u32_at(for_update, updated_entities, sizeof(u64));
-librg_log("before size write: %zu\n", zpl_bs_size(for_create));
+
             usize write_pos = zpl_bs_write_pos(for_create);
-            // zpl_bs_write_u32(for_create, 0);
+            zpl_bs_write_u32(for_create, 0);
 
             // add entity removes
             for (isize i = 0; i < zpl_array_count(last_snapshot->entries); ++i) {
@@ -1898,15 +1897,15 @@ librg_log("before size write: %zu\n", zpl_bs_size(for_create));
             }
 
             zpl_bs_write_u32_at(for_create, removed_entities, write_pos);
-librg_log("after size write: %zu\n", zpl_bs_size(for_create));
-            librg_log("--- for_create: %u, for_update: %u, for_remove: %u\n",
-                created_entities, updated_entities, removed_entities);
 
             librg__entbool_destroy(last_snapshot);
             *last_snapshot = next_snapshot;
 
             enet_peer_send(client->peer, 0, enet_packet_create( for_create, zpl_bs_size(for_create), ENET_PACKET_FLAG_RELIABLE ));
             enet_peer_send(client->peer, 1, enet_packet_create( for_update, zpl_bs_size(for_update), ENET_PACKET_FLAG_UNRELIABLE_FRAGMENT ));
+
+            zpl_bs_free(for_create);
+            zpl_bs_free(for_update);
         });
 
         // destroy entities queued for removal

@@ -14,13 +14,12 @@ int main() {
         .tick_delay     = 32,
         .mode           = librg_server_ev,
         .world_size     = zplm_vec2(5000.0f, 5000.0f),
-        .entity_limit   = 128000,
+        .entity_limit   = 50000,
     });
 
     librg_entity_t entity = librg_entity_create();
     librg_fetch_streamable(entity)->range = 250;
 
-    // insertion and deletion of 48k entities
     srand(0xDEADBEEF);
 
     measure("creating 48k entities", {
@@ -49,10 +48,9 @@ int main() {
 
     librg__streamer_update();
 
-    // start = zpl_utc_time_now();
-    // zpl_array_t(librg_entity_t) res = librg_streamer_query(entity);
-    // result = (zpl_utc_time_now() - start) / 1000.0;
-    // librg_log("query of 48k entities with 250 units query range: took %f ms.\n", result);
+    measure("query of 48k entities with 250 units query range: took %f ms", {
+        zpl_array_t(librg_entity_t) res = librg_streamer_query(entity);
+    });
 
     librg_free();
     return 0;
