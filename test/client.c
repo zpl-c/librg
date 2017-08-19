@@ -5,7 +5,7 @@
 typedef struct { i32 a; } librg_component(foo);
 
 void on_connect_request(librg_event_t *event) {
-    zpl_bs_write_u32(event->data, 42);
+    librg_data_wu32(&event->data, 42);
     librg_log("on_connect_request\n");
 }
 
@@ -20,11 +20,11 @@ void on_connect_refused(librg_event_t *event) {
 // client
 void damage_car(librg_entity_t entity) {
     librg_log("client: damanging the car\n");
-    librg_send(21, librg_lambda(data), { zpl_bs_write_u32(data, entity.id); });
+    librg_send(21, librg_lambda(data), { librg_data_wentity(&data, entity); });
 }
 
 void onvehcielcreate(librg_message_t *msg) {
-    u32 guid = zpl_bs_read_u32(msg->data);
+    u32 guid = librg_data_ru32(&msg->data);
 
     librg_entity_t entity = librg_entity_create_shared(guid);
     librg_attach_foo(entity, (foo_t) { 123 });
@@ -35,7 +35,7 @@ void onvehcielcreate(librg_message_t *msg) {
 }
 
 void on_damage_finished(librg_message_t *msg) {
-    u32 guid = zpl_bs_read_u32(msg->data);
+    u32 guid = librg_data_ru32(&msg->data);
     librg_entity_t entity = librg_entity_get(guid);
 
     foo_t *foo = librg_fetch_foo(entity);

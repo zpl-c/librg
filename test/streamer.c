@@ -40,6 +40,7 @@ int main() {
         librg_entity_destroy(friendly);
     }
 
+    librg__entity_execute_destroy();
     zplc_clear(&librg__streamer);
 
     // should be able to return exactly 666 entities
@@ -60,6 +61,7 @@ int main() {
         }
     }
 
+    librg__entity_execute_destroy();
     zplc_clear(&librg__streamer);
 
     // should be able to return less than 32k entities
@@ -80,6 +82,7 @@ int main() {
         }
     }
 
+    librg__entity_execute_destroy();
     zplc_clear(&librg__streamer);
 
     // should be able to blacklist 1 entity globally
@@ -105,6 +108,7 @@ int main() {
         librg_entity_destroy(badentity);
     }
 
+    librg__entity_execute_destroy();
     zplc_clear(&librg__streamer);
 
     // should be able to ignore 1 entity for target entity
