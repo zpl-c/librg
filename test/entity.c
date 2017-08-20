@@ -21,7 +21,7 @@ int main() {
     });
 
     for (isize i = 0; i < 15; ++i) {
-        librg_entity_t h = librg_entity_create();
+        librg_entity_t h = librg_entity_create(0);
         librg_attach_transform(h, (transform_t){i, i*2, i*i});
         if (i % 2 == 0) {
             librg_attach_position(h, (position_t){1,2,3});
@@ -33,7 +33,7 @@ int main() {
         }
     }
 
-    librg_entity_t t = librg_entity_create();
+    librg_entity_t t = librg_entity_create(0);
     ZPL_ASSERT(t.id == 15);
 
     transform_t *data = librg_attach_transform(t, (transform_t) { 1, 2, 3 });
@@ -42,7 +42,7 @@ int main() {
 
     transform_t *d = librg_fetch_transform(t);
 
-    librg_entity_t a = librg_entity_create_shared(128);
+    librg_entity_t a = librg_entity_create_shared(128, 0);
     printf("Remote: %lu, Local: %lu, Remote (from Local): %lu, Local (from Remote): %lu, Remote (from Local from Remote): %lu\n", a.id, librg__entity_get(a).id, librg__entity_get(librg__entity_get(a)).id,
            librg__entity_get(librg__entity_get(librg__entity_get(a))).id, librg__entity_get(librg__entity_get(librg__entity_get(librg__entity_get(a)))).id);
 
@@ -50,11 +50,11 @@ int main() {
 
     librg_entity_destroy(t);
 
-    t = librg_entity_create();
+    t = librg_entity_create(0);
     ZPL_ASSERT(t.id == 15 && t.generation == 1); // NOTE(ZaKlaus): This should be re-used entity.
 
-    librg_entity_t ent = librg_entity_create();
-    librg_entity_t ent2 = librg_entity_create();
+    librg_entity_t ent = librg_entity_create(0);
+    librg_entity_t ent2 = librg_entity_create(0);
 
     librg_attach_position(ent, (position_t) { 1, 2, 3 });
     librg_attach_position(ent2, (position_t) { 1, 2, 3 });

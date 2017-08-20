@@ -135,6 +135,10 @@ extern "C" {
     #define LIBRG_NETWORK_CHANNELS 4
     #endif
 
+    #ifndef LIBRG_DEFAULT_CLIENT_TYPE
+    #define LIBRG_DEFAULT_CLIENT_TYPE 0
+    #endif
+
     /**
      * If you dont want to skip filter rules if previous one is empty
      * make sure you #define LIBRG_ENTITY_UNOPTIMIZED_CYCLES
@@ -288,12 +292,12 @@ extern "C" {
     /**
      * Create entity and return handle
      */
-    LIBRG_API librg_entity_t librg_entity_create();
+    LIBRG_API librg_entity_t librg_entity_create(u32 type);
 
     /**
      * Create shared entity and return handle
      */
-    LIBRG_API librg_entity_t librg_entity_create_shared(u32 guid);
+    LIBRG_API librg_entity_t librg_entity_create_shared(u32 guid, u32 type);
 
     /**
      * Get entity from the numeric id
@@ -306,18 +310,9 @@ extern "C" {
     LIBRG_API b32 librg_entity_valid(librg_entity_t entity);
 
     /**
-     * Set entity type
-     * can be used only in pair with librg_entity_get_type
-     * (will be set to internal, local entity, if entity is shared)
+     * Return entity type
      */
-    LIBRG_API void librg_entity_set_type(librg_entity_t entity, u32 type);
-
-    /**
-     * Set entity type
-     * can be used only in pair with librg_entity_set_type
-     * (will be get from internal, local entity, if entity is shared)
-     */
-    LIBRG_API u32 librg_entity_get_type(librg_entity_t entity);
+    LIBRG_API u32 librg_entity_type(librg_entity_t entity);
 
     /**
      * Auto detach all attached components
@@ -921,7 +916,7 @@ extern "C" {
      * and inits custom data storages inside (if needed)
      */
 
-    librg_entity_t librg_entity_create() {
+    librg_entity_t librg_entity_create(u32 type) {
         zple_id_t id = zple_create(&librg__entity_pool);
         librg_entity_t entity = *(librg_entity_t *)&id;
 
@@ -939,8 +934,8 @@ extern "C" {
         librg__entcache_set(&librg__entcache, key.master, id);
     }
 
-    librg_entity_t librg_entity_create_shared(u32 guid) {
-        librg_entity_t entity = librg_entity_create();
+    librg_entity_t librg_entity_create_shared(u32 guid, u32 type) {
+        librg_entity_t entity = librg_entity_create(type);
 
         librg_entity_t remote_id;
         remote_id.id = guid;
@@ -982,11 +977,7 @@ extern "C" {
      * Entity types
      */
 
-    void librg_entity_set_type(librg_entity_t entity, u32 type) {
-        librg_fetch_entitymeta(entity)->type = type;
-    }
-
-    u32 librg_entity_get_type(librg_entity_t entity) {
+    u32 librg_entity_type(librg_entity_t entity) {
         return librg_fetch_entitymeta(entity)->type;
     }
 
@@ -997,7 +988,6 @@ extern "C" {
     void librg_entity_each(librg_entity_filter_t filter, librg_entity_cb_t callback) {
         librg_entity_eachx(filter, librg_lambda(entity), { callback(entity); });
     }
-
 
     /**
      * Entity destructors
@@ -1516,7 +1506,7 @@ extern "C" {
         librg_event_trigger(LIBRG_CONNECTION_REQUEST, &event);
 
         if (librg_event_succeeded(&event)) {
-            librg_entity_t entity = librg_entity_create();
+            librg_entity_t entity = librg_entity_create(LIBRG_DEFAULT_CLIENT_TYPE);
 
             // assign default compoenents
             librg_attach_client(entity, (librg_client_t){ msg->peer });
@@ -1556,7 +1546,7 @@ extern "C" {
         librg_dbg("librg__connection_accept\n");
 
         u32 guid = zpl_bs_read_u32(msg->data);
-        librg_entity_t entity = librg_entity_create_shared(guid);
+        librg_entity_t entity = librg_entity_create_shared(guid, LIBRG_DEFAULT_CLIENT_TYPE);
 
         // add server peer to storage
         librg_peers_set(&librg__network.connected_peers, cast(u64)msg->peer, entity);
@@ -1590,8 +1580,7 @@ extern "C" {
             librg_transform_t transform;
             zpl_bs_read_size(msg->data, &transform, sizeof(transform));
 
-            librg_entity_t entity = librg_entity_create_shared(guid);
-            librg_entity_set_type(entity, type);
+            librg_entity_t entity = librg_entity_create_shared(guid, type);
             *librg_fetch_transform(entity) = transform;
 
             librg_event_t event = {0};

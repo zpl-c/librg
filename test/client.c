@@ -26,7 +26,7 @@ void on_connect_refused(librg_event_t *event) {
 // void onvehcielcreate(librg_message_t *msg) {
 //     u32 guid = librg_data_ru32(&msg->data);
 
-//     librg_entity_t entity = librg_entity_create_shared(guid);
+//     librg_entity_t entity = librg_entity_create_shared(guid, 0);
 //     librg_attach_foo(entity, (foo_t) { 123 });
 
 //     librg_log("server created vehicle %lu\n", entity.id);

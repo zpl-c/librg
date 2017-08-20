@@ -18,7 +18,7 @@ void on_connect_request(librg_event_t *event) {
     }
 }
 // void on_vehicle_create() {
-//     librg_entity_t entity = librg_entity_create();
+//     librg_entity_t entity = librg_entity_create(0);
 
 //     librg_entity_set_type(entity, TYPE_VEHICLE);
 
@@ -78,7 +78,7 @@ int main() {
     librg_network_start((librg_address_t) { .host = "localhost", .port = 27010 });
 
     for (isize i = 0; i < 10000; i++) {
-        librg_entity_t car = librg_entity_create();
+        librg_entity_t car = librg_entity_create(0);
         librg_transform_t *t = librg_fetch_transform(car);
         t->position = zplm_vec3((f32)i, (f32)i, (f32)0);
     }

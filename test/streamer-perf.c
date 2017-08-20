@@ -11,14 +11,14 @@ int main() {
         .entity_limit   = 50000,
     });
 
-    librg_entity_t entity = librg_entity_create();
+    librg_entity_t entity = librg_entity_create(0);
     librg_fetch_streamable(entity)->range = 250;
 
     srand(0xDEADBEEF);
 
     measure("creating 48k entities", {
         for (int i = 0; i < 48000; i++) {
-            librg_entity_t enemy = librg_entity_create();
+            librg_entity_t enemy = librg_entity_create(0);
             librg_transform_t *transform = librg_fetch_transform(enemy);
             transform->position.x = (float)(2000 - rand() % 4000);
             transform->position.y = (float)(2000 - rand() % 4000);
@@ -36,7 +36,7 @@ int main() {
 
     // fill up new entities
     for (int i = 0; i < 48000; i++) {
-        librg_entity_t enemy = librg_entity_create();
+        librg_entity_t enemy = librg_entity_create(0);
         librg_fetch_transform(enemy)->position = zplm_vec3((float)i, (float)i, 10);
     }
 

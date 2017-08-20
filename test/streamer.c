@@ -13,7 +13,7 @@ int main() {
 
 
 
-    librg_entity_t entity = librg_entity_create();
+    librg_entity_t entity = librg_entity_create(0);
 
     librg_fetch_transform(entity)->position = zplm_vec3(30, 20, 0);
     librg_fetch_streamable(entity)->range = 1000;
@@ -28,7 +28,7 @@ int main() {
 
     // should be able to return exactly 1 entity
     {
-        librg_entity_t friendly = librg_entity_create();
+        librg_entity_t friendly = librg_entity_create(0);
         librg_fetch_transform(friendly)->position = zplm_vec3(30, 20, 10);
 
         librg__streamer_update();
@@ -46,7 +46,7 @@ int main() {
     // should be able to return exactly 666 entities
     {
         for (int i = 0; i < 666; i++) {
-            librg_entity_t enemy = librg_entity_create();
+            librg_entity_t enemy = librg_entity_create(0);
             librg_fetch_transform(enemy)->position = zplm_vec3(i, 20, 10);
         }
 
@@ -67,7 +67,7 @@ int main() {
     // should be able to return less than 32k entities
     {
         for (int i = 0; i < 48000; i++) {
-            librg_entity_t enemy = librg_entity_create();
+            librg_entity_t enemy = librg_entity_create(0);
             librg_fetch_transform(enemy)->position = zplm_vec3((float)i, 20, 10);
         }
 
@@ -87,7 +87,7 @@ int main() {
 
     // should be able to blacklist 1 entity globally
     {
-        librg_entity_t badentity = librg_entity_create();
+        librg_entity_t badentity = librg_entity_create(0);
         librg_fetch_transform(badentity)->position = zplm_vec3(30, 20, 10);
         librg__streamer_update();
 
@@ -113,8 +113,8 @@ int main() {
 
     // should be able to ignore 1 entity for target entity
     {
-        librg_entity_t badentity = librg_entity_create();
-        librg_entity_t tarentity = librg_entity_create();
+        librg_entity_t badentity = librg_entity_create(0);
+        librg_entity_t tarentity = librg_entity_create(0);
         librg__streamer_update();
 
         librg_streamer_set_visible_for(badentity, tarentity, false);
