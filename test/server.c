@@ -11,7 +11,15 @@ typedef struct { i32 a; } librg_component(foo);
 void on_connect_request(librg_event_t *event) {
     u32 secret = zpl_bs_read_u32(event->data);
 
-    librg_log("user sent number: %u\n", secret);
+    librg_transform_t *transform = librg_fetch_transform(event->entity);
+    transform->position.x = (float)(2000 - rand() % 4000);
+    transform->position.y = (float)(2000 - rand() % 4000);
+
+    librg_log("spawning player at: %f %f %f\n",
+        transform->position.x,
+        transform->position.y,
+        transform->position.z
+    );
 
     if (secret != 42) {
         return librg_event_reject(event);
@@ -67,6 +75,7 @@ int main() {
         .mode           = librg_server_ev,
         .world_size     = zplm_vec2(5000.0f, 5000.0f),
         .entity_limit   = 50000,
+        .max_connections = 1000,
     });
 
     librg_event_add(LIBRG_CONNECTION_REQUEST, on_connect_request);
@@ -78,9 +87,10 @@ int main() {
     librg_network_start((librg_address_t) { .host = "localhost", .port = 27010 });
 
     for (isize i = 0; i < 10000; i++) {
-        librg_entity_t car = librg_entity_create(0);
-        librg_transform_t *t = librg_fetch_transform(car);
-        t->position = zplm_vec3((f32)i, (f32)i, (f32)0);
+        librg_entity_t enemy = librg_entity_create(0);
+        librg_transform_t *transform = librg_fetch_transform(enemy);
+        transform->position.x = (float)(2000 - rand() % 4000);
+        transform->position.y = (float)(2000 - rand() % 4000);
     }
 
     while (true) {

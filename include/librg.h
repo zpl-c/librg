@@ -921,7 +921,7 @@ extern "C" {
         librg_entity_t entity = *(librg_entity_t *)&id;
 
         librg_attach_transform(entity, (librg_transform_t) { 0 });
-        librg_attach_streamable(entity, (librg_streamable_t) { 250 });
+        librg_attach_streamable(entity, (librg_streamable_t) { 250 }); // TODO: remove as default
         librg_attach_entitymeta(entity, (librg_entitymeta_t) { 0 });
 
         librg__entbool_init(&librg_fetch_entitymeta(entity)->ignored, zpl_heap_allocator());
