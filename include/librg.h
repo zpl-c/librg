@@ -337,7 +337,7 @@ extern "C" {
 
     #define librg_entity_eachx(filter, NAME, CODE) do {                                                                                        \
         u32 index = filter.contains1;                                                                                                          \
-        librg_assert(index != 0);                                                                                                              \
+        if (index == 0) break;                                                                                                                 \
         librg_assert(index <= zpl_array_count(librg__component_pool));                                                                         \
         librg__component__dummy_pool_t *pool = cast(librg__component__dummy_pool_t*)librg__component_pool[index - 1];                          \
         librg_assert(pool);                                                                                                                    \
@@ -781,11 +781,11 @@ extern "C" {
 
     typedef struct {
         u32 range;
-        librg__entbool_t ignored;
     } librg_component_declare_inner(librg_, streamable);
 
     typedef struct {
         u32 type;
+        librg__entbool_t ignored;
     } librg_component_declare_inner(librg_, entitymeta);
 
     typedef struct {
@@ -924,7 +924,7 @@ extern "C" {
         librg_attach_streamable(entity, (librg_streamable_t) { 250 });
         librg_attach_entitymeta(entity, (librg_entitymeta_t) { 0 });
 
-        librg__entbool_init(&librg_fetch_streamable(entity)->ignored, zpl_heap_allocator());
+        librg__entbool_init(&librg_fetch_entitymeta(entity)->ignored, zpl_heap_allocator());
 
         return entity;
     }
@@ -997,9 +997,7 @@ extern "C" {
         librg_entity_t entity = librg__entity_get(id);
 
         librg_streamer_set_visible(entity, true);
-        if (librg_fetch_streamable(entity)) {
-            librg__entbool_destroy(&librg_fetch_streamable(entity)->ignored);
-        }
+        librg__entbool_destroy(&librg_fetch_entitymeta(entity)->ignored);
 
         for (i32 i = 0; i < zpl_array_count(librg__component_pool); i++) {
             librg__dummy_meta_ent_t *meta_ent = (cast(librg__component__dummy_pool_t*)librg__component_pool[i])->entities+entity.id;
@@ -1719,9 +1717,7 @@ extern "C" {
     }
 
     void librg_streamer_set_visible_for(librg_entity_t entity, librg_entity_t target, b32 state) {
-        if (librg_fetch_streamable(entity)) {
-            librg__entbool_set(&librg_fetch_streamable(entity)->ignored, target.id, !state);
-        }
+        librg__entbool_set(&librg_fetch_entitymeta(entity)->ignored, target.id, !state);
     }
 
     zpl_array_t(librg_entity_t) librg_streamer_query(librg_entity_t entity) {
@@ -1747,7 +1743,7 @@ extern "C" {
             if (!librg_entity_valid(target)) continue;
 
             b32 *global = librg__entbool_get(&librg__ignored, target.id);
-            b32 *local  = librg__entbool_get(&librg_fetch_streamable(target)->ignored, entity.id);
+            b32 *local  = librg__entbool_get(&librg_fetch_entitymeta(target)->ignored, entity.id);
 
             if ((global && *global) || (local && *local)) continue;
 
@@ -1785,12 +1781,57 @@ extern "C" {
         u64 start = zpl_utc_time_now();
 
         if (librg_is_client()) {
+            u32 amount = 0;
+            librg_data_t data;
+            librg_data_init(&data);
+
+            librg_data_wu64(&data, LIBRG_CLIENT_STREAMER_UPDATE);
+            librg_data_wu32(&data, 0); // amount of entities to be sent (updates)
+
+            librg_entity_filter_t filter = {
+                librg_index_clientstream(),
+                librg_index_streamable(),
+            };
+
+            librg_entity_eachx(filter, librg_lambda(entity), {
+                librg_transform_t *transform = librg_fetch_transform(entity);
+
+                librg_data_t subdata;
+                librg_data_init(&subdata);
+
+                librg_event_t event = {0};
+                event.data = subdata; event.entity = entity;
+                librg_event_trigger(LIBRG_CLIENT_STREAMER_UPDATE, &event);
+
+                librg_data_wptr(&subdata, transform, sizeof(librg_transform_t));
+
+                librg_data_wu32(&data, entity.id);
+                librg_data_wu32(&data, librg_data_get_wpos(subdata));
+
+                // write sub-bitstream to main bitstream
+                librg_data_wptr(&data, subdata, librg_data_get_wpos(subdata));
+                librg_data_free(&subdata);
+
+                amount++;
+            });
+
+            if (amount < 1) {
+                return;
+            }
+
+            // write amountafter packet id
+            librg_data_wu32_at(&data, amount, sizeof(u64));
+
+            enet_peer_send(librg__network.peer, 1, enet_packet_create(
+                data, librg_data_get_wpos(&data), ENET_PACKET_FLAG_UNRELIABLE_FRAGMENT
+            ));
+
+            librg_data_free(&data);
+
             return;
         }
 
-        if (librg_index_client() == 0) return;
-
-        // server streamer
+        // create the server cull tree
         librg__streamer_update();
 
         librg_entity_filter_t filter = {
@@ -1814,8 +1855,8 @@ extern "C" {
             zpl_bs_t for_create;
             zpl_bs_t for_update;
 
-            zpl_bs_init(for_create, zpl_heap_allocator(), 64);
-            zpl_bs_init(for_update, zpl_heap_allocator(), 128);
+            zpl_bs_init(for_create, zpl_heap_allocator(), LIBRG_DEFAULT_BS_SIZE * 2);
+            zpl_bs_init(for_update, zpl_heap_allocator(), LIBRG_DEFAULT_BS_SIZE);
 
             zpl_bs_write_u64(for_create, LIBRG_ENTITY_CREATE);
             zpl_bs_write_u32(for_create, created_entities);

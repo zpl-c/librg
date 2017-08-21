@@ -16,7 +16,7 @@ int main() {
 
     srand(0xDEADBEEF);
 
-    measure("creating 48k entities", {
+    librg_measure("creating 48k entities", {
         for (int i = 0; i < 48000; i++) {
             librg_entity_t enemy = librg_entity_create(0);
             librg_transform_t *transform = librg_fetch_transform(enemy);
@@ -25,7 +25,7 @@ int main() {
         }
     });
 
-    measure("creating insertions for 48k entities", {
+    librg_measure("creating insertions for 48k entities", {
         librg__streamer_update();
     });
 
@@ -42,7 +42,7 @@ int main() {
 
     librg__streamer_update();
 
-    measure("query of 48k entities with 250 units query range: took %f ms", {
+    librg_measure("query of 48k entities with 250 units query range: took %f ms", {
         zpl_array_t(librg_entity_t) res = librg_streamer_query(entity);
     });
 
