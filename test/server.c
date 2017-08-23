@@ -1,4 +1,5 @@
 #define LIBRG_IMPLEMENTATION
+#define LIBRG_ENTITY_AMOUNT 50000
 #define LIBRG_DEBUG
 #include <librg.h>
 
@@ -6,7 +7,7 @@ enum {
     TYPE_VEHICLE = 242,
 };
 
-typedef struct { i32 a; } librg_component(foo);
+// typedef struct { i32 a; } librg_component(foo);
 
 void on_connect_request(librg_event_t *event) {
     u32 secret = zpl_bs_read_u32(event->data);
@@ -74,7 +75,6 @@ int main() {
         .tick_delay     = 1000,
         .mode           = librg_server_ev,
         .world_size     = zplm_vec2(5000.0f, 5000.0f),
-        .entity_limit   = 50000,
         .max_connections = 1000,
     });
 
@@ -86,7 +86,7 @@ int main() {
 
     librg_network_start((librg_address_t) { .host = "localhost", .port = 27010 });
 
-    for (isize i = 0; i < 10000; i++) {
+    for (isize i = 0; i < 1000; i++) {
         librg_entity_t enemy = librg_entity_create(0);
         librg_transform_t *transform = librg_fetch_transform(enemy);
         transform->position.x = (float)(2000 - rand() % 4000);
@@ -100,5 +100,6 @@ int main() {
 
     librg_network_stop();
     librg_free();
+
     return 0;
 }

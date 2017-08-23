@@ -1,4 +1,5 @@
 #define LIBRG_IMPLEMENTATION
+#define LIBRG_ENTITY_AMOUNT 50000
 #define LIBRG_DEBUG
 #include <librg.h>
 
@@ -58,7 +59,6 @@ int main() {
         .tick_delay     = 1000,
         .mode           = librg_client_ev,
         .world_size     = zplm_vec2(5000.0f, 5000.0f),
-        .entity_limit   = 50000,
     });
 
     librg_event_add(LIBRG_CONNECTION_REQUEST, on_connect_request);
