@@ -10,7 +10,7 @@ var rl = readline.createInterface({
     terminal: false
 });
 
-console.log('spawn NUMBER - spawns client processes')
+console.log('start NUMBER - spawns client processes')
 console.log('stop - stops all proccesses')
 
 rl.on('line', function (cmd) {
@@ -21,15 +21,11 @@ rl.on('line', function (cmd) {
             console.log('spawning client #' + i);
             let bat = spawn(proc_path);
 
-            bat.stderr.on('data', (data) => {
-                console.log('client #' + i, data.toString());
-            });
-
-            bat.on('exit', (code) => {
-              console.log('client #' + i, `Child exited with code ${code}`);
-            });
-
             clients.push(bat);
+
+            // sleep
+            var stop = new Date().getTime();
+            while(new Date().getTime() < stop + 100) {}
         }
     }
 

@@ -1,5 +1,4 @@
 #define LIBRG_IMPLEMENTATION
-#define LIBRG_ENTITY_AMOUNT 50000
 #define LIBRG_DEBUG
 #include <librg.h>
 

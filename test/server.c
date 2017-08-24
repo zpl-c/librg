@@ -1,5 +1,4 @@
 #define LIBRG_IMPLEMENTATION
-#define LIBRG_ENTITY_AMOUNT 50000
 #define LIBRG_DEBUG
 #include <librg.h>
 
@@ -86,7 +85,7 @@ int main() {
 
     librg_network_start((librg_address_t) { .host = "localhost", .port = 27010 });
 
-    for (isize i = 0; i < 1000; i++) {
+    for (isize i = 0; i < 10000; i++) {
         librg_entity_t enemy = librg_entity_create(0);
         librg_transform_t *transform = librg_fetch_transform(enemy);
         transform->position.x = (float)(2000 - rand() % 4000);
