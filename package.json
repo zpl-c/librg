@@ -21,10 +21,10 @@
   "homepage": "https://github.com/reguider/librg#readme",
   "dependencies": {
     "enet.c": "^1.3.15",
-    "zpl.c": "^2.4.0",
-    "zpl_cull.c": "^2.1.0",
-    "zpl_ent.c": "^2.1.0",
-    "zpl_event.c": "^1.0.6",
+    "zpl.c": "^3.0.0",
+    "zpl_cull.c": "^2.1.1",
+    "zpl_ent.c": "^2.1.1",
+    "zpl_event.c": "^1.0.7",
     "zpl_math.c": "^1.0.1"
   }
 }
