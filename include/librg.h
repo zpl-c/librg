@@ -509,6 +509,7 @@ extern "C" {
     LIBRG_API void librg_data_init(librg_data_t *data);
     LIBRG_API void librg_data_init_size(librg_data_t *data, usize size);
     LIBRG_API void librg_data_free(librg_data_t *data);
+    LIBRG_API void librg_data_reset(librg_data_t *data);
     LIBRG_API void librg_data_grow(librg_data_t *data, usize min_size);
 
     LIBRG_API usize librg_data_capacity(librg_data_t *data);
@@ -1131,18 +1132,23 @@ extern "C" {
      *
      */
 
-    void librg_data_init(librg_data_t *data) {
+    librg_inline void librg_data_init(librg_data_t *data) {
         librg_assert_msg(data, "librg_data_init: you need to provide data with &");
         zpl_bs_init(*data, zpl_heap_allocator(), LIBRG_DEFAULT_BS_SIZE);
     }
 
-    void librg_data_init_size(librg_data_t *data, usize size) {
+    librg_inline void librg_data_init_size(librg_data_t *data, usize size) {
         librg_assert_msg(data, "librg_data_init: you need to provide data with &");
         zpl_bs_init(*data, zpl_heap_allocator(), size);
     }
 
-    void librg_data_free(librg_data_t *data) {
+    librg_inline void librg_data_free(librg_data_t *data) {
         zpl_bs_free(*data);
+    }
+
+    void librg_data_reset(librg_data_t *data) {
+        ZPL_BS_HEADER(*data)->read_pos = 0;
+        ZPL_BS_HEADER(*data)->read_pos = 0;
     }
 
     void librg_data_grow(librg_data_t *data, usize min_size) {
@@ -1955,9 +1961,9 @@ extern "C" {
         }
         else {
             // create the server cull tree
-            librg__entity_execute_insert();
+            librg_measure("librg__entity_execute_insert", librg__entity_execute_insert());
 
-            librg__update_server();
+            librg_measure("librg__update_server", librg__update_server());
 
             // destroy entities queued for removal
             librg__entity_execute_destroy();
