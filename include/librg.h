@@ -81,7 +81,8 @@ extern "C" {
 
     #define LIBRG_API ZPL_DEF
     #define LIBRG_ENTITY_ALLOCATOR zpl_heap_allocator
-    #define LIBRG_NETWORK_STREAM_CHANNEL 1
+    #define LIBRG_NETWORK_STREAM_PRIMARY_CHANNEL 1
+    #define LIBRG_NETWORK_STREAM_SECONDARY_CHANNEL 1
     #define LIBRG_NETWORK_MESSAGE_CHANNEL 2
 
     #ifdef LIBRG_DEBUG
@@ -1465,10 +1466,10 @@ extern "C" {
         librg_dbg("librg__connection_init\n");
 
         #if defined(LIBRG_DEBUG)
-            char my_host[16];
+        char my_host[16];
 
-            enet_address_get_host_ip(&msg->peer->address, my_host, 16);
-            librg_dbg("librg__connection_init: a new connection attempt at %s:%u.\n", my_host, msg->peer->address.port);
+        enet_address_get_host_ip(&msg->peer->address, my_host, 16);
+        librg_dbg("librg__connection_init: a new connection attempt at %s:%u.\n", my_host, msg->peer->address.port);
         #endif
 
         if (librg_is_client()) {
@@ -1800,7 +1801,7 @@ extern "C" {
         // write amountafter packet id
         librg_data_wu32_at(&data, amount, sizeof(u64));
 
-        enet_peer_send(librg__network.peer, 1, enet_packet_create(
+        enet_peer_send(librg__network.peer, LIBRG_NETWORK_STREAM_SECONDARY_CHANNEL, enet_packet_create(
             data, librg_data_get_wpos(&data), ENET_PACKET_FLAG_UNRELIABLE_FRAGMENT
         ));
 
@@ -1935,8 +1936,10 @@ extern "C" {
             // zpl_array_copy_init(client->last_snapshot.hashes, next_snapshot.hashes);
 
             // send the data, via differnt channels and reliability settings
-            enet_peer_send(client->peer, 0, enet_packet_create( for_create, zpl_bs_size(for_create), ENET_PACKET_FLAG_RELIABLE ));
-            enet_peer_send(client->peer, 1, enet_packet_create( for_update, zpl_bs_size(for_update), ENET_PACKET_FLAG_UNRELIABLE_FRAGMENT ));
+            enet_peer_send(client->peer, LIBRG_NETWORK_STREAM_PRIMARY_CHANNEL, enet_packet_create(
+                for_create, zpl_bs_size(for_create), ENET_PACKET_FLAG_RELIABLE));
+            enet_peer_send(client->peer, LIBRG_NETWORK_STREAM_SECONDARY_CHANNEL, enet_packet_create(
+                for_update, zpl_bs_size(for_update), ENET_PACKET_FLAG_UNRELIABLE_FRAGMENT));
 
             // and cleanup
             zpl_bs_free(for_create);
@@ -2028,7 +2031,7 @@ extern "C" {
         // streamer
         zplc_bounds_t world = {0};
         world.centre = zplm_vec3(0, 0, 0);
-        world.half_size = zplm_vec3(librg__config.world_size.x, librg__config.world_size.y, 100);
+        world.half_size = zplm_vec3(librg__config.world_size.x, librg__config.world_size.y, 0);
         zplc_init(&librg__streamer, zpl_heap_allocator(), zplc_dim_2d_ev, world, 4);
         librg__entbool_init(&librg__entity.ignored, zpl_heap_allocator());
 
