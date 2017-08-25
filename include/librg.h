@@ -21,7 +21,6 @@
  * enet.h
  *
  * Version History:
- * 2.0.1 - Entity ID translation fixes (see test/entity.c)
  * 2.0.0 - Initial C version rewrite
  *
  * Copyright 2017 Vladislav Gritsenko
@@ -50,6 +49,8 @@
 #define LIBRG_VERSION_GET_PATCH(version) ((version)&0xFF)
 #define LIBRG_VERSION LIBRG_VERSION_CREATE(LIBRG_VERSION_MAJOR, LIBRG_VERSION_MINOR, LIBRG_VERSION_PATCH)
 
+#ifndef LIBRG_CUSTOM_INCLUDES
+
 #ifdef LIBRG_IMPLEMENTATION
 #define ZPL_IMPLEMENTATION
 #define ZPLE_IMPLEMENTATION
@@ -58,13 +59,13 @@
 #define ZPLEV_IMPLEMENTATION
 #endif
 
-#ifndef LIBRG_CUSTOM_INCLUDES
 #include <zpl.h>
 #include <zpl_ent.h>
 #include <zpl_math.h>
 #include <zpl_cull.h>
 #include <zpl_event.h>
 #include <enet/enet.h>
+
 #endif
 
 #ifdef __cplusplus
@@ -292,7 +293,7 @@ extern "C" {
     /**
      * Table for various entity bool storages
      */
-    ZPL_TABLE_DECLARE(extern, librg__entbool_t, librg__entbool_, u32);
+    ZPL_TABLE_DECLARE(extern, librg_table_t, librg_table_, u32);
 
     /**
      * Create entity and return handle
@@ -740,7 +741,7 @@ extern "C" {
 
     typedef struct {
         u32 type;
-        librg__entbool_t ignored;
+        librg_table_t ignored;
     } librg_component_declare_inner(librg_, entitymeta);
 
     typedef struct {
@@ -749,7 +750,7 @@ extern "C" {
 
     typedef struct {
         librg_peer_t peer;
-        librg__entbool_t last_snapshot;
+        librg_table_t last_snapshot;
     } librg_component_declare_inner(librg_, client);
 
 
@@ -814,7 +815,7 @@ extern "C" {
 
 
     ZPL_TABLE_DEFINE(librg_peers_t, librg_peers_, librg_entity_t);
-    ZPL_TABLE_DEFINE(librg__entbool_t, librg__entbool_, u32);
+    ZPL_TABLE_DEFINE(librg_table_t, librg_table_, u32);
 
 
     /**
@@ -829,9 +830,9 @@ extern "C" {
     librg_network_t     librg__network;
 
     struct {
-        librg__entbool_t ignored;
-        librg__entbool_t natives;
-        librg__entbool_t remotes;
+        librg_table_t ignored;
+        librg_table_t natives;
+        librg_table_t remotes;
         u32 count;
     } librg__entity;
 
@@ -869,7 +870,7 @@ extern "C" {
         librg_attach_streamable(entity, (librg_streamable_t) { 250 }); // TODO: remove as default
         librg_attach_entitymeta(entity, (librg_entitymeta_t) { 0 });
 
-        librg__entbool_init(&librg_fetch_entitymeta(entity)->ignored, zpl_heap_allocator());
+        librg_table_init(&librg_fetch_entitymeta(entity)->ignored, zpl_heap_allocator());
 
         return entity;
     }
@@ -878,14 +879,14 @@ extern "C" {
         librg_assert_msg(librg_is_client(), "can be executed only on client");
 
         librg_entity_t native = librg_entity_create(type);
-        u32 *other_native = librg__entbool_get(&librg__entity.natives, remote);
+        u32 *other_native = librg_table_get(&librg__entity.natives, remote);
 
         if (other_native && *other_native != LIBRG_INVALID_ENTITY) {
             librg_log("creating dublicate for id: %u; prev: %u\n", remote, *other_native);
         }
 
-        librg__entbool_set(&librg__entity.natives, remote, native);
-        librg__entbool_set(&librg__entity.remotes, native, remote);
+        librg_table_set(&librg__entity.natives, remote, native);
+        librg_table_set(&librg__entity.remotes, native, remote);
 
         return remote;
     }
@@ -899,7 +900,7 @@ extern "C" {
         if (librg_is_server()) return remote;
 
         // if entity exists in locals (by remote) - its shared id
-        u32 *native = librg__entbool_get(&librg__entity.natives, remote);
+        u32 *native = librg_table_get(&librg__entity.natives, remote);
         return (native && *native != LIBRG_INVALID_ENTITY) ? *native : remote;
     }
 
@@ -907,7 +908,7 @@ extern "C" {
         if (librg_is_server()) return native;
 
         // if entity exists in remote - its shared id
-        u32 *remote = librg__entbool_get(&librg__entity.remotes, native);
+        u32 *remote = librg_table_get(&librg__entity.remotes, native);
         return (remote && *remote != LIBRG_INVALID_ENTITY) ? *remote : native;
     }
 
@@ -970,13 +971,13 @@ extern "C" {
         librg_assert(meta);
 
         // reset ignored entities for this entity
-        librg__entbool_destroy(&meta->ignored);
+        librg_table_destroy(&meta->ignored);
         librg_streamer_set_visible(entity, true);
 
         librg_entity_t native = librg__entity_native(entity);
 
-        librg__entbool_set(&librg__entity.natives, entity, LIBRG_INVALID_ENTITY);
-        librg__entbool_set(&librg__entity.remotes, entity, LIBRG_INVALID_ENTITY);
+        librg_table_set(&librg__entity.natives, entity, LIBRG_INVALID_ENTITY);
+        librg_table_set(&librg__entity.remotes, entity, LIBRG_INVALID_ENTITY);
 
         for (i32 i = 0; i < zpl_array_count(librg__component_pool); i++) {
             __dummymeta_t *meta = (cast(__dummypool_t*)librg__component_pool[i])->entities+native;
@@ -1494,7 +1495,7 @@ extern "C" {
 
             // assign default compoenents
             librg_attach_client(entity, (librg_client_t){ msg->peer });
-            librg__entbool_init(&librg_fetch_client(entity)->last_snapshot, zpl_heap_allocator());
+            librg_table_init(&librg_fetch_client(entity)->last_snapshot, zpl_heap_allocator());
 
             // add client peer to storage
             librg_peers_set(&librg__network.connected_peers, cast(u64)msg->peer, entity);
@@ -1548,7 +1549,7 @@ extern "C" {
         if (librg_is_server()) {
             librg_entity_t *entity = librg_peers_get(&librg__network.connected_peers, cast(u64)msg->peer);
             if (!entity || !librg_entity_valid(*entity)) return;
-            librg__entbool_destroy(&librg_fetch_client(*entity)->last_snapshot);
+            librg_table_destroy(&librg_fetch_client(*entity)->last_snapshot);
             librg_detach_client(*entity);
             librg_entity_destroy(*entity);
         }
@@ -1692,12 +1693,12 @@ extern "C" {
 
 
     void librg_streamer_set_visible(librg_entity_t entity, b32 state) {
-        librg__entbool_set(&librg__entity.ignored, entity, (u32)!state);
+        librg_table_set(&librg__entity.ignored, entity, (u32)!state);
     }
 
     void librg_streamer_set_visible_for(librg_entity_t entity, librg_entity_t target, b32 state) {
         librg_assert(librg_fetch_entitymeta(entity));
-        librg__entbool_set(&librg_fetch_entitymeta(entity)->ignored, target, (u32)!state);
+        librg_table_set(&librg_fetch_entitymeta(entity)->ignored, target, (u32)!state);
     }
 
     zpl_array_t(librg_entity_t) librg_streamer_query(librg_entity_t entity) {
@@ -1722,8 +1723,8 @@ extern "C" {
             librg_entity_t target = search_temp[i].tag;
             if (!librg_entity_valid(target)) continue;
 
-            u32 *global = librg__entbool_get(&librg__entity.ignored, target);
-            u32 *local  = librg__entbool_get(&librg_fetch_entitymeta(target)->ignored, entity);
+            u32 *global = librg_table_get(&librg__entity.ignored, target);
+            u32 *local  = librg_table_get(&librg_fetch_entitymeta(target)->ignored, entity);
 
             if ((global && *global) || (local && *local)) continue;
 
@@ -1732,26 +1733,6 @@ extern "C" {
 
         zpl_array_free(search_temp);
         return search_result;
-    }
-
-    librg_internal void librg__streamer_update() {
-        librg_entity_filter_t filter = { librg_index_streamable() };
-
-        // clear
-        zplc_clear(&librg__streamer);
-
-        // fill up
-        librg_entity_eachx(filter, librg_lambda(entity), {
-            librg_transform_t *transform = librg_fetch_transform(entity);
-            librg_assert(transform);
-
-            zplc_node_t node = { 0 };
-
-            node.tag      = entity;
-            node.position = transform->position;
-
-            zplc_insert(&librg__streamer, node);
-        });
     }
 
     /**
@@ -1814,17 +1795,15 @@ extern "C" {
      * Responsive for udpating the server-side streamer
      */
     librg_internal void librg__update_server() {
-        // create the server cull tree
-        librg__streamer_update();
         librg_entity_filter_t filter = { librg_index_client() };
 
         librg_entity_eachx(filter, librg_lambda(player), {
             librg_client_t *client = librg_fetch_client(player);
 
             // get old, and preapre new snapshot handlers
-            librg__entbool_t *last_snapshot = &client->last_snapshot;
-            librg__entbool_t next_snapshot = { 0 };
-            librg__entbool_init(&next_snapshot, zpl_heap_allocator());
+            librg_table_t *last_snapshot = &client->last_snapshot;
+            librg_table_t next_snapshot = { 0 };
+            librg_table_init(&next_snapshot, zpl_heap_allocator());
 
             // fetch entities in the steram zone
             zpl_array_t(librg_entity_t) queue = librg_streamer_query(player);
@@ -1852,7 +1831,7 @@ extern "C" {
                 librg_entity_t entity = queue[i];
 
                 // fetch value of entity in the last snapshot
-                u32 *existed_in_last = librg__entbool_get(last_snapshot, entity);
+                u32 *existed_in_last = librg_table_get(last_snapshot, entity);
 
                 // write create
                 if (!existed_in_last) {
@@ -1876,7 +1855,7 @@ extern "C" {
                 }
                 else {
                     // mark entity as still alive, for the remove cycle
-                    librg__entbool_set(last_snapshot, entity, 0);
+                    librg_table_set(last_snapshot, entity, 0);
 
                     // fetch client streamer
                     librg_clientstream_t *cli_stream = librg_fetch_clientstream(entity);
@@ -1898,7 +1877,7 @@ extern "C" {
                 }
 
                 // mark entity as existed for the next update
-                librg__entbool_set(&next_snapshot, entity, 1);
+                librg_table_set(&next_snapshot, entity, 1);
             }
 
             // write our calcualted amounts right after packet id (from the beginning)
@@ -1930,7 +1909,7 @@ extern "C" {
             }
             zpl_bs_write_u32_at(for_create, removed_entities, write_pos);
 
-            librg__entbool_destroy(&client->last_snapshot);
+            librg_table_destroy(&client->last_snapshot);
             *last_snapshot = next_snapshot;
             // zpl_array_copy_init(client->last_snapshot.entries, next_snapshot.entries);
             // zpl_array_copy_init(client->last_snapshot.hashes, next_snapshot.hashes);
@@ -1946,9 +1925,26 @@ extern "C" {
             zpl_bs_free(for_update);
             zpl_array_free(queue);
         });
+    }
 
-        // destroy entities queued for removal
-        librg__entity_execute_destroy();
+    librg_inline void librg__entity_execute_insert() {
+        librg_entity_filter_t filter = { librg_index_streamable() };
+
+        // clear
+        zplc_clear(&librg__streamer);
+
+        // fill up
+        librg_entity_eachx(filter, librg_lambda(entity), {
+            librg_transform_t *transform = librg_fetch_transform(entity);
+            librg_assert(transform);
+
+            zplc_node_t node = { 0 };
+
+            node.tag      = entity;
+            node.position = transform->position;
+
+            zplc_insert(&librg__streamer, node);
+        });
     }
 
     librg_internal ZPL_TIMER_CB(librg__tick_cb) {
@@ -1958,7 +1954,13 @@ extern "C" {
             return librg__update_client();
         }
         else {
+            // create the server cull tree
+            librg__entity_execute_insert();
+
             librg__update_server();
+
+            // destroy entities queued for removal
+            librg__entity_execute_destroy();
         }
 
         librg_dbg("-update took :%f ms\n", (zpl_utc_time_now() - start) / 1000.f);
@@ -2025,15 +2027,15 @@ extern "C" {
         zple_init(&librg__entity_pool, LIBRG_ENTITY_ALLOCATOR(), LIBRG_ENTITY_AMOUNT);
         zpl_array_init(librg__component_pool, LIBRG_ENTITY_ALLOCATOR());
         zpl_array_init(librg__entity_remove_queue, zpl_heap_allocator());
-        librg__entbool_init(&librg__entity.natives, zpl_heap_allocator());
-        librg__entbool_init(&librg__entity.remotes, zpl_heap_allocator());
+        librg_table_init(&librg__entity.natives, zpl_heap_allocator());
+        librg_table_init(&librg__entity.remotes, zpl_heap_allocator());
 
         // streamer
         zplc_bounds_t world = {0};
         world.centre = zplm_vec3(0, 0, 0);
         world.half_size = zplm_vec3(librg__config.world_size.x, librg__config.world_size.y, 0);
         zplc_init(&librg__streamer, zpl_heap_allocator(), zplc_dim_2d_ev, world, 4);
-        librg__entbool_init(&librg__entity.ignored, zpl_heap_allocator());
+        librg_table_init(&librg__entity.ignored, zpl_heap_allocator());
 
         // events
         zplev_init(&librg__events, zpl_heap_allocator());
@@ -2072,9 +2074,9 @@ extern "C" {
 
         // streamer
         zplc_free(&librg__streamer);
-        librg__entbool_destroy(&librg__entity.ignored);
-        librg__entbool_destroy(&librg__entity.natives);
-        librg__entbool_destroy(&librg__entity.remotes);
+        librg_table_destroy(&librg__entity.ignored);
+        librg_table_destroy(&librg__entity.natives);
+        librg_table_destroy(&librg__entity.remotes);
 
         // free the entity component pools
         for (i32 i = 0; i < zpl_array_count(librg__component_pool); i++) {
