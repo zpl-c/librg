@@ -601,6 +601,8 @@ extern "C" {
         librg_peers_t connected_peers;
     } librg_network_t;
 
+    extern librg_network_t librg__network;
+
     /**
      * Check are we connected
      */
@@ -829,6 +831,11 @@ extern "C" {
     librg_cfg_t         librg__config;
     zpl_timer_pool      librg__timers;
     librg_network_t     librg__network;
+
+    struct {
+        librg_data_t input;
+        librg_data_t output;
+    } librg__streams;
 
     struct {
         librg_table_t ignored;
@@ -1146,24 +1153,24 @@ extern "C" {
         zpl_bs_free(*data);
     }
 
-    void librg_data_reset(librg_data_t *data) {
+    librg_inline void librg_data_reset(librg_data_t *data) {
         ZPL_BS_HEADER(*data)->read_pos = 0;
         ZPL_BS_HEADER(*data)->read_pos = 0;
     }
 
-    void librg_data_grow(librg_data_t *data, usize min_size) {
+    librg_inline void librg_data_grow(librg_data_t *data, usize min_size) {
         zpl_bs_grow(*data, min_size);
     }
 
-    usize librg_data_capacity(librg_data_t *data) {
+    librg_inline usize librg_data_capacity(librg_data_t *data) {
         return ZPL_BS_HEADER(*data)->capacity;
     }
 
-    usize librg_data_get_rpos(librg_data_t *data) {
+    librg_inline usize librg_data_get_rpos(librg_data_t *data) {
         return ZPL_BS_HEADER(*data)->read_pos;
     }
 
-    usize librg_data_get_wpos(librg_data_t *data) {
+    librg_inline usize librg_data_get_wpos(librg_data_t *data) {
         return ZPL_BS_HEADER(*data)->write_pos;
     }
 
@@ -1171,17 +1178,17 @@ extern "C" {
      * Pointer writers and readers
      */
 
-    void librg_data_rptr(librg_data_t *data, void *ptr, usize size) {
+    librg_inline void librg_data_rptr(librg_data_t *data, void *ptr, usize size) {
         librg_data_rptr_at(data, ptr, size, librg_data_get_rpos(data));
         ZPL_BS_HEADER(*data)->read_pos += size;
     }
 
-    void librg_data_wptr(librg_data_t *data, void *ptr, usize size) {
+    librg_inline void librg_data_wptr(librg_data_t *data, void *ptr, usize size) {
         librg_data_wptr_at(data, ptr, size, librg_data_get_wpos(data));
         ZPL_BS_HEADER(*data)->write_pos += size;
     }
 
-    void librg_data_rptr_at(librg_data_t *data, void *ptr, usize size, isize position) {
+    librg_inline void librg_data_rptr_at(librg_data_t *data, void *ptr, usize size, isize position) {
         librg_assert(*data);
         librg_assert_msg(position + size <= librg_data_capacity(data),
             "librg_data: trying to read from outside of the bounds");
@@ -1189,7 +1196,7 @@ extern "C" {
         zpl_memcopy(ptr, *data + position, size);
     }
 
-    void librg_data_wptr_at(librg_data_t *data, void *ptr, usize size, isize position) {
+    librg_inline void librg_data_wptr_at(librg_data_t *data, void *ptr, usize size, isize position) {
         librg_assert(*data);
         if (position + size > librg_data_capacity(data)) {
             librg_data_grow(data, librg_data_capacity(data) + size + position);
