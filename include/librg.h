@@ -1803,6 +1803,13 @@ extern "C" {
     librg_internal void librg__update_server() {
         librg_entity_filter_t filter = { librg_index_client() };
 
+        // create data and write inital stuff
+        librg_data_t for_create;
+        librg_data_t for_update;
+
+        librg_data_init(&for_create);
+        librg_data_init(&for_update);
+
         librg_entity_eachx(filter, librg_lambda(player), {
             librg_client_t *client = librg_fetch_client(player);
 
@@ -1818,19 +1825,12 @@ extern "C" {
             u32 updated_entities = (u32) zpl_array_count(queue);
             u32 removed_entities = 0;
 
-            // create data and write inital stuff
-            zpl_bs_t for_create;
-            zpl_bs_t for_update;
-
-            zpl_bs_init(for_create, zpl_heap_allocator(), LIBRG_DEFAULT_BS_SIZE * 2);
-            zpl_bs_init(for_update, zpl_heap_allocator(), LIBRG_DEFAULT_BS_SIZE);
-
             // write packet headers
-            zpl_bs_write_u64(for_create, LIBRG_ENTITY_CREATE);
-            zpl_bs_write_u32(for_create, created_entities);
+            librg_data_wu64(&for_create, LIBRG_ENTITY_CREATE);
+            librg_data_wu32(&for_create, created_entities);
 
-            zpl_bs_write_u64(for_update, LIBRG_ENTITY_UPDATE);
-            zpl_bs_write_u32(for_update, updated_entities);
+            librg_data_wu64(&for_update, LIBRG_ENTITY_UPDATE);
+            librg_data_wu32(&for_update, updated_entities);
 
             // add entity creates and updates
             for (isize i = 0; i < zpl_array_count(queue); ++i) {
@@ -1850,9 +1850,9 @@ extern "C" {
                     created_entities++;
 
                     // write all basic data
-                    zpl_bs_write_u32(for_create, entity);
-                    zpl_bs_write_u32(for_create, librg_fetch_entitymeta(entity)->type);
-                    zpl_bs_write_size(for_create, librg_fetch_transform(entity), sizeof(librg_transform_t));
+                    librg_data_wu32(&for_create, entity);
+                    librg_data_wu32(&for_create, librg_fetch_entitymeta(entity)->type);
+                    librg_data_wptr(&for_create, librg_fetch_transform(entity), sizeof(librg_transform_t));
 
                     // request custom data from user
                     librg_event_t event = {0};
@@ -1872,8 +1872,8 @@ extern "C" {
                     }
                     // write update
                     else {
-                        zpl_bs_write_u32(for_update, entity);
-                        zpl_bs_write_size(for_update, librg_fetch_transform(entity), sizeof(librg_transform_t));
+                        librg_data_wu32(&for_update, entity);
+                        librg_data_wptr(&for_update, librg_fetch_transform(entity), sizeof(librg_transform_t));
 
                         // request custom data from user
                         librg_event_t event = {0};
@@ -1887,12 +1887,12 @@ extern "C" {
             }
 
             // write our calcualted amounts right after packet id (from the beginning)
-            zpl_bs_write_u32_at(for_create, created_entities, sizeof(u64));
-            zpl_bs_write_u32_at(for_update, updated_entities, sizeof(u64));
+            librg_data_wu32_at(&for_create, created_entities, sizeof(u64));
+            librg_data_wu32_at(&for_update, updated_entities, sizeof(u64));
 
             // save pos for remove data counter
-            usize write_pos = zpl_bs_write_pos(for_create);
-            zpl_bs_write_u32(for_create, 0);
+            usize write_pos = librg_data_get_wpos(&for_create);
+            librg_data_wu32(&for_create, 0);
 
             // add entity removes
             for (isize i = 0; i < zpl_array_count(last_snapshot->entries); ++i) {
@@ -1904,7 +1904,7 @@ extern "C" {
                 if (entity == player) continue;
 
                 // write id
-                zpl_bs_write_u32(for_create, entity);
+                librg_data_wu32(&for_create, entity);
                 removed_entities++;
 
                 // write the rest
@@ -1913,7 +1913,7 @@ extern "C" {
                 event.entity = entity;
                 librg_event_trigger(LIBRG_ENTITY_REMOVE, &event);
             }
-            zpl_bs_write_u32_at(for_create, removed_entities, write_pos);
+            librg_data_wu32_at(&for_create, removed_entities, write_pos);
 
             librg_table_destroy(&client->last_snapshot);
             *last_snapshot = next_snapshot;
@@ -1922,15 +1922,18 @@ extern "C" {
 
             // send the data, via differnt channels and reliability settings
             enet_peer_send(client->peer, LIBRG_NETWORK_STREAM_PRIMARY_CHANNEL, enet_packet_create(
-                for_create, zpl_bs_size(for_create), ENET_PACKET_FLAG_RELIABLE));
+                for_create, librg_data_get_wpos(&for_create), ENET_PACKET_FLAG_RELIABLE));
             enet_peer_send(client->peer, LIBRG_NETWORK_STREAM_SECONDARY_CHANNEL, enet_packet_create(
-                for_update, zpl_bs_size(for_update), ENET_PACKET_FLAG_UNRELIABLE_FRAGMENT));
+                for_update, librg_data_get_wpos(&for_update), ENET_PACKET_FLAG_UNRELIABLE_FRAGMENT));
 
             // and cleanup
-            zpl_bs_free(for_create);
-            zpl_bs_free(for_update);
             zpl_array_free(queue);
+            ZPL_BS_HEADER(for_create)->write_pos = 0;
+            ZPL_BS_HEADER(for_update)->write_pos = 0;
         });
+
+        zpl_bs_free(for_create);
+        zpl_bs_free(for_update);
     }
 
     librg_inline void librg__entity_execute_insert() {
