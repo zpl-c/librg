@@ -4,7 +4,7 @@
 
 int main() {
 
-    librg_init((librg_cfg_t) {
+    librg_init((librg_config_t) {
         .tick_delay     = 32,
         .mode           = librg_server_ev,
         .world_size     = zplm_vec2(5000.0f, 5000.0f),
