@@ -147,7 +147,11 @@ void render()
 bool shooting = false;
 bool keysHeld[323] = { false };
 
-int main() {
+#ifdef main
+#undef main
+#endif /* main */
+
+int main(int argc, char *argv[]) {
     if (init_sdl() != 0) {
         return librg_log("error creating sdl\n");
     }
@@ -159,7 +163,7 @@ int main() {
                         "==================================================\n");
 
     librg_init((librg_config_t) {
-        .tick_delay     = 1000,
+        .tick_delay     = 32,
         .mode           = librg_client_ev,
         .world_size     = zplm_vec2(5000.0f, 5000.0f),
     });
