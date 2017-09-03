@@ -155,6 +155,13 @@ int main(int argc, char *argv[]) {
     if (init_sdl() != 0) {
         return librg_log("error creating sdl\n");
     }
+    
+#ifdef ZPL_SYSTEM_WINDOWS
+    AllocConsole();
+    freopen("conin$","r",stdin);
+    freopen("conout$","w",stdout);
+    freopen("conout$","w",stderr);
+#endif
 
     librg_log("%s\n\n", "===============      CLIENT      =================\n" \
                         "==                                              ==\n" \
@@ -213,17 +220,25 @@ int main(int argc, char *argv[]) {
         if (keysHeld[SDLK_s]) {
             camera.y += speed;
         }
-
+        
         librg_transform_t *transform = librg_fetch_transform(player);
-
+        
+        if (keysHeld[SDLK_t] && transform) {
+            zpl_printf("triggering 1 entity spawn server-side.\n");
+            
+            librg_send_all(42, data,
+                           {
+                               librg_data_wptr(&data, transform, sizeof(librg_transform_t));
+                           });
+            
+        }
+        
         if (transform) {
             transform->position.x = (f32)camera.x;
             transform->position.y = (f32)camera.y;
         }
 
         librg_tick();
-        zpl_sleep_ms(16);
-
         render();
     }
 

@@ -149,7 +149,7 @@ extern "C" {
     #define LIBRG_DEFAULT_CLIENT_TYPE 0
     #endif
 
-    #define LIBRG_INVALID_ENTITY (librg__config.max_entities - 1)
+    #define LIBRG_INVALID_ENTITY (librg__config.max_entities)
 
     /**
      * If you dont want to skip filter rules if previous one is empty
@@ -1030,13 +1030,13 @@ extern "C" {
      * COMPONENTS
      *
      */
-
-    #define librg_component_define_inner(PREFIX, NAME)                                                                                         \
-        ZPL_JOIN3(librg__component_, NAME, _pool_t) ZPL_JOIN3(librg__component_, NAME, _pool);                                                 \
-                                                                                                                                               \
-        void ZPL_JOIN2(librg__init_, NAME) (ZPL_JOIN3(librg__component_, NAME, _pool_t) *h, zple_pool *p, zpl_allocator_t a) {                 \
-            librg_assert(h&&p); h->backing = a;                                                                                                \
-            librg_dbg("initializing %s pool, approximate size: %f kb\n", #NAME, (zpl_size_of(ZPL_JOIN3(PREFIX, NAME, _t))*p->count) / 1000.0); \
+    //librg_dbg("initializing %s pool, approximate size: %f kb\n", #NAME, (zpl_size_of(ZPL_JOIN3(PREFIX, NAME, _t))*p->count) / 1000.0)
+    
+#define librg_component_define_inner(PREFIX, NAME)                                                                                         \
+ZPL_JOIN3(librg__component_, NAME, _pool_t) ZPL_JOIN3(librg__component_, NAME, _pool);                                                 \
+                                                                                                                                       \
+void ZPL_JOIN2(librg__init_, NAME) (ZPL_JOIN3(librg__component_, NAME, _pool_t) *h, zple_pool *p, zpl_allocator_t a) {                 \
+    librg_assert(h&&p); h->backing = a;                                                                                                \
             h->count = p->count;                                                                                                               \
             zpl_buffer_init(h->entities, a, zpl_size_of(ZPL_JOIN3(librg_, NAME, _meta_ent_t)) * p->count);                                       \
             zpl_buffer_init(h->data, a, zpl_size_of(ZPL_JOIN3(PREFIX, NAME, _t)) * p->count);                                           \
@@ -1988,7 +1988,7 @@ extern "C" {
             librg__entity_execute_destroy();
         }
 
-        librg_dbg("-update took :%f ms\n", (zpl_utc_time_now() - start) / 1000.f);
+        //librg_dbg("-update took :%f ms\n", (zpl_utc_time_now() - start) / 1000.f);
     }
 
     void librg_streamer_client_set(librg_entity_t entity, librg_peer_t peer) {

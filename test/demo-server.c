@@ -28,6 +28,16 @@ void on_connect_accepted(librg_event_t *event) {
     librg_streamer_client_set(event->entity, client->peer);
 }
 
+void on_spawn_npc(librg_message_t *msg) {
+    librg_data_t bs = msg->data;
+    
+    librg_transform_t tr;
+    librg_data_rptr(&bs, &tr, sizeof(librg_transform_t));
+    
+    librg_entity_t npc = librg_entity_create(0);
+    *librg_fetch_transform(npc) = tr;
+}
+
 int main() {
     char *test = "===============      SERVER      =================\n" \
                  "==                                              ==\n" \
@@ -46,15 +56,19 @@ int main() {
     librg_event_add(LIBRG_CONNECTION_REQUEST, on_connect_request);
     librg_event_add(LIBRG_CONNECTION_ACCEPT, on_connect_accepted);
 
+    librg_network_add(42, on_spawn_npc);
+
     librg_network_start((librg_address_t) { .port = 27010 });
 
+#if 0
     for (isize i = 0; i < 10000; i++) {
         librg_entity_t enemy = librg_entity_create(0);
         librg_transform_t *transform = librg_fetch_transform(enemy);
         transform->position.x = (float)(2000 - rand() % 4000);
         transform->position.y = (float)(2000 - rand() % 4000);
     }
-
+#endif
+    
     while (true) {
         librg_tick();
         zpl_sleep_ms(1);
