@@ -925,6 +925,52 @@ extern "C" {
     }
 
     /**
+     * Entity destructors
+     */
+
+    librg_internal void librg__entity_destroy(librg_entity_t entity) {
+        librg__entity.count--;
+
+        librg_entitymeta_t *meta = librg_fetch_entitymeta(entity);
+        librg_assert(meta);
+
+        // reset ignored entities for this entity
+        librg_table_destroy(&meta->ignored);
+        librg_streamer_set_visible(entity, true);
+
+        librg_entity_t native = librg__entity_native(entity);
+
+        if (librg_is_client()) {
+            librg_table_set(&librg__entity.natives, entity, LIBRG_INVALID_ENTITY);
+            librg_table_set(&librg__entity.remotes, native, LIBRG_INVALID_ENTITY);
+        }
+
+        for (i32 i = 0; i < zpl_array_count(librg__component_pool); i++) {
+            __dummymeta_t *meta = (cast(__dummypool_t*)librg__component_pool[i])->entities+native;
+            librg_assert(meta);
+            meta->used = false;
+        }
+
+        return zple_destroy(&librg__entity_pool, (zple_id_t) { .id = native });
+    }
+
+    void librg__entity_execute_destroy() {
+        for (isize i = 0; i < zpl_array_count(librg__entity_remove_queue); i++) {
+            librg__entity_destroy(librg__entity_remove_queue[i]);
+        }
+
+        zpl_array_clear(librg__entity_remove_queue);
+    }
+
+    void librg_entity_destroy(librg_entity_t id) {
+        if (librg_is_client()) {
+            return librg__entity_destroy(id);
+        }
+
+        zpl_array_append(librg__entity_remove_queue, id);
+    }
+
+    /**
      * Entity types
      */
 
@@ -975,50 +1021,6 @@ extern "C" {
 
     void librg_entity_each(librg_entity_filter_t filter, librg_entity_cb_t callback) {
         librg_entity_eachx(filter, librg_lambda(entity), { callback(entity); });
-    }
-
-    /**
-     * Entity destructors
-     */
-
-    librg_internal void librg__entity_destroy(librg_entity_t entity) {
-        librg__entity.count--;
-
-        librg_entitymeta_t *meta = librg_fetch_entitymeta(entity);
-        librg_assert(meta);
-
-        // reset ignored entities for this entity
-        librg_table_destroy(&meta->ignored);
-        librg_streamer_set_visible(entity, true);
-
-        librg_entity_t native = librg__entity_native(entity);
-
-        librg_table_set(&librg__entity.natives, entity, LIBRG_INVALID_ENTITY);
-        librg_table_set(&librg__entity.remotes, native, LIBRG_INVALID_ENTITY);
-
-        for (i32 i = 0; i < zpl_array_count(librg__component_pool); i++) {
-            __dummymeta_t *meta = (cast(__dummypool_t*)librg__component_pool[i])->entities+native;
-            librg_assert(meta);
-            meta->used = false;
-        }
-
-        return zple_destroy(&librg__entity_pool, (zple_id_t) { .id = native });
-    }
-
-    void librg__entity_execute_destroy() {
-        for (isize i = 0; i < zpl_array_count(librg__entity_remove_queue); i++) {
-            librg__entity_destroy(librg__entity_remove_queue[i]);
-        }
-
-        zpl_array_clear(librg__entity_remove_queue);
-    }
-
-    void librg_entity_destroy(librg_entity_t id) {
-        if (librg_is_client()) {
-            return librg__entity_destroy(id);
-        }
-
-        zpl_array_append(librg__entity_remove_queue, id);
     }
 
 
@@ -1656,7 +1658,7 @@ extern "C" {
         librg_entity_t entity = zpl_bs_read_u32(msg->data);
 
         if (!librg_entity_valid(entity)) {
-            librg_dbg("trying to remove unknown entity from clientstream!");
+            librg_dbg("trying to remove unknown entity from clientstream!\n");
             return;
         }
 
@@ -1988,7 +1990,7 @@ extern "C" {
             librg__entity_execute_destroy();
         }
 
-        librg_dbg("-update took :%f ms\n", (zpl_utc_time_now() - start) / 1000.f);
+        librg_dbg(" [update: %fms]   \r", (zpl_utc_time_now() - start) / 1000.f);
     }
 
     void librg_streamer_client_set(librg_entity_t entity, librg_peer_t peer) {

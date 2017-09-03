@@ -14,8 +14,8 @@ void on_connect_accepted(librg_event_t *event) {
     librg_transform_t *transform = librg_fetch_transform(event->entity);
     librg_client_t *client = librg_fetch_client(event->entity);
 
-    transform->position.x = (float)(2000 - rand() % 4000);
-    transform->position.y = (float)(2000 - rand() % 4000);
+    // transform->position.x = (float)(2000 - rand() % 4000);
+    // transform->position.y = (float)(2000 - rand() % 4000);
     // transform->position.x = 200;
     // transform->position.y = 200;
 
