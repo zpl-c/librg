@@ -33,7 +33,7 @@ void on_spawn_npc(librg_message_t *msg) {
     librg_transform_t tr;
     librg_data_rptr(&msg->data, &tr, sizeof(librg_transform_t));
 
-    librg_entity_t npc = librg_entity_create(0);
+    librg_entity_t npc = librg_entity_create(1);
     librg_attach_transform(npc, tr);
 }
 
@@ -66,7 +66,7 @@ int main() {
 
 #if 1
     for (isize i = 0; i < 10000; i++) {
-        librg_entity_t enemy = librg_entity_create(0);
+        librg_entity_t enemy = librg_entity_create(2);
         librg_transform_t *transform = librg_fetch_transform(enemy);
         transform->position.x = (float)(2000 - rand() % 4000);
         transform->position.y = (float)(2000 - rand() % 4000);

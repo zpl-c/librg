@@ -1906,8 +1906,7 @@ extern "C" {
 
                 // write the rest
                 librg_event_t event = {0};
-                event.data = for_create;
-                event.entity = entity;
+                event.data = for_create; event.entity = entity;
                 librg_event_trigger(LIBRG_ENTITY_REMOVE, &event);
             }
             librg_data_wu32_at(&for_create, removed_entities, write_pos);

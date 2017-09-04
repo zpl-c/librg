@@ -119,6 +119,12 @@ void render_entity(librg_entity_t entity) {
     if (entity == player) {
         SDL_SetRenderDrawColor( sdl_renderer, 150, 250, 150, 255 );
     }
+    else if (librg_entity_type(entity) == 1) {
+        SDL_SetRenderDrawColor( sdl_renderer, 150, 25, 25, 255 );
+    }
+    else if (librg_entity_type(entity) == 2) {
+        SDL_SetRenderDrawColor( sdl_renderer, 25, 25, 150, 255 );
+    }
     else {
         SDL_SetRenderDrawColor( sdl_renderer, 150, 150, 150, 255 );
     }
