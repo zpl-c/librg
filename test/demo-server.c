@@ -35,6 +35,8 @@ void on_spawn_npc(librg_message_t *msg) {
 
     librg_entity_t npc = librg_entity_create(1);
     librg_attach_transform(npc, tr);
+
+    // librg_streamer_client_remove(librg_get_client_entity(msg->peer));
 }
 
 int main() {

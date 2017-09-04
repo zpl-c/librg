@@ -88,7 +88,7 @@ extern "C" {
     #define LIBRG_NETWORK_MESSAGE_CHANNEL 2
 
     #ifdef LIBRG_DEBUG
-    #define librg_dbg(fmt, ...) zpl_printf(fmt, ##__VA_ARGS__)
+    #define librg_dbg(fmt, ...) librg_log(fmt, ##__VA_ARGS__)
     #define librg_measure(TITLE, CODE) do { \
             u64 start  = zpl_utc_time_now(); CODE; \
             f32 result = (zpl_utc_time_now() - start) / 1000.0; \
@@ -612,7 +612,7 @@ extern "C" {
         librg_peers_t connected_peers;
     } librg_network_t;
 
-    extern librg_network_t librg__network;
+    extern librg_network_t librg_network;
 
     /**
      * Check are we connected
@@ -735,6 +735,10 @@ extern "C" {
      */
     LIBRG_API void librg_streamer_client_remove(librg_entity_t entity);
 
+    /**
+     * Get entity by peer
+     */
+    LIBRG_API librg_entity_t librg_get_client_entity(librg_peer_t peer);
 
 
 
@@ -840,7 +844,7 @@ extern "C" {
     zplev_pool          librg__events;
     librg_config_t      librg__config;
     zpl_timer_pool      librg__timers;
-    librg_network_t     librg__network;
+    librg_network_t     librg_network;
 
     struct {
         librg_data_t input;
@@ -1273,7 +1277,7 @@ extern "C" {
     void librg_network_start(librg_address_t addr) {
         librg_dbg("librg_network_start\n");
 
-        librg_peers_init(&librg__network.connected_peers, zpl_heap_allocator());
+        librg_peers_init(&librg_network.connected_peers, zpl_heap_allocator());
 
         if (librg_is_server()) {
             ENetAddress address;
@@ -1282,8 +1286,8 @@ extern "C" {
             address.host = ENET_HOST_ANY;
 
             // setup server host
-            librg__network.host = enet_host_create(&address, librg__config.max_connections, LIBRG_NETWORK_CHANNELS, 0, 0);
-            librg_assert_msg(librg__network.host, "could not start server at provided port");
+            librg_network.host = enet_host_create(&address, librg__config.max_connections, LIBRG_NETWORK_CHANNELS, 0, 0);
+            librg_assert_msg(librg_network.host, "could not start server at provided port");
         }
         else {
             ENetAddress address;
@@ -1292,31 +1296,31 @@ extern "C" {
             enet_address_set_host(&address, addr.host);
 
             // setup client host
-            librg__network.host = enet_host_create(NULL, 1, LIBRG_NETWORK_CHANNELS, 57600 / 8, 14400 / 8);
-            librg_assert_msg(librg__network.host, "could not start client");
+            librg_network.host = enet_host_create(NULL, 1, LIBRG_NETWORK_CHANNELS, 57600 / 8, 14400 / 8);
+            librg_assert_msg(librg_network.host, "could not start client");
 
             // create peer connecting to server
-            librg_log("connecting to server %s:%u\n", addr.host, addr.port);
-            librg__network.peer = enet_host_connect(librg__network.host, &address, LIBRG_NETWORK_CHANNELS, 0);
-            librg_assert_msg(librg__network.peer, "could not setup peer for provided address");
+            librg_dbg("connecting to server %s:%u\n", addr.host, addr.port);
+            librg_network.peer = enet_host_connect(librg_network.host, &address, LIBRG_NETWORK_CHANNELS, 0);
+            librg_assert_msg(librg_network.peer, "could not setup peer for provided address");
         }
     }
 
     void librg_network_stop() {
         librg_dbg("librg_network_stop\n");
 
-        if (librg__network.peer) {
+        if (librg_network.peer) {
             ENetEvent event;
 
             // disconnect and emit event
-            enet_peer_disconnect(librg__network.peer, 0);
-            enet_host_service(librg__network.host, &event, 100);
+            enet_peer_disconnect(librg_network.peer, 0);
+            enet_host_service(librg_network.host, &event, 100);
 
             // reset our peer
-            enet_peer_reset(librg__network.peer);
+            enet_peer_reset(librg_network.peer);
         }
 
-        librg_peers_destroy(&librg__network.connected_peers);
+        librg_peers_destroy(&librg_network.connected_peers);
     }
 
     /**
@@ -1332,7 +1336,7 @@ extern "C" {
     }
 
     librg_inline b32 librg_is_connected() {
-        return librg__network.peer && librg__network.peer->state == ENET_PEER_STATE_CONNECTED;
+        return librg_network.peer && librg_network.peer->state == ENET_PEER_STATE_CONNECTED;
     }
 
 
@@ -1361,7 +1365,7 @@ extern "C" {
 
     void librg_message_send_all(librg_data_t data) {
         if (librg_is_client()) {
-            return librg_message_send_to(librg__network.peer, data);
+            return librg_message_send_to(librg_network.peer, data);
         }
 
         librg_message_send_except(NULL, data);
@@ -1428,13 +1432,13 @@ extern "C" {
     void librg_tick() {
         zpl_timer_update(librg__timers);
 
-        if (!librg__network.host) {
+        if (!librg_network.host) {
             return; /* occasion where we are not started network yet */
         }
 
         ENetEvent event;
 
-        while (enet_host_service(librg__network.host, &event, 0) > 0) {
+        while (enet_host_service(librg_network.host, &event, 0) > 0) {
             librg_message_t msg = {
                 .data   = NULL,
                 .peer   = event.peer,
@@ -1533,7 +1537,7 @@ extern "C" {
             librg_table_init(&librg_fetch_client(entity)->last_snapshot, zpl_heap_allocator());
 
             // add client peer to storage
-            librg_peers_set(&librg__network.connected_peers, cast(u64)msg->peer, entity);
+            librg_peers_set(&librg_network.connected_peers, cast(u64)msg->peer, entity);
 
             // send accept
             librg_send_to(LIBRG_CONNECTION_ACCEPT, msg->peer, librg_lambda(data), {
@@ -1569,7 +1573,7 @@ extern "C" {
         librg_entity_t entity = librg_entity_create_shared(remote, LIBRG_DEFAULT_CLIENT_TYPE);
 
         // add server peer to storage
-        librg_peers_set(&librg__network.connected_peers, cast(u64)msg->peer, entity);
+        librg_peers_set(&librg_network.connected_peers, cast(u64)msg->peer, entity);
 
         librg_event_t event = { 0 };
         event.data = msg->data; event.entity = entity;
@@ -1583,7 +1587,7 @@ extern "C" {
         librg_dbg("librg__connection_disconnect\n");
 
         if (librg_is_server()) {
-            librg_entity_t *entity = librg_peers_get(&librg__network.connected_peers, cast(u64)msg->peer);
+            librg_entity_t *entity = librg_peers_get(&librg_network.connected_peers, cast(u64)msg->peer);
             if (!entity || !librg_entity_valid(*entity)) return;
             librg_table_destroy(&librg_fetch_client(*entity)->last_snapshot);
             librg_detach_client(*entity);
@@ -1702,7 +1706,7 @@ extern "C" {
             librg_clientstream_t *cli_stream = librg_fetch_clientstream(entity);
 
             if (!cli_stream || cli_stream->peer != msg->peer) {
-                librg_log("no component, or peer is different\n");
+                librg_dbg("no component, or peer is different\n");
                 zpl_bs_read_pos(msg->data) += size;
                 continue;
             }
@@ -1818,7 +1822,7 @@ extern "C" {
         // write amountafter packet id
         librg_data_wu32_at(&data, amount, sizeof(u64));
 
-        enet_peer_send(librg__network.peer, LIBRG_NETWORK_STREAM_SECONDARY_CHANNEL, enet_packet_create(
+        enet_peer_send(librg_network.peer, LIBRG_NETWORK_STREAM_SECONDARY_CHANNEL, enet_packet_create(
             data, librg_data_get_wpos(&data), ENET_PACKET_FLAG_UNRELIABLE_FRAGMENT
         ));
 
@@ -2039,6 +2043,14 @@ extern "C" {
         });
 
         librg_detach_clientstream(entity);
+    }
+
+    librg_entity_t librg_get_client_entity(librg_peer_t peer) {
+        librg_assert(peer);
+        librg_entity_t *entity = librg_peers_get(&librg_network.connected_peers, (u64)peer);
+        librg_assert(entity);
+
+        return *entity;
     }
 
 
