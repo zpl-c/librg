@@ -58,6 +58,8 @@ void on_connect_request(librg_event_t *event) {
 void on_connect_accepted(librg_event_t *event) {
     librg_log("on_connect_accepted\n");
     player = event->entity;
+
+    librg_log("spawned me with id: %u\n", player);
 }
 
 void on_connect_refused(librg_event_t *event) {
@@ -67,7 +69,7 @@ void on_connect_refused(librg_event_t *event) {
 void on_entity_create(librg_event_t *event) {
     // librg_log("on_entity_create: %u\n", event->entity);
 
-    librg_transform_t *transform = librg_fetch_transform(event->entity);
+    // librg_transform_t *transform = librg_fetch_transform(event->entity);
 
     // librg_log("spawning entity %u at: %f %f %f\n",
     //     event->entity,
@@ -77,8 +79,26 @@ void on_entity_create(librg_event_t *event) {
     // );
 }
 
+void on_entity_update(librg_event_t *event) {
+    // librg_transform_t *transform = librg_fetch_transform(event->entity);
+
+    // librg_log("moving entity %u at: %f %f %f\n",
+    //     event->entity,
+    //     transform->position.x,
+    //     transform->position.y,
+    //     transform->position.z
+    // );
+}
+
 void on_client_entity_update(librg_event_t *event) {
-    
+//     librg_transform_t *transform = librg_fetch_transform(player);
+//     if (!transform) return;
+
+//     librg_log("sending pos: %f %f %f\n",
+//         transform->position.x,
+//         transform->position.y,
+//         transform->position.z
+//     );
 }
 
 /**
@@ -156,6 +176,13 @@ int main(int argc, char *argv[]) {
         return librg_log("error creating sdl\n");
     }
 
+#ifdef ZPL_SYSTEM_WINDOWS
+    AllocConsole();
+    freopen("conin$","r",stdin);
+    freopen("conout$","w",stdout);
+    freopen("conout$","w",stderr);
+#endif
+
     librg_log("%s\n\n", "===============      CLIENT      =================\n" \
                         "==                                              ==\n" \
                         "==                 ¯\\_(ツ)_/¯                   ==\n" \
@@ -172,6 +199,7 @@ int main(int argc, char *argv[]) {
     librg_event_add(LIBRG_CONNECTION_ACCEPT, on_connect_accepted);
     librg_event_add(LIBRG_CONNECTION_REFUSE, on_connect_refused);
     librg_event_add(LIBRG_ENTITY_CREATE, on_entity_create);
+    librg_event_add(LIBRG_ENTITY_UPDATE, on_entity_update);
     librg_event_add(LIBRG_CLIENT_STREAMER_UPDATE, on_client_entity_update);
 
     librg_network_start((librg_address_t) { .host = "localhost", .port = 27010 });
@@ -216,14 +244,22 @@ int main(int argc, char *argv[]) {
 
         librg_transform_t *transform = librg_fetch_transform(player);
 
+        if (keysHeld[SDLK_t] && transform) {
+            zpl_printf("triggering 1 entity spawn server-side.\n");
+
+            librg_send_all(42, librg_lambda(data), {
+               librg_data_wptr(&data, transform, sizeof(librg_transform_t));
+            });
+
+            // keysHeld[SDLK_t] = false;
+        }
+
         if (transform) {
             transform->position.x = (f32)camera.x;
             transform->position.y = (f32)camera.y;
         }
 
         librg_tick();
-        zpl_sleep_ms(16);
-
         render();
     }
 
