@@ -171,7 +171,7 @@ void render()
 }
 
 bool shooting = false;
-bool keysHeld[323] = { false };
+bool keys_held[323] = { false };
 
 #ifdef main
 #undef main
@@ -197,7 +197,7 @@ int main(int argc, char *argv[]) {
 
     librg_init((librg_config_t) {
         .tick_delay     = 32,
-        .mode           = librg_client_ev,
+        .mode           = LIBRG_MODE_CLIENT,
         .world_size     = zplm_vec2(5000.0f, 5000.0f),
     });
 
@@ -220,7 +220,7 @@ int main(int argc, char *argv[]) {
                 loop = false;
 
             if (event.type == SDL_KEYDOWN) {
-                if (event.key.keysym.sym < 323) keysHeld[event.key.keysym.sym] = true;
+                if (event.key.keysym.sym < 323) keys_held[event.key.keysym.sym] = true;
 
                 switch (event.key.keysym.sym) {
                     case SDLK_SPACE:
@@ -229,35 +229,35 @@ int main(int argc, char *argv[]) {
                 }
             }
             else if (event.type == SDL_KEYUP) {
-                if (event.key.keysym.sym < 323) keysHeld[event.key.keysym.sym] = false;
+                if (event.key.keysym.sym < 323) keys_held[event.key.keysym.sym] = false;
             }
         }
 
         i32 speed = 5;
 
-        if (keysHeld[SDLK_a]) {
+        if (keys_held[SDLK_a]) {
             camera.x -= speed;
         }
-        if (keysHeld[SDLK_d]) {
+        if (keys_held[SDLK_d]) {
             camera.x += speed;
         }
-        if (keysHeld[SDLK_w]) {
+        if (keys_held[SDLK_w]) {
             camera.y -= speed;
         }
-        if (keysHeld[SDLK_s]) {
+        if (keys_held[SDLK_s]) {
             camera.y += speed;
         }
 
         librg_transform_t *transform = librg_fetch_transform(player);
 
-        if (keysHeld[SDLK_t] && transform) {
+        if (keys_held[SDLK_t] && transform) {
             zpl_printf("triggering 1 entity spawn server-side.\n");
 
             librg_send_all(42, librg_lambda(data), {
                librg_data_wptr(&data, transform, sizeof(librg_transform_t));
             });
 
-            // keysHeld[SDLK_t] = false;
+            // keys_held[SDLK_t] = false;
         }
 
         if (transform) {

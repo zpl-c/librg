@@ -9,7 +9,7 @@ int main() {
 
     librg_init((librg_config_t) {
         .tick_delay     = 32,
-        .mode           = librg_client_ev,
+        .mode           = LIBRG_MODE_CLIENT,
         .world_size     = zplm_vec2(5000.0f, 5000.0f),
         .max_entities   = 16048,
     });
