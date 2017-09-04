@@ -87,6 +87,12 @@ extern "C" {
     #define LIBRG_NETWORK_STREAM_SECONDARY_CHANNEL 1
     #define LIBRG_NETWORK_MESSAGE_CHANNEL 2
 
+    #ifdef __cplusplus
+    #define librg_void char
+    #else
+    #define librg_void void
+    #endif
+
     #ifdef LIBRG_DEBUG
     #define librg_dbg(fmt, ...) librg_log(fmt, ##__VA_ARGS__)
     #define librg_measure(TITLE, CODE) do { \
@@ -111,6 +117,7 @@ extern "C" {
     #define librg_bit_set(A,k)     ( A[(k/32)] |= (1 << (k%32)) )
     #define librg_bit_clear(A,k)   ( A[(k/32)] &= ~(1 << (k%32)) )
     #define librg_bit_test(A,k)    ( A[(k/32)] & (1 << (k%32)) )
+
 
     /**
      *
@@ -145,7 +152,6 @@ extern "C" {
     #ifndef LIBRG_DEFAULT_CLIENT_TYPE
     #define LIBRG_DEFAULT_CLIENT_TYPE 0
     #endif
-
 
     /**
      *
@@ -385,7 +391,7 @@ extern "C" {
 
     typedef struct librg_event_t {
         b32 rejected;
-        void *data;
+        librg_void *data;
         librg_entity_t entity;
     } librg_event_t;
 
@@ -479,7 +485,7 @@ extern "C" {
      *
      */
 
-    typedef char *librg_data_t;
+    typedef librg_void *librg_data_t;
 
     /**
      * Initialize new bitstream with default mem size
@@ -889,6 +895,16 @@ extern "C" {
      * and inits custom data storages inside (if needed)
      */
 
+    librg_inline void librg__entity_attach_default(librg_entity_t entity) {
+        librg_transform_t t  = {0};
+        librg_entitymeta_t m = {0};
+        librg_streamable_t s = {250};
+
+        librg_attach_transform(entity,  t);
+        librg_attach_entitymeta(entity, m);
+        librg_attach_streamable(entity, s);
+    }
+
     librg_inline librg_entity_t librg__entity_create(librg__entity_pool_t *pool) {
         librg_assert_msg(++pool->count < pool->limit_upper, "entity limit");
 
@@ -899,10 +915,7 @@ extern "C" {
         for (; pool->cursor < pool->limit_upper; ++pool->cursor) {
             librg_entity_t entity = pool->cursor;
             if (librg_entity_valid(entity)) continue;
-
-            librg_attach_transform(entity,  {0});
-            librg_attach_entitymeta(entity, {0});
-            librg_attach_streamable(entity, { 250 });
+            librg__entity_attach_default(entity);
 
             if (librg_is_server()) {
                 librg_table_init(&librg_fetch_entitymeta(entity)->ignored, zpl_heap_allocator());
@@ -932,10 +945,8 @@ extern "C" {
 
         librg__entity_pool_t *pool = &librg__entity.shared;
         librg_assert_msg(++pool->count < pool->limit_upper, "entity limit");
-
-        librg_attach_transform(entity,  {0});
-        librg_attach_entitymeta(entity, { type, 0 });
-        librg_attach_streamable(entity, { 250 });
+        librg__entity_attach_default(entity);
+        librg_fetch_entitymeta(entity)->type = type;
 
         return entity;
     }
@@ -1533,7 +1544,8 @@ extern "C" {
             librg_entity_t entity = librg_entity_create(LIBRG_DEFAULT_CLIENT_TYPE);
 
             // assign default compoenents
-            librg_attach_client(entity, { msg->peer });
+            librg_client_t client = { msg->peer };
+            librg_attach_client(entity, client);
             librg_table_init(&librg_fetch_client(entity)->last_snapshot, zpl_heap_allocator());
 
             // add client peer to storage
@@ -1662,7 +1674,8 @@ extern "C" {
         librg_clientstream_t *cli_stream = librg_fetch_clientstream(entity);
 
         if (!cli_stream) {
-            librg_attach_clientstream(entity,{});
+            librg_clientstream_t cs = {0};
+            librg_attach_clientstream(entity, cs);
 
             librg_event_t event = {0};
             event.data = msg->data; event.entity = entity;
@@ -1755,7 +1768,7 @@ extern "C" {
 
         zplc_bounds_t search_bounds;
         search_bounds.centre = transform->position;
-        search_bounds.half_size = { (f32)streamable->range, (f32)streamable->range, (f32)streamable->range };
+        search_bounds.half_size = zplm_vec3((f32)streamable->range, (f32)streamable->range, (f32)streamable->range);
 
         zplc_query(&librg__streamer, search_bounds, &search_temp);
 
@@ -2022,7 +2035,8 @@ extern "C" {
         }
         // attach new entity owner
         else {
-            librg_attach_clientstream(entity, { peer });
+            librg_clientstream_t cs = { peer };
+            librg_attach_clientstream(entity, cs);
         }
 
         librg_send_to(LIBRG_CLIENT_STREAMER_ADD, peer, librg_lambda(data), {
