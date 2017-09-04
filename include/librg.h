@@ -1,4 +1,4 @@
-/**
+﻿/**
  * LIBRG - reguider library
  *
  * A library for building simple and elegant cross-platform mmo client-server solutions.
@@ -479,7 +479,7 @@ extern "C" {
      *
      */
 
-    typedef void *librg_data_t;
+    typedef char *librg_data_t;
 
     /**
      * Initialize new bitstream with default mem size
@@ -900,9 +900,9 @@ extern "C" {
             librg_entity_t entity = pool->cursor;
             if (librg_entity_valid(entity)) continue;
 
-            librg_attach_transform(entity,  (librg_transform_t){0});
-            librg_attach_entitymeta(entity, (librg_entitymeta_t){0});
-            librg_attach_streamable(entity, (librg_streamable_t) { 250 });
+            librg_attach_transform(entity,  {0});
+            librg_attach_entitymeta(entity, {0});
+            librg_attach_streamable(entity, { 250 });
 
             if (librg_is_server()) {
                 librg_table_init(&librg_fetch_entitymeta(entity)->ignored, zpl_heap_allocator());
@@ -933,9 +933,9 @@ extern "C" {
         librg__entity_pool_t *pool = &librg__entity.shared;
         librg_assert_msg(++pool->count < pool->limit_upper, "entity limit");
 
-        librg_attach_transform(entity,  (librg_transform_t){0});
-        librg_attach_entitymeta(entity, (librg_entitymeta_t){ .type = type, 0 });
-        librg_attach_streamable(entity, (librg_streamable_t) { 250 });
+        librg_attach_transform(entity,  {0});
+        librg_attach_entitymeta(entity, { type, 0 });
+        librg_attach_streamable(entity, { 250 });
 
         return entity;
     }
@@ -1439,11 +1439,10 @@ extern "C" {
         ENetEvent event;
 
         while (enet_host_service(librg_network.host, &event, 0) > 0) {
-            librg_message_t msg = {
-                .data   = NULL,
-                .peer   = event.peer,
-                .packet = event.packet,
-            };
+            librg_message_t msg;
+            msg.data = NULL;
+            msg.peer = event.peer;
+            msg.packet = event.packet;
 
             switch (event.type) {
                 case ENET_EVENT_TYPE_RECEIVE: {
@@ -1504,7 +1503,8 @@ extern "C" {
                 librg_data_wu16(&data, LIBRG_PLATFORM_BUILD);
                 librg_data_wu16(&data, LIBRG_PLATFORM_PROTOCOL);
 
-                librg_event_t event = { .data = data };
+                librg_event_t event = { 0 };
+                event.data = data;
                 librg_event_trigger(LIBRG_CONNECTION_REQUEST, &event);
             });
         }
@@ -1533,7 +1533,7 @@ extern "C" {
             librg_entity_t entity = librg_entity_create(LIBRG_DEFAULT_CLIENT_TYPE);
 
             // assign default compoenents
-            librg_attach_client(entity, (librg_client_t){ msg->peer });
+            librg_attach_client(entity, { msg->peer });
             librg_table_init(&librg_fetch_client(entity)->last_snapshot, zpl_heap_allocator());
 
             // add client peer to storage
@@ -1662,7 +1662,7 @@ extern "C" {
         librg_clientstream_t *cli_stream = librg_fetch_clientstream(entity);
 
         if (!cli_stream) {
-            librg_attach_clientstream(entity, (librg_clientstream_t){});
+            librg_attach_clientstream(entity,{});
 
             librg_event_t event = {0};
             event.data = msg->data; event.entity = entity;
@@ -1753,10 +1753,9 @@ extern "C" {
         librg_streamable_t *streamable = librg_fetch_streamable(entity);
         librg_assert(transform && streamable);
 
-        zplc_bounds_t search_bounds = {
-            .centre = transform->position,
-            .half_size = {streamable->range, streamable->range, streamable->range},
-        };
+        zplc_bounds_t search_bounds;
+        search_bounds.centre = transform->position;
+        search_bounds.half_size = { (f32)streamable->range, (f32)streamable->range, (f32)streamable->range };
 
         zplc_query(&librg__streamer, search_bounds, &search_temp);
 
@@ -2023,7 +2022,7 @@ extern "C" {
         }
         // attach new entity owner
         else {
-            librg_attach_clientstream(entity, (librg_clientstream_t){ .peer = peer });
+            librg_attach_clientstream(entity, { peer });
         }
 
         librg_send_to(LIBRG_CLIENT_STREAMER_ADD, peer, librg_lambda(data), {
