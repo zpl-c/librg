@@ -1496,6 +1496,10 @@ extern "C" {
 
         if (librg_is_client()) {
             librg_send_to(LIBRG_CONNECTION_REQUEST, msg->peer, librg_lambda(data), {
+                librg_data_wu16(&data, LIBRG_PLATFORM_ID);
+                librg_data_wu16(&data, LIBRG_PLATFORM_BUILD);
+                librg_data_wu16(&data, LIBRG_PLATFORM_PROTOCOL);
+
                 librg_event_t event = { .data = data };
                 librg_event_trigger(LIBRG_CONNECTION_REQUEST, &event);
             });
@@ -1508,10 +1512,20 @@ extern "C" {
     librg_internal void librg__callback_connection_request(librg_message_t *msg) {
         librg_dbg("librg__connection_request\n");
 
+        u16 platform_id       = librg_data_ru16(&msg->data);
+        u16 platform_build    = librg_data_ru16(&msg->data);
+        u16 platform_protocol = librg_data_ru16(&msg->data);
+
+        b32 blocked = (platform_id != LIBRG_PLATFORM_ID || platform_protocol != LIBRG_PLATFORM_PROTOCOL);
+
+        if (platform_build != LIBRG_PLATFORM_BUILD) {
+            librg_dbg("NOTICE: librg platform build mismatch client %u, server: %u\n", platform_build, LIBRG_PLATFORM_BUILD);
+        }
+
         librg_event_t event = { 0 }; event.data = msg->data;
         librg_event_trigger(LIBRG_CONNECTION_REQUEST, &event);
 
-        if (librg_event_succeeded(&event)) {
+        if (librg_event_succeeded(&event) && !blocked) {
             librg_entity_t entity = librg_entity_create(LIBRG_DEFAULT_CLIENT_TYPE);
 
             // assign default compoenents
