@@ -838,7 +838,7 @@ extern "C" {
      */
     zplc_t              librg__streamer;
     zplev_pool          librg__events;
-    librg_config_t         librg__config;
+    librg_config_t      librg__config;
     zpl_timer_pool      librg__timers;
     librg_network_t     librg__network;
 
@@ -898,7 +898,7 @@ extern "C" {
 
             librg_attach_transform(entity,  (librg_transform_t){0});
             librg_attach_entitymeta(entity, (librg_entitymeta_t){0});
-            librg_attach_streamable(entity, (librg_streamable_t) { 250 }); // TODO: remove as default
+            librg_attach_streamable(entity, (librg_streamable_t) { 250 });
 
             if (librg_is_server()) {
                 librg_table_init(&librg_fetch_entitymeta(entity)->ignored, zpl_heap_allocator());
@@ -931,7 +931,7 @@ extern "C" {
 
         librg_attach_transform(entity,  (librg_transform_t){0});
         librg_attach_entitymeta(entity, (librg_entitymeta_t){ .type = type, 0 });
-        librg_attach_streamable(entity, (librg_streamable_t) { 250 }); // TODO: remove as default
+        librg_attach_streamable(entity, (librg_streamable_t) { 250 });
 
         return entity;
     }
