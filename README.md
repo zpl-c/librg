@@ -106,7 +106,7 @@ void on_connect_accepted(librg_event_t *event) {
 
 int main() {
     // initialization
-    librg_config_t config;
+    librg_config_t config = {0};
 
     config.tick_delay   = 64;
     config.mode         = LIBRG_MODE_SERVER;
@@ -118,7 +118,7 @@ int main() {
     librg_event_add(LIBRG_CONNECTION_ACCEPT, on_connect_accepted);
 
     // starting server
-    librg_address_t address; address.port = 22331;
+    librg_address_t address = {0}; address.port = 22331;
     librg_network_start(address);
 
     // starting main loop
@@ -172,7 +172,7 @@ void on_entity_remove(librg_event_t *event) {
 
 int main() {
     // initialization
-    librg_config_t config;
+    librg_config_t config = {0};
 
     config.tick_delay   = 64;
     config.mode         = LIBRG_MODE_CLIENT;
