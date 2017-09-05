@@ -925,6 +925,7 @@ extern "C" {
         }
 
         librg_assert_msg(false, "no entities to spawn");
+        return 0;
     }
 
     librg_entity_t librg_entity_create(u32 type) {
@@ -1610,7 +1611,7 @@ extern "C" {
     librg_internal void librg__callback_entity_create(librg_message_t *msg) {
         u32 query_size = librg_data_ru32(&msg->data);
 
-        for (int i = 0; i < query_size; ++i) {
+        for (usize i = 0; i < query_size; ++i) {
             librg_entity_t entity = librg_data_rentity(&msg->data);
             u32 type = librg_data_ru32(&msg->data);
 
@@ -1627,7 +1628,7 @@ extern "C" {
 
         u32 remove_size = librg_data_ru32(&msg->data);
 
-        for (int i = 0; i < remove_size; ++i) {
+        for (usize i = 0; i < remove_size; ++i) {
             librg_entity_t entity = librg_data_rentity(&msg->data);
 
             if (librg_entity_valid(entity)) {
@@ -1645,7 +1646,7 @@ extern "C" {
     librg_internal void librg__callback_entity_update(librg_message_t *msg) {
         u32 query_size = zpl_bs_read_u32(msg->data);
 
-        for (int i = 0; i < query_size; ++i) {
+        for (usize i = 0; i < query_size; ++i) {
             librg_entity_t entity = zpl_bs_read_u32(msg->data);
 
             librg_transform_t transform;
@@ -1705,7 +1706,7 @@ extern "C" {
     librg_internal void librg__callback_entity_client_streamer_update(librg_message_t *msg) {
         u32 amount = zpl_bs_read_u32(msg->data);
 
-        for (isize i = 0; i < amount; i++) {
+        for (usize i = 0; i < amount; i++) {
             librg_entity_t entity = zpl_bs_read_u32(msg->data);
             u32 size = zpl_bs_read_u32(msg->data);
 
@@ -1773,7 +1774,7 @@ extern "C" {
         zplc_query(&librg__streamer, search_bounds, &search_temp);
 
         for (isize i = 0; i < zpl_array_count(search_temp); i++) {
-            librg_entity_t target = search_temp[i].tag;
+            librg_entity_t target = (u32)search_temp[i].tag;
             if (!librg_entity_valid(target)) continue;
 
             u32 *global = librg_table_get(&librg__entity.ignored, target);
@@ -1880,7 +1881,7 @@ extern "C" {
 
             // add entity creates and updates
             for (isize i = 0; i < zpl_array_count(queue); ++i) {
-                librg_entity_t entity = queue[i];
+                librg_entity_t entity = (u32)queue[i];
 
                 // fetch value of entity in the last snapshot
                 u32 *existed_in_last = librg_table_get(last_snapshot, entity);
@@ -1942,7 +1943,7 @@ extern "C" {
 
             // add entity removes
             for (isize i = 0; i < zpl_array_count(last_snapshot->entries); ++i) {
-                librg_entity_t entity = last_snapshot->entries[i].key;
+                librg_entity_t entity = (u32)last_snapshot->entries[i].key;
                 b32 not_existed = last_snapshot->entries[i].value;
                 if (not_existed == 0) continue;
 
