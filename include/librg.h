@@ -833,7 +833,7 @@ extern "C" {
      * Create dummy component to
      * use it as template for removal in destroy
      */
-    typedef struct {} librg_component_declare(_dummy);
+    typedef struct { u8 a; } librg_component_declare(_dummy);
     #define __dummypool_t librg__component__dummy_pool_t
     #define __dummymeta_t librg__dummy_meta_ent_t
 
