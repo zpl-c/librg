@@ -27,25 +27,25 @@
 
 ## Purpose
 
-Many people think that implementing network solution for your game project is the most complicated and time consuming task.  
-We believe many people dont want even to try, which results in the fact, that you almost never see small games made by indie developers having any type networking.
+Many people think that implementing networking solution for your game project is the most complicated and time consuming task.  
+We believe many people are afraid to even try, which results in the fact, that you almost never see small games made by indie developers having any type of networking involved.
 
-And we hope, that this library, which is just a small step in the direction, however it still might help anyone and everyone who wants to add a multiplayer capabilities inside your game.
+Thus we hope that with this library, which is just a small step in the direction, we might help anyone and everyone who wants to add a multi-player capabilities inside one's game.
 
 ## Use-cases
 
 * As "built-in" server:  
-    Server can be attached to the client and run as a subprocess. It will result in quite common concept of client-hosted game sessions for **friends**.
+    Server can be attached to the client and run as a subprocess. It will result in a quite common concept of client-hosted game sessions for **friends**.
     However it requires user, or you, to deal with stuff like public ip/visibility.
 
 * As proxy server:  
-    Want to have **dedicated server**? Server will be used more like a proxy to store and send accumulated player data.
+    Would you like to have a **dedicated server** solution? Server will be used as a proxy to store and send accumulated player data.
     Considering the fact that you don't have (almost) any game logic on the server side, it can handle big amounts of clients.
     Great example can be something like [San-Andreas Multiplayer](http://www.sa-mp.com/).
 
 * As thin client (advanced):  
-    For client side you will use thin-client "pattern". All user actions will be sent directly to the server.
-    Requires you to write all the server side stuff, like physics handling, game world management, and **gameloop on the server side**.
+    For client side, you will use thin-client "pattern". All user actions will be sent directly to the server.
+    Requires you to write all the server side systems, like physics handling, game world management, and **gameloop on the server side**.
 
 * Any other possible way that was not mentioned.
 
@@ -53,8 +53,8 @@ And we hope, that this library, which is just a small step in the direction, how
 ## Structure
 
 ### General
-The library is built with single-header design. So everything librg provides is located in `includes/librg.h` file.  
-However it has dependencies. Most of them are also single-header libraries.
+The library is built with single header-only file design. So everything librg provides is located in `includes/librg.h` file.  
+However it has dependencies. Most of them are also single header-only libraries.
 
 ### List
 Current list and description of dependencies looks like this:
@@ -68,19 +68,19 @@ Current list and description of dependencies looks like this:
 | [enet](https://github.com/zpl-c/enet) | ![](https://img.shields.io/npm/v/enet.c.svg?maxAge=3600) | **enet** is a quite popular high performant low-level network library. A core for the librg. |
 
 ### Information
-**enet** is the only dependency which has a multi-file structure and source parts (*.c files). So it should be compiled separately and linked.
+**enet** is the only dependency which has a multi-file structure and source parts (*.c files). So it should be compiled separately and linked together with your project.
 
 ### Build instructions
-librg comes with a **CMakeLists.txt** file. So you can use it to integrate the library inside your project. Or at least as an example of how to compile it.
-Also there exists a **[build.sh](build.sh)** file which is usually used for the development purposes, however it also can be used as an example of instructions you need to provide to your compiler.
+librg comes with a **CMakeLists.txt** file. You can use it to integrate the library inside your project. Or use it as a boilerplate for new project.
+There is also the **[build.sh](build.sh)** shell script, which is usually used for the development purposes, however it also can be used as an example of instructions you need to provide to your compiler.
 
 ## Installation
 
 There are multiple way of how you can "install" the library:
 
 * automatic
-    * using **[npm](https://www.npmjs.com/get-npm)**. Just run `npm install librg.c` in folder with your project, thats it!   
-        <sub><i>(maybe you will not like the `node_modules` folder, however u can move it or rename it, if you are *not planning* to fetch any udpates via npm)</i></sub>
+    * using **[npm](https://www.npmjs.com/get-npm)**. Just run `npm install librg.c` in folder with your project, that's it!   
+        <sub><i>(maybe you will not like the `node_modules` folder, however you can move it or rename it, if you are *not planning* to fetch any udpates via npm)</i></sub>
 
 * manual:
     * downloading/copying only [librg.h](https://raw.githubusercontent.com/librg/librg/master/include/librg.h) file, and doing same for each dependency.
@@ -127,7 +127,7 @@ int main() {
         zpl_sleep_ms(1);
     }
 
-    // stopping network and freeing resources
+    // stopping network and resources disposal
     librg_network_stop();
     librg_free();
     return 0;
@@ -196,7 +196,7 @@ int main() {
     }
 
     // disconnection from the server
-    // and freeing resources
+    // and resource disposal
     librg_network_stop();
     librg_free();
     return 0;
@@ -206,14 +206,14 @@ int main() {
 ### Additional
 
 You can and **MUST** (not really, but i really advise you to) look into the source code ([librg.h](include/librg.h)).
-There we have many helpful (and not really) comments that will guide you or at very least give you explanation what is this or that, why its needed, and how to use it.
+There we have many helpful (and not really) comments that will guide you or at very least give you explanation what is this or that, why it's needed, and how to use it.
 
-Also you can look inside our [test](test/) folder, there are many different things. Its usually used for the development purposes, but i guarantee you can find something interesting in there.
+Also you can look inside our [test](test/) folder, there are many different things. It's usually used for the development purposes, but I guarantee you can find something interesting in there.
 
 ## Features
 
-* single-header format (however it has some [dependencies](#Structure))
-* written in pure C (portability)
+* single header-only file format (however it has some [dependencies](#Structure))
+* written in C99 (portability reasons)
 * highly configurable
 * small (only 1160LOC)
 * ready for C/C++ projects
