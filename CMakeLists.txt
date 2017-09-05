@@ -19,6 +19,8 @@ include_directories(include
     ${LIBRG_VENDOR_FOLDER}/enet${LIBRG_POSTFIX}/include
 )
 
+set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -std=c99")
+
 if (LIBRG_DEMO)
 
     add_subdirectory(${LIBRG_VENDOR_FOLDER}/sdl2${LIBRG_POSTFIX})
