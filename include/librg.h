@@ -1602,7 +1602,7 @@ extern "C" {
             if (!entity || !librg_entity_valid(*entity)) return;
 
             librg_event_t event = {0};
-            event.entity = *entity; event.data = msg->peer;
+            event.entity = *entity; event.data = (librg_void*)msg->peer;
             librg_event_trigger(LIBRG_CONNECTION_DISCONNECT, &event);
 
             librg_table_destroy(&librg_fetch_client(*entity)->last_snapshot);
