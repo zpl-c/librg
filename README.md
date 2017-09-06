@@ -28,7 +28,7 @@
 ## Purpose
 
 Many people think that implementing **networking** solution for your **game project** is the most **complicated** and time consuming **task**.  
-We **believe **many people are afraid to even try, which results in the fact, that you **almost** never see small games made by **indie developers** having any type of networking involved.
+We **believe** many people are afraid to even try, which results in the fact, that you **almost** never see small games made by **indie developers** having any type of networking involved.
 
 Thus we hope that with this **library**, which is just a **small step in the direction**, we might help anyone and everyone who wants to add a **multi-player** capabilities inside one's game.
 
