@@ -27,8 +27,8 @@
 
 ## Purpose
 
-Many people think that implementing **networking** solution for your **game project** is the most **complicated **and time consuming **task**.  
-We **believe **many people are afraid to even try, which results in the fact, that you **almost **never see small games made by **indie developers** having any type of networking involved.
+Many people think that implementing **networking** solution for your **game project** is the most **complicated** and time consuming **task**.  
+We **believe **many people are afraid to even try, which results in the fact, that you **almost** never see small games made by **indie developers** having any type of networking involved.
 
 Thus we hope that with this **library**, which is just a **small step in the direction**, we might help anyone and everyone who wants to add a **multi-player** capabilities inside one's game.
 
@@ -89,11 +89,11 @@ There are multiple way of how you can "install" the library:
 
 * simple to use **entity-component** system
 * fast and performant **event** system
-* convinient interface for binary data reading/writing (**bitstream**)
+* convenient interface for binary data reading/writing (**bitstream**)
 * highly configurable, both at compile- and run-time
-* high perfromant **server-side network-culling**, or in other words **"streaming"**
+* high performant **server-side network-culling**, or in other words **"streaming"**
 * single header-only file format (however it has some [dependencies](#structure))
-* written in c99 (portability reasons)
+* written in C99 (portability reasons)
 * small (only 1160LOC)
 * ready for C/C++ projects
 * CMake support
@@ -112,44 +112,44 @@ If you want to get involved - please contact us, we would gladly answer your que
 
 #### General
 
-General concept is very simple. Both server and client operate an **array of entities**. Entities have attached **components**.
+General concept is very simple. Both server and client operate on an **array of entities**. Entities have attached **components**.
 User can create his **own components** and **attach** them onto entities.
 
-librg entities have some **default components**, like: `transform`, `streamable`, `client` (for client) and `clientstreamable` (for entities which are controlled by client).
-You can find more information about those, checking out the source header file.
+librg entities have few **default components**, like: `transform`, `streamable`, `client` (for client) and `clientstream` (for entities which are controlled by client).
+You can find more information about those by checking out the source header file.
 
 #### Server streaming
 
-Server **always have all the entities in the game world**. Clients will have only **snapshot** of the current world, which is **limited** by the **stream-range**.  
+Server **always has all the entities in the game world**. Clients will have only **snapshot** of the current world, which is **limited** by the **stream-range**.
 Client will receive **periodic updates from the server**, containing information about the world (snaphot).
 
-When entity receieves an entity which **was not in his stream zone** for the first time, the `LIBRG_ENTITY_CREATE` event will be called,
-there you can **create your ingame object**, attach a component with custom data, etc.
-You should **consider sending as much data** as possible about the entity on it's creating, for example: color, hair-style, vehicle model id, etc.
+When entity receives an entity which **was not in his stream zone** for the first time, the `LIBRG_ENTITY_CREATE` event will be called,
+there you can **create your in-game object**, attach a component with custom data, etc.
+You should **consider sending as much data** as possible about the entity on it's creation, for example: color, hair-style, vehicle model id, etc.
 
 If entity already exists in the client's local game world, `LIBRG_ENTITY_UPDATE` event will be called. (Note: it will be called **each time** server sends update, and entity is still in the stream-zone).
-It's recommended that you send as **less data** as possible in the update, otherwise you will be **polluting the network**. Entity **transform** will be alawys sent.
+It's recommended that you send as **less data** as possible in the update, otherwise you will be **polluting the network**. Entity **transform** will be always sent.
 
-And finally if entity is **no longer in the client's stream-zone** the `LIBRG_ENTITY_REMOVE` event will be triggered. There you should remove created previously ingame object,
-detach all components, and deallocate all your game stuff related to that entity.
+At last, if entity is **no longer in the client's stream-zone** the `LIBRG_ENTITY_REMOVE` event will be triggered. There you should remove previously created in-game object,
+detach all components, and de-allocate all your game data related to that entity (or cache it, it's your call).
 
 #### Client streaming
 
 If you want your client to send updates about **one or more** entities to the server.  
-For example you have a game world **similar to some GTA-like** game, where there are some entities which are not players, however you need someone to control them.
+For example, you have a huge game world (e.g. open world sandbox game), where there are some entities which are not players, however you need someone to control them.
 Considering the fact that you probably don't have any game logic on the server, you need **one of your clients to send updates about ingame entities** to other clients.
 
-This can be achieved quite simple, you can just call method `librg_streamer_client_set` on the server, for specific entity.
+This can be achieved quite easily, you can just call method `librg_streamer_client_set` on the server, for specific entity.
 It will make provided **client responsive** for streaming this entity to the server. 
 
-Now, what do you need to do is just **update that entity** components like `transform` and so on from your local client's game world. And that `transform` will be automatically sent to the server.
+Now, what you need to do is just **update that entity** components like `transform` and so on from your local client's game world. And that `transform` will be automatically sent to the server.
 
 
 #### Custom data
 
 Now, you probably have a question, `how do i send custom data?`
 
-That is also quite simple indeed. Before triggering lets say `LIBRG_ENTITY_UPDATE` event on the client,
+That is also quite simple indeed. Before triggering, let's say `LIBRG_ENTITY_UPDATE` event on the client,
 same event will be triggered on the server, allowing you to write something in the `data` parameter.
 
 For example:
@@ -300,8 +300,8 @@ Also you can look inside our [test](test/) folder, there are many different thin
 
 ## Testing
 
-We are just started testing the library for different platforms. This table provides some sort of description for compilability.
-If you have tested it, and it compiles, or stopped compiling, please feel free to describe the issue in the [issues](https://github.com/librg/librg/issues).
+We started testing the library for different platforms. This table provides some sort of description for compatibility.
+If you have tested it, and it compiles, or it perhaps stopped compiling, please feel free to describe the issue in the [issues](https://github.com/librg/librg/issues).
 
 | *Compiler* / Target   | Windows               | Linux                 | macOS                 | iOS               | Android           |
 |:-:|:-:|:-:|:-:|:-:|:-:|
