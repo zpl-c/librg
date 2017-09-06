@@ -8,7 +8,7 @@ if (NOT LIBRG_VENDOR_FOLDER)
     set(LIBRG_POSTFIX ".c")
 endif()
 
-add_subdirectory(${LIBRG_VENDOR_FOLDER}/enet${LIBRG_POSTFIX})
+add_subdirectory(${LIBRG_VENDOR_FOLDER}/enet${LIBRG_POSTFIX} ${CMAKE_CURRENT_BINARY_DIR}/enet${LIBRG_POSTFIX})
 
 include_directories(include
     ${LIBRG_VENDOR_FOLDER}/zpl${LIBRG_POSTFIX}/include
