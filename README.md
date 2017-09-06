@@ -24,6 +24,29 @@
   </sub>
 </div>
 
+## Table of Contents
+
+* [Purpose](#purpose)
+* [Use-cases](#use-cases)
+* [Features](#features)
+* [Plans](#plans)
+* [How it works](#how-it-works)
+    * [General](#general)
+    * [Server streaming](#server-streaming)
+    * [Client streaming](#client-streaming)
+    * [Custom data](#custom-data)
+* [Structure](#structure)
+    * [List](#list)
+    * [Information](#information)
+    * [Build instructions](#build-instructions)
+* [Installation](#installation)
+* [Examples](#examples)
+    * [Server](#server)
+    * [Client](#client)
+    * [Additional](#additional)
+* [Testing](#testing)
+* [Contributors](#contributors)
+* [License](#license)
 
 ## Purpose
 
@@ -48,42 +71,6 @@ Thus we hope that with this **library**, which is just a **small step in the dir
     Requires you to write all the server side systems, like physics handling, game world management, and **gameloop on the server side**.
 
 * Any other possible way that was not mentioned.
-
-## Structure
-
-The library is built with **single header-only file design**. So everything librg provides is located in [includes/librg.h](https://github.com/librg/librg/blob/master/include/librg.h) file.  
-However it has **dependencies**. Most of them are also single header-only libraries.
-
-### List
-Current list and description of dependencies looks like this:
-
-| Library | Version | Description |
-|:-:|:-:|---|
-| [zpl](https://github.com/zpl-c/zpl) | ![](https://img.shields.io/npm/v/zpl.c.svg?maxAge=3600) | **zpl** is a basic library containing many functions you would use in everyday programming.|
-| [zpl-cull](https://github.com/zpl-c/zpl-cull) | ![](https://img.shields.io/npm/v/zpl_cull.c.svg?maxAge=3600) | **zpl-cull** is culling library. Used to create an entity tree, and query objects based on that. |
-| [zpl-math](https://github.com/zpl-c/zpl-math) | ![](https://img.shields.io/npm/v/zpl_math.c.svg?maxAge=3600) | **zpl-math** is obviously a math library. Used mostly in the streamer part. |
-| [zpl-event](https://github.com/zpl-c/zpl-event) | ![](https://img.shields.io/npm/v/zpl_event.c.svg?maxAge=3600) | **zpl-event** is simple and yet powerful event library. Most of the public interfaces of librg are build using zpl-event. |
-| [enet](https://github.com/zpl-c/enet) | ![](https://img.shields.io/npm/v/enet.c.svg?maxAge=3600) | **enet** is a quite popular high performant low-level network library. A core for the librg. |
-
-### Information
-**enet** is the only dependency which has a multi-file structure and source parts (*.c files). So it should be compiled separately and linked together with your project.
-
-### Build instructions
-librg comes with a **[CMakeLists.txt](CMakeLists.txt)** file. You can use it to integrate the library inside your project. Or use it as a boilerplate for new project.
-There is also the **[build.sh](build.sh)** shell script, which is usually used for the development purposes, however it also can be used as an example of instructions you need to provide to your compiler.
-
-## Installation
-
-There are multiple way of how you can "install" the library:
-
-* automatic
-    * using **[npm](https://www.npmjs.com/get-npm)**. Just run `npm install librg.c` in folder with your project, that's it!   
-        <sub><i>(maybe you will not like the `node_modules` folder, however you can move it or rename it, if you are *not planning* to fetch any udpates via npm)</i></sub>
-
-* manual:
-    * downloading/copying only [librg.h](https://raw.githubusercontent.com/librg/librg/master/include/librg.h) file, and doing same for each dependency.
-    * downloading/cloning repos for the librg and for each other dependency.
-
 
 ## Features
 
@@ -173,6 +160,42 @@ void on_entity_update(librg_event_t *event) {
 ```
 
 This concept can be applied to all events that have been described above: `LIBRG_ENTITY_CREATE`, `LIBRG_ENTITY_UPDATE`, `LIBRG_ENTITY_REMOVE`, `LIBRG_CLIENT_STREAMER_REMOVE`, and some others.
+
+## Structure
+
+The library is built with **single header-only file design**. So everything librg provides is located in [includes/librg.h](https://github.com/librg/librg/blob/master/include/librg.h) file.  
+However it has **dependencies**. Most of them are also single header-only libraries.
+
+### List
+Current list and description of dependencies looks like this:
+
+| Library | Version | Description |
+|:-:|:-:|---|
+| [zpl](https://github.com/zpl-c/zpl) | ![](https://img.shields.io/npm/v/zpl.c.svg?maxAge=3600) | **zpl** is a basic library containing many functions you would use in everyday programming.|
+| [zpl-cull](https://github.com/zpl-c/zpl-cull) | ![](https://img.shields.io/npm/v/zpl_cull.c.svg?maxAge=3600) | **zpl-cull** is culling library. Used to create an entity tree, and query objects based on that. |
+| [zpl-math](https://github.com/zpl-c/zpl-math) | ![](https://img.shields.io/npm/v/zpl_math.c.svg?maxAge=3600) | **zpl-math** is obviously a math library. Used mostly in the streamer part. |
+| [zpl-event](https://github.com/zpl-c/zpl-event) | ![](https://img.shields.io/npm/v/zpl_event.c.svg?maxAge=3600) | **zpl-event** is simple and yet powerful event library. Most of the public interfaces of librg are build using zpl-event. |
+| [enet](https://github.com/zpl-c/enet) | ![](https://img.shields.io/npm/v/enet.c.svg?maxAge=3600) | **enet** is a quite popular high performant low-level network library. A core for the librg. |
+
+### Information
+**enet** is the only dependency which has a multi-file structure and source parts (*.c files). So it should be compiled separately and linked together with your project.
+
+### Build instructions
+librg comes with a **[CMakeLists.txt](CMakeLists.txt)** file. You can use it to integrate the library inside your project. Or use it as a boilerplate for new project.
+There is also the **[build.sh](build.sh)** shell script, which is usually used for the development purposes, however it also can be used as an example of instructions you need to provide to your compiler.
+
+## Installation
+
+There are multiple way of how you can "install" the library:
+
+* automatic
+    * using **[npm](https://www.npmjs.com/get-npm)**. Just run `npm install librg.c` in folder with your project, that's it!   
+        <sub><i>(maybe you will not like the `node_modules` folder, however you can move it or rename it, if you are *not planning* to fetch any udpates via npm)</i></sub>
+
+* manual:
+    * downloading/copying only [librg.h](https://raw.githubusercontent.com/librg/librg/master/include/librg.h) file, and doing same for each dependency.
+    * downloading/cloning repos for the librg and for each other dependency.
+
 
 ## Examples
 
