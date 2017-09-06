@@ -1229,7 +1229,7 @@ extern "C" {
         librg_assert_msg(position + size <= librg_data_capacity(data),
             "librg_data: trying to read from outside of the bounds");
 
-        zpl_memcopy(ptr, *data + position, size);
+        zpl_memcopy(ptr, (char *)*data + position, size);
     }
 
     librg_inline void librg_data_wptr_at(librg_data_t *data, void *ptr, usize size, isize position) {
@@ -1238,7 +1238,7 @@ extern "C" {
             librg_data_grow(data, librg_data_capacity(data) + size + position);
         }
 
-        zpl_memcopy(*data + position, ptr, size);
+        zpl_memcopy((char *)*data + position, ptr, size);
     }
 
     /**
@@ -1459,7 +1459,7 @@ extern "C" {
                     // read our data
                     librg_data_t data;
                     zpl_bs_init(data, zpl_heap_allocator(), event.packet->dataLength);
-                    zpl_bs_write_size(data, event.packet->data, event.packet->dataLength);
+                    zpl_bs_write_size((char *)data, event.packet->data, event.packet->dataLength);
                     msg.data = data;
 
                     // get curernt packet id
@@ -1657,7 +1657,7 @@ extern "C" {
             librg_entity_t entity = zpl_bs_read_u32(msg->data);
 
             librg_transform_t transform;
-            zpl_bs_read_size(msg->data, &transform, sizeof(transform));
+            zpl_bs_read_size((char *)msg->data, &transform, sizeof(transform));
 
             if (!librg_entity_valid(entity)) {
                 continue;
@@ -1737,7 +1737,7 @@ extern "C" {
             librg_event_trigger(LIBRG_CLIENT_STREAMER_UPDATE, &event);
 
             librg_transform_t transform;
-            zpl_bs_read_size(msg->data, &transform, sizeof(transform));
+            zpl_bs_read_size((char *)msg->data, &transform, sizeof(transform));
             *librg_fetch_transform(entity) = transform;
         }
     }
