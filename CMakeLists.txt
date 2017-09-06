@@ -19,8 +19,6 @@ include_directories(include
     ${LIBRG_VENDOR_FOLDER}/enet${LIBRG_POSTFIX}/include
 )
 
-set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -std=c99")
-
 if (LIBRG_DEMO)
 
     add_subdirectory(${LIBRG_VENDOR_FOLDER}/sdl2${LIBRG_POSTFIX})
@@ -41,11 +39,14 @@ if (LIBRG_DEMO)
         target_link_libraries(librg.demo-server m)
         target_link_libraries(librg.demo-client m)
     endif()
+	
+	set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -std=gnu99")
 
 elseif (LIBRG_TEST)
 
     add_executable(buildtest test/build-test.c)
     target_link_libraries(buildtest enet ${CMAKE_DL_LIBS} ${CMAKE_THREAD_LIBS_INIT} m)
+	set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -std=c99")
 
 else()
 
