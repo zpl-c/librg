@@ -12,7 +12,7 @@
 
 <br />
 <div align="center">
-  Pure C library for building simple and elegant cross-platform mmo client-server solutions.
+  Pure C99 library for building simple and elegant cross-platform mmo client-server solutions.
 </div>
 
 <div align="center">
@@ -27,10 +27,10 @@
 
 ## Purpose
 
-Many people think that implementing networking solution for your game project is the most complicated and time consuming task.  
-We believe many people are afraid to even try, which results in the fact, that you almost never see small games made by indie developers having any type of networking involved.
+Many people think that implementing **networking** solution for your **game project** is the most **complicated **and time consuming **task**.  
+We **believe **many people are afraid to even try, which results in the fact, that you **almost **never see small games made by **indie developers** having any type of networking involved.
 
-Thus we hope that with this library, which is just a small step in the direction, we might help anyone and everyone who wants to add a multi-player capabilities inside one's game.
+Thus we hope that with this **library**, which is just a **small step in the direction**, we might help anyone and everyone who wants to add a **multi-player** capabilities inside one's game.
 
 ## Use-cases
 
@@ -49,12 +49,10 @@ Thus we hope that with this library, which is just a small step in the direction
 
 * Any other possible way that was not mentioned.
 
-
 ## Structure
 
-### General
-The library is built with single header-only file design. So everything librg provides is located in `includes/librg.h` file.  
-However it has dependencies. Most of them are also single header-only libraries.
+The library is built with **single header-only file design**. So everything librg provides is located in [includes/librg.h](https://github.com/librg/librg/blob/master/include/librg.h) file.  
+However it has **dependencies**. Most of them are also single header-only libraries.
 
 ### List
 Current list and description of dependencies looks like this:
@@ -71,7 +69,7 @@ Current list and description of dependencies looks like this:
 **enet** is the only dependency which has a multi-file structure and source parts (*.c files). So it should be compiled separately and linked together with your project.
 
 ### Build instructions
-librg comes with a **CMakeLists.txt** file. You can use it to integrate the library inside your project. Or use it as a boilerplate for new project.
+librg comes with a **[CMakeLists.txt](CMakeLists.txt)** file. You can use it to integrate the library inside your project. Or use it as a boilerplate for new project.
 There is also the **[build.sh](build.sh)** shell script, which is usually used for the development purposes, however it also can be used as an example of instructions you need to provide to your compiler.
 
 ## Installation
@@ -87,13 +85,102 @@ There are multiple way of how you can "install" the library:
     * downloading/cloning repos for the librg and for each other dependency.
 
 
+## Features
+
+* simple to use **entity-component** system
+* fast and performant **event** system
+* convinient interface for binary data reading/writing (**bitstream**)
+* highly configurable, both at compile- and run-time
+* high perfromant **server-side network-culling**, or in other words **"streaming"**
+* single header-only file format (however it has some [dependencies](#structure))
+* written in c99 (portability reasons)
+* small (only 1160LOC)
+* ready for C/C++ projects
+* CMake support
+* npm support (for dependency management)
+
+## Plans
+
+We are currently fixing issues on different platforms and possibly adding small features. However, the main idea for library and it's interface is done.
+In the future, we would like to see this library being used in different platforms and environments.
+
+For example, creating bindings for different platforms and languages (e.g `librg-love2d` or `librg-csharp`) would be useful.
+If you want to get involved - please contact us, we would gladly answer your questions and provide you support with a repository reserved in our organisation.
+
+
+## How it works
+
+#### General
+
+General concept is very simple. Both server and client operate an **array of entities**. Entities have attached **components**.
+User can create his **own components** and **attach** them onto entities.
+
+librg entities have some **default components**, like: `transform`, `streamable`, `client` (for client) and `clientstreamable` (for entities which are controlled by client).
+You can find more information about those, checking out the source header file.
+
+#### Server streaming
+
+Server **always have all the entities in the game world**. Clients will have only **snapshot** of the current world, which is **limited** by the **stream-range**.  
+Client will receive **periodic updates from the server**, containing information about the world (snaphot).
+
+When entity receieves an entity which **was not in his stream zone** for the first time, the `LIBRG_ENTITY_CREATE` event will be called,
+there you can **create your ingame object**, attach a component with custom data, etc.
+You should **consider sending as much data** as possible about the entity on it's creating, for example: color, hair-style, vehicle model id, etc.
+
+If entity already exists in the client's local game world, `LIBRG_ENTITY_UPDATE` event will be called. (Note: it will be called **each time** server sends update, and entity is still in the stream-zone).
+It's recommended that you send as **less data** as possible in the update, otherwise you will be **polluting the network**. Entity **transform** will be alawys sent.
+
+And finally if entity is **no longer in the client's stream-zone** the `LIBRG_ENTITY_REMOVE` event will be triggered. There you should remove created previously ingame object,
+detach all components, and deallocate all your game stuff related to that entity.
+
+#### Client streaming
+
+If you want your client to send updates about **one or more** entities to the server.  
+For example you have a game world **similar to some GTA-like** game, where there are some entities which are not players, however you need someone to control them.
+Considering the fact that you probably don't have any game logic on the server, you need **one of your clients to send updates about ingame entities** to other clients.
+
+This can be achieved quite simple, you can just call method `librg_streamer_client_set` on the server, for specific entity.
+It will make provided **client responsive** for streaming this entity to the server. 
+
+Now, what do you need to do is just **update that entity** components like `transform` and so on from your local client's game world. And that `transform` will be automatically sent to the server.
+
+
+#### Custom data
+
+Now, you probably have a question, `how do i send custom data?`
+
+That is also quite simple indeed. Before triggering lets say `LIBRG_ENTITY_UPDATE` event on the client,
+same event will be triggered on the server, allowing you to write something in the `data` parameter.
+
+For example:
+
+```c
+void on_entity_update(librg_event_t *event) {
+    librg_data_wu32(&event->data, 11223345); // write unsigned long
+    librg_data_wptr(&event->data, &mycomponent, sizeof(mycomponent)); // write data right from the struct
+}
+```
+
+Now on the other side, you are required to read the data with in the same exact sequence:
+
+```c
+void on_entity_update(librg_event_t *event) {
+    u32 mynumber = librg_data_ru32(&event->data); // read unsigned long
+
+    mycompoonent_t mycomponent;
+    librg_data_rptr(&event->data, &mycomponent, sizeof(mycompoonent_t)); // read data right to the struct
+}
+```
+
+This concept can be applied to all events that have been described above: `LIBRG_ENTITY_CREATE`, `LIBRG_ENTITY_UPDATE`, `LIBRG_ENTITY_REMOVE`, `LIBRG_CLIENT_STREAMER_REMOVE`, and some others.
+
 ## Examples
 
 ### Server
 
-Simple server, which will behave like a proxy, creating entity for each joining client, and showing him his network-culled zone of view. Some people call it streaming.
+Simple server, which will behave like a **proxy**, creating entity for each joining client, and showing him his **network-culled zone of view**. Some people call it **streaming**.
 Updates will be sent to the client each `config.tick_delay` ms. You can add your own logic of moving objects on the server,
-and all changes of the position and other parameters will be automatically sent to all clients.
+and all **changes** of the position and other parameters will be **automatically sent to all clients**.
 
 ```c
 #define LIBRG_DEBUG
@@ -136,9 +223,9 @@ int main() {
 
 ### Client
 
-Client receives a snapshot of network-culled game world and calls methods for creating entities according to what server tells them.
-Moving objects (on the server) may go out of "stream-zone" and client will trigger entity remove event, if object is still visible for the player, update event will be triggered,
-it will contain current server's information about the object.
+Client receives a **snapshot of network-culled game world** and calls methods for **creating entities according to what server tells them**.
+Moving objects (on the server) may go out of "stream-zone" and client will trigger **entity remove event**, if object is still visible for the player, **update event** will be triggered,
+it will contain **current server's information** about the object.
 
 ```c
 #define LIBRG_DEBUG
@@ -210,21 +297,38 @@ There we have many helpful (and not really) comments that will guide you or at v
 
 Also you can look inside our [test](test/) folder, there are many different things. It's usually used for the development purposes, but I guarantee you can find something interesting in there.
 
-## Features
 
-* single header-only file format (however it has some [dependencies](#Structure))
-* written in C99 (portability reasons)
-* highly configurable
-* small (only 1160LOC)
-* ready for C/C++ projects
-* CMake support
-* npm support (for dependency management)
+## Testing
+
+We are just started testing the library for different platforms. This table provides some sort of description for compilability.
+If you have tested it, and it compiles, or stopped compiling, please feel free to describe the issue in the [issues](https://github.com/librg/librg/issues).
+
+| *Compiler* / Target   | Windows               | Linux                 | macOS                 | iOS               | Android           |
+|:-:|:-:|:-:|:-:|:-:|:-:|
+| *clang C*             | :grey_question:       | :white_check_mark:    | :white_check_mark:    | :grey_question:   | :grey_question:   |
+| *clang C++*           | :grey_question:       | :grey_question:       | :white_check_mark:    | :grey_question:   | :grey_question:   |
+| *gcc C*               |                       | :white_check_mark:    | :white_check_mark:    |                   | :grey_question:   |
+| *gcc C++*             |                       | :grey_question:       | :grey_question:       |                   | :grey_question:   |
+| *msvc C++*            | :white_check_mark:    |                       |                       |                   |                   |
+| *msvc C*              | :white_check_mark:    |                       |                       |                   |                   |
+| *mingw C++*           | :white_check_mark:    |                       |                       |                   |                   |
+| *mingw C*             | :white_check_mark:    |                       |                       |                   |                   |
+
+<sub>
+:white_check_mark: - compiles/runs without any errors.  
+:grey_question: - not tested.  
+:red_circle: - compilation/runtime faults.  
+</sub>
 
 ## Contributors
 
-| [Inlife](https://github.com/inlife) | [ZaKlaus](https://github.com/zaklaus) |
-|:-:|:-:|
-|[![](https://avatars3.githubusercontent.com/u/2182108?v=4&s=64)](https://github.com/inlife)|[![](https://avatars0.githubusercontent.com/u/9026786?v=4&s=64)](https://github.com/zaklaus)|
+Current ~~list~~ table of contributors looks like this:
+
+| [Inlife](https://github.com/inlife) | [ZaKlaus](https://github.com/zaklaus) | You |
+|:-:|:-:|:-:|
+|[![](https://avatars3.githubusercontent.com/u/2182108?v=4&s=64)](https://github.com/inlife)|[![](https://avatars0.githubusercontent.com/u/9026786?v=4&s=64)](https://github.com/zaklaus)|![](https://avatars0.githubusercontent.com/u/19527937?v=4&s=64)|
+
+If you want to help us - you are very welcome. New features, performance optimizations, fixes for bugs and errors are waiting for you!
 
 ## License
 Last time we checked it was **Apache License 2.0**.  
