@@ -45,7 +45,7 @@ if (LIBRG_DEMO)
 elseif (LIBRG_TEST)
 
     add_executable(buildtest test/build-test.c)
-    target_link_libraries(buildtest enet ${CMAKE_DL_LIBS} ${CMAKE_THREAD_LIBS_INIT})
+    target_link_libraries(buildtest enet ${CMAKE_DL_LIBS} ${CMAKE_THREAD_LIBS_INIT} m)
 
 else()
 
