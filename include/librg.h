@@ -88,9 +88,9 @@ extern "C" {
     #define LIBRG_NETWORK_MESSAGE_CHANNEL 2
 
     #if defined(__cplusplus) || defined(WIN32)
-    #define librg_void char
+    #define librg_void char*
     #else
-    #define librg_void void
+    #define librg_void void*
     #endif
 
     #ifdef LIBRG_DEBUG
