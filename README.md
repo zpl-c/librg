@@ -4,7 +4,7 @@
 
 <div align="center">
     <a href="https://travis-ci.org/librg/librg"><img src="https://travis-ci.org/librg/librg.svg" alt="Build status" /></a>
-    <a href="https://github.com/librg/librg"><img src="https://img.shields.io/npm/v/librg.c.svg?maxAge=3600" alt="NPM version" /></a>
+    <a href="https://www.npmjs.com/package/librg.c"><img src="https://img.shields.io/npm/v/librg.c.svg?maxAge=3600" alt="NPM version" /></a>
     <a href="https://david-dm.org/librg/librg"><img src="https://img.shields.io/david/librg/librg.svg?maxAge=3600" alt="Dependencies" /></a>
     <a href="https://discord.gg/2fZVEym"><img src="https://discordapp.com/api/guilds/219565308007022592/embed.png" alt="Discord server" /></a>
     <a href="LICENSE"><img src="https://img.shields.io/github/license/librg/librg.svg" alt="license" /></a>
