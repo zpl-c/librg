@@ -11,4 +11,4 @@ script:
   - npm install
   - cmake -DLIBRG_TEST=1
   - make
-  - ./buildtest
+  - ./librg_test
