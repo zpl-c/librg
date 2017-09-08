@@ -24,6 +24,7 @@
  * sdl2.h
  *
  * Version History:
+ * 2.2.0 - Inner message system rafactor
  * 2.1.0 - Inner bitstream refactors, with slight interface changes
  * 2.0.2 - C++ and MSVC related fixes
  * 2.0.0 - Initial C version rewrite
@@ -657,32 +658,24 @@ extern "C" {
 
     /**
      * Part of message API
-     * Used to create message header
-     * Returns initialized bitstream pointer
-     */
-    LIBRG_API librg_data_t librg_message_start(u64 id, usize size);
-
-    /**
-     * Part of message API
-     * Takes in initialized bitstream pointer with written packet id
-     * ( from call to librg_message_start)
+     * Takes in initialized void of size pointer with written packet id
      * and sends data to all connected peers ( or to server if its client )
      */
-    LIBRG_API void librg_message_send_all(librg_data_t data);
+    LIBRG_API void librg_message_send_all(librg_void *data, usize size);
 
     /**
      * Part of message API
      * Applies all from previous mehod
      * But data will be sent only to particular provided peer
      */
-    LIBRG_API void librg_message_send_to(librg_peer_t peer, librg_data_t data);
+    LIBRG_API void librg_message_send_to(librg_peer_t peer, librg_void *data, usize size);
 
     /**
      * Part of message API
      * Applies all from previous mehod
      * But data will be sent to all except provided peer
      */
-    LIBRG_API void librg_message_send_except(librg_peer_t peer, librg_data_t data);
+    LIBRG_API void librg_message_send_except(librg_peer_t peer, librg_void *data, usize size);
 
     /**
      * Part of message API
@@ -690,7 +683,7 @@ extern "C" {
      * Data will be sent only to entities, which are inside streamzone
      * for provided entity
      */
-    LIBRG_API void librg_message_send_instream(librg_entity_t entity, librg_data_t data);
+    LIBRG_API void librg_message_send_instream(librg_entity_t entity, librg_void *data, usize size);
 
     /**
      * Part of message API
@@ -698,7 +691,7 @@ extern "C" {
      * Data will be sent only to entities, which are inside streamzone
      * for provided entity except peer
      */
-    LIBRG_API void librg_message_send_instream_except(librg_entity_t entity, librg_peer_t peer, librg_data_t data);
+    LIBRG_API void librg_message_send_instream_except(librg_entity_t entity, librg_peer_t peer, librg_void *data, usize size);
 
 
 
@@ -789,30 +782,45 @@ extern "C" {
      *
      */
 
-    #define librg_send_all(ID, NAME, CODE) do {                                 \
-            librg_data_t NAME = librg_message_start(ID, LIBRG_DEFAULT_BS_SIZE); \
-            CODE; librg_message_send_all(NAME);                                 \
-        } while(0);
+    #define librg_send_all(ID, NAME, CALLBACK_CODE) do {            \
+        librg_data_t NAME; librg_data_init(&NAME);                  \
+        librg_data_wu64(&NAME, ID); CALLBACK_CODE;                  \
+        librg_message_send_all(NAME, librg_data_get_wpos(&NAME));   \
+        librg_data_free(&NAME);                                     \
+    } while(0);
 
-    #define librg_send_to(ID, WHO, NAME, CODE) do {                             \
-            librg_data_t NAME = librg_message_start(ID, LIBRG_DEFAULT_BS_SIZE); \
-            CODE; librg_message_send_to(WHO, NAME);                             \
-        } while(0);
+    #define librg_send_to(ID, PEER, NAME, CALLBACK_CODE) do {       \
+        librg_data_t NAME; librg_data_init(&NAME);                  \
+        librg_data_wu64(&NAME, ID); CALLBACK_CODE;                  \
+        librg_message_send_to(PEER, NAME,                           \
+            librg_data_get_wpos(&NAME));                            \
+        librg_data_free(&NAME);                                     \
+    } while(0);
 
-    #define librg_send_except(ID, WHO, NAME, CODE) do {                         \
-            librg_data_t NAME = librg_message_start(ID, LIBRG_DEFAULT_BS_SIZE); \
-            CODE; librg_message_send_except(WHO, NAME);                         \
-        } while(0)
+    #define librg_send_except(ID, PEER, NAME, CALLBACK_CODE) do {   \
+        librg_data_t NAME; librg_data_init(&NAME);                  \
+        librg_data_wu64(&NAME, ID); CALLBACK_CODE;                  \
+        librg_message_send_except(PEER, NAME,                       \
+            librg_data_get_wpos(&NAME));                            \
+        librg_data_free(&NAME);                                     \
+    } while(0);
 
-    #define librg_send_instream(ID, WHO, NAME, CODE) do {                       \
-            librg_data_t NAME = librg_message_start(ID, LIBRG_DEFAULT_BS_SIZE); \
-            CODE; librg_message_send_instream(WHO, NAME);                       \
-        } while(0)
+    #define librg_send_instream(ID, ENTITY, NAME, CALLBACK_CODE) do { \
+        librg_data_t NAME; librg_data_init(&NAME);                  \
+        librg_data_wu64(&NAME, ID); CALLBACK_CODE;                  \
+        librg_message_send_instream(ENTITY, NAME,                   \
+            librg_data_get_wpos(&NAME));                            \
+        librg_data_free(&NAME);                                     \
+    } while(0);
 
-    #define librg_send_instream_except(ID, HOW, WHO, NAME, CODE) do {           \
-            librg_data_t NAME = librg_message_start(ID, LIBRG_DEFAULT_BS_SIZE); \
-            CODE; librg_message_send_instream_except(HOW, WHO, NAME);           \
-        } while(0)
+    #define librg_send_instream_except(ID, ENTITY, PEER, NAME, CALLBACK_CODE) do { \
+        librg_data_t NAME; librg_data_init(&NAME);                  \
+        librg_data_wu64(&NAME, ID); CALLBACK_CODE;                  \
+        librg_message_send_instream_except(ENTITY, PEER, NAME,      \
+            librg_data_get_wpos(&NAME));                            \
+        librg_data_free(&NAME);                                     \
+    } while(0);
+
 
     #define librg_send librg_send_all
 
@@ -1374,34 +1382,25 @@ extern "C" {
         librg__messages[id] = NULL;
     }
 
-    librg_data_t librg_message_start(u64 id, usize size) {
-        librg_data_t data;
-        zpl_bs_init(data, zpl_heap_allocator(), size + sizeof(u64));
-        zpl_bs_write_u64(data, id);
-        return data;
-    }
-
     /**
      * Senders
      */
 
-    void librg_message_send_all(librg_data_t data) {
+    void librg_message_send_all(librg_void *data, usize size) {
         if (librg_is_client()) {
-            return librg_message_send_to(librg_network.peer, data);
+            return librg_message_send_to(librg_network.peer, data, size);
         }
 
-        librg_message_send_except(NULL, data);
+        librg_message_send_except(NULL, data, size);
     }
 
-    void librg_message_send_to(librg_peer_t peer, librg_data_t data) {
+    void librg_message_send_to(librg_peer_t peer, librg_void *data, usize size) {
         enet_peer_send(peer, LIBRG_NETWORK_MESSAGE_CHANNEL, enet_packet_create(
-            data, zpl_bs_size(data), ENET_PACKET_FLAG_RELIABLE
+            data, size, ENET_PACKET_FLAG_RELIABLE
         ));
-
-        zpl_bs_free(data);
     }
 
-    void librg_message_send_except(librg_peer_t peer, librg_data_t data) {
+    void librg_message_send_except(librg_peer_t peer, librg_void *data, usize size) {
         librg_entity_filter_t filter = { librg_index_client() };
 
         librg_entity_eachx(filter, librg_lambda(entity2), {
@@ -1409,19 +1408,17 @@ extern "C" {
 
             if (client->peer != peer) {
                 enet_peer_send(client->peer, LIBRG_NETWORK_MESSAGE_CHANNEL, enet_packet_create(
-                     data, zpl_bs_size(data), ENET_PACKET_FLAG_RELIABLE
+                     data, size, ENET_PACKET_FLAG_RELIABLE
                 ));
             }
         });
-
-        zpl_bs_free(data);
     }
 
-    librg_inline void librg_message_send_instream(librg_entity_t entity, librg_data_t data) {
-        librg_message_send_instream_except(entity, NULL, data);
+    librg_inline void librg_message_send_instream(librg_entity_t entity, librg_void *data, usize size) {
+        librg_message_send_instream_except(entity, NULL, data, size);
     }
 
-    void librg_message_send_instream_except(librg_entity_t entity, librg_peer_t ignored, librg_data_t data) {
+    void librg_message_send_instream_except(librg_entity_t entity, librg_peer_t ignored, librg_void *data, usize size) {
         zpl_array_t(librg_entity_t) queue = librg_streamer_query(entity);
 
         for (isize i = 0; i < zpl_array_count(queue); i++) {
@@ -1439,12 +1436,11 @@ extern "C" {
             }
 
             enet_peer_send(peer, LIBRG_NETWORK_MESSAGE_CHANNEL, enet_packet_create(
-                data, zpl_bs_size(data), ENET_PACKET_FLAG_RELIABLE
+                data, size, ENET_PACKET_FLAG_RELIABLE
             ));
         }
 
         zpl_array_free(queue);
-        zpl_bs_free(data);
     }
 
     /**
@@ -1567,7 +1563,7 @@ extern "C" {
 
             // send accept
             librg_send_to(LIBRG_CONNECTION_ACCEPT, msg->peer, librg_lambda(data), {
-                zpl_bs_write_u32(data, entity);
+                librg_data_wu32(&data, entity);
             });
 
             librg_event_t acptevt = { 0 }; acptevt.entity = entity;
