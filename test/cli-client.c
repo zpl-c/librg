@@ -2,20 +2,40 @@
 #define LIBRG_DEBUG
 #include <librg.h>
 
-typedef struct { i32 a; } librg_component(foo);
+typedef struct {
+    zplm_vec3_t a;
+    zplm_vec3_t b;
+    zplm_vec3_t c;
+    zplm_vec3_t d;
+    zplm_vec3_t e;
+    zplm_vec3_t f;
+} librg_component(foo);
 
 void on_connect_request(librg_event_t *event) {
-    librg_data_wu32(&event->data, 42);
+    librg_data_wu32(event->data, 42);
     librg_log("on_connect_request\n");
 }
 
 void on_connect_accepted(librg_event_t *event) {
     librg_log("on_connect_accepted\n");
+    librg_log("my entity: %u\n", event->entity);
 }
 
 void on_connect_refused(librg_event_t *event) {
     librg_log("on_connect_refused\n");
 }
+
+void on_entity_create(librg_event_t *event) {
+    foo_t foo;
+    librg_data_rptr(event->data, &foo, sizeof(foo_t));
+    librg_attach_foo(event->entity, foo);
+}
+
+void on_entity_update(librg_event_t *event) {
+    librg_data_rf32(event->data);
+    // librg_log("sent: %f on upd", librg_data_rf32(event->data));
+}
+
 
 // // client
 // void damage_car(librg_entity_t entity) {
@@ -64,8 +84,8 @@ int main() {
     librg_event_add(LIBRG_CONNECTION_ACCEPT, on_connect_accepted);
     librg_event_add(LIBRG_CONNECTION_REFUSE, on_connect_refused);
 
-    // librg_network_add(20, onvehcielcreate);
-    // librg_network_add(22, on_damage_finished);
+    librg_event_add(LIBRG_ENTITY_CREATE, on_entity_create);
+    librg_event_add(LIBRG_ENTITY_UPDATE, on_entity_update);
 
     librg_network_start((librg_address_t) { .host = "localhost", .port = 27010 });
 

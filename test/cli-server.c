@@ -6,10 +6,17 @@ enum {
     TYPE_VEHICLE = 242,
 };
 
-// typedef struct { i32 a; } librg_component(foo);
+typedef struct {
+    zplm_vec3_t a;
+    zplm_vec3_t b;
+    zplm_vec3_t c;
+    zplm_vec3_t d;
+    zplm_vec3_t e;
+    zplm_vec3_t f;
+} librg_component(foo);
 
 void on_connect_request(librg_event_t *event) {
-    u32 secret = zpl_bs_read_u32(event->data);
+    u32 secret = librg_data_ru32(event->data);
 
     librg_transform_t *transform = librg_fetch_transform(event->entity);
     transform->position.x = (float)(2000 - rand() % 4000);
@@ -25,42 +32,25 @@ void on_connect_request(librg_event_t *event) {
         return librg_event_reject(event);
     }
 }
-// void on_vehicle_create() {
-//     librg_entity_t entity = librg_entity_create(0);
-
-//     librg_entity_set_type(entity, TYPE_VEHICLE);
-
-//     librg_log("created vehicle with type: %d\n", librg_entity_get_type(entity));
-//     // librg_attach_transform(entity);
-
-//     librg_attach_foo(entity, (foo_t) { 42 });
-
-//     librg_send(20, librg_lambda(data), { zpl_bs_write_u32(data, entity.id); });
-// }
 
 void on_connect_accepted(librg_event_t *event) {
     librg_log("on_connect_accepted\n");
-    // on_vehicle_create();
+    librg_attach_foo(event->entity, (foo_t){0});
 }
 
 void on_connect_refused(librg_event_t *event) {
     librg_log("on_connect_refused\n");
 }
 
+void on_entity_create(librg_event_t *event) {
+    foo_t *foo = librg_fetch_foo(event->entity);
+    if (foo)
+    librg_data_wptr(event->data, foo, sizeof(foo_t));
+}
 
-// void oncardamage(librg_message_t *msg) {
-//     librg_log("server: damanging the car\n");
-//     u32 guid = zpl_bs_read_u32(msg->data);
-//     librg_entity_t entity = librg_entity_get(guid);
-
-//     foo_t *foo = librg_fetch_foo(entity);
-
-//     ZPL_ASSERT(foo && foo->a == 42);
-
-//     librg_log("damaged car\n");
-
-//     librg_send(22, librg_lambda(data), { zpl_bs_write_u32(data, entity.id); });
-// }
+void on_entity_update(librg_event_t *event) {
+    librg_data_wf32(event->data, librg_fetch_foo(event->entity)->a.x);
+}
 
 int main() {
     char *test = "===============      SERVER      =================\n" \
@@ -74,6 +64,7 @@ int main() {
         .tick_delay     = 1000,
         .mode           = LIBRG_MODE_SERVER,
         .world_size     = zplm_vec2(5000.0f, 5000.0f),
+        .max_entities   = 15000,
         .max_connections = 1000,
     });
 
@@ -81,13 +72,16 @@ int main() {
     librg_event_add(LIBRG_CONNECTION_ACCEPT, on_connect_accepted);
     librg_event_add(LIBRG_CONNECTION_REFUSE, on_connect_refused);
 
-    // librg_network_add(21, oncardamage);
+    librg_event_add(LIBRG_ENTITY_CREATE, on_entity_create);
+    librg_event_add(LIBRG_ENTITY_UPDATE, on_entity_update);
+
 
     librg_network_start((librg_address_t) { .host = "localhost", .port = 27010 });
 
     for (isize i = 0; i < 10000; i++) {
         librg_entity_t enemy = librg_entity_create(0);
         librg_transform_t *transform = librg_fetch_transform(enemy);
+        librg_attach_foo(enemy, (foo_t){0});
         transform->position.x = (float)(2000 - rand() % 4000);
         transform->position.y = (float)(2000 - rand() % 4000);
     }

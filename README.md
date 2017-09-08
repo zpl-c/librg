@@ -144,8 +144,8 @@ For example:
 
 ```c
 void on_entity_update(librg_event_t *event) {
-    librg_data_wu32(&event->data, 11223345); // write unsigned long
-    librg_data_wptr(&event->data, &mycomponent, sizeof(mycomponent)); // write data right from the struct
+    librg_data_wu32(event->data, 11223345); // write unsigned long
+    librg_data_wptr(event->data, &mycomponent, sizeof(mycomponent)); // write data right from the struct
 }
 ```
 
@@ -156,7 +156,7 @@ void on_entity_update(librg_event_t *event) {
     u32 mynumber = librg_data_ru32(&event->data); // read unsigned long
 
     mycompoonent_t mycomponent;
-    librg_data_rptr(&event->data, &mycomponent, sizeof(mycompoonent_t)); // read data right to the struct
+    librg_data_rptr(event->data, &mycomponent, sizeof(mycompoonent_t)); // read data right to the struct
 }
 ```
 
@@ -355,5 +355,4 @@ Current ~~list~~ table of contributors looks like this:
 If you want to help us - you are very welcome. New features, performance optimizations, fixes for bugs and errors are waiting for you!
 
 ## License
-Last time we checked it was **Apache License 2.0**.  
-However we suggest you to check out [License](LICENSE).
+Last time we checked it was **Apache License 2.0**. However we suggest you to [check it again](LICENSE), what if it has been changed!

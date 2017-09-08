@@ -53,7 +53,7 @@ librg_entity_t player;
 
 void on_connect_request(librg_event_t *event) {
     librg_log("on_connect_request\n");
-    librg_data_wu32(&event->data, 42);
+    librg_data_wu32(event->data, 42);
 }
 
 void on_connect_accepted(librg_event_t *event) {

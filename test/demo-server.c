@@ -3,7 +3,7 @@
 #include <librg.h>
 
 void on_connect_request(librg_event_t *event) {
-    if (librg_data_ru32(&event->data) != 42) {
+    if (librg_data_ru32(event->data) != 42) {
         return librg_event_reject(event);
     }
 }
@@ -31,7 +31,7 @@ void on_connect_accepted(librg_event_t *event) {
 
 void on_spawn_npc(librg_message_t *msg) {
     librg_transform_t tr;
-    librg_data_rptr(&msg->data, &tr, sizeof(librg_transform_t));
+    librg_data_rptr(msg->data, &tr, sizeof(librg_transform_t));
 
     librg_entity_t npc = librg_entity_create(1);
     librg_attach_transform(npc, tr);
@@ -52,6 +52,7 @@ int main() {
         .mode           = LIBRG_MODE_SERVER,
         .world_size     = zplm_vec2(5000.0f, 5000.0f),
         .max_connections = 1000,
+        .max_entities    = 16000,
     });
 
     librg_event_add(LIBRG_CONNECTION_REQUEST, on_connect_request);

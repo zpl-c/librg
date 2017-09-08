@@ -2,7 +2,30 @@
 #define LIBRG_DEBUG
 #include <librg.h>
 
-typedef struct { i32 foo; f64 bar; } zap_t;
+
+typedef struct {
+    zplm_vec3_t a;
+    zplm_vec3_t b;
+    zplm_vec3_t c;
+    zplm_vec3_t d;
+    zplm_vec3_t e;
+    zplm_vec3_t f;
+} librg_component(foo);
+
+// typedef struct temp {
+//     zpl_allocator_t allocator;
+
+//     usize capacity;
+//     usize read_pos;
+//     usize write_pos;
+
+//     void *data;
+// } temp_t;
+
+
+void aaaaa(librg_event_t *e, foo_t foo) {
+    librg_data_wptr(e->data, &foo, sizeof(foo_t));
+}
 
 int main() {
 
@@ -10,7 +33,6 @@ int main() {
         .tick_delay     = 32,
         .mode           = LIBRG_MODE_SERVER,
         .world_size     = zplm_vec2(5000.0f, 5000.0f),
-        .entity_limit   = 128000,
     });
 
     librg_data_t data;
@@ -25,9 +47,19 @@ int main() {
         librg_data_ru32(&data)
     );
 
-    zap_t zap = { -2542, 0.2322222222222244 };
+    librg_log("current wpos: %u\n", librg_data_get_wpos(&data));
+    librg_data_reset(&data);
+    librg_log("current wpos: %u\n", librg_data_get_wpos(&data));
 
-    librg_data_wptr(&data, &zap, sizeof(zap));
+    foo_t foo = { 0 };
+
+    for (int i = 0; i < 10000; ++i) {
+        librg_event_t e = {0};
+        e.data = &data;
+        aaaaa(&e, foo);
+        librg_data_wptr(&data, &foo, sizeof(foo_t));
+    }
+
     // librg_data_rptr()
 
     librg_data_free(&data);
