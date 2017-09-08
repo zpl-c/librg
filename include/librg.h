@@ -24,6 +24,7 @@
  * sdl2.h
  *
  * Version History:
+ * 2.2.1 - Fixed cpp issues with librg_data_t pointers
  * 2.2.0 - Inner message system rafactor
  * 2.1.0 - Inner bitstream refactors, with slight interface changes
  * 2.0.2 - C++ and MSVC related fixes
@@ -392,7 +393,7 @@ extern "C" {
 
     typedef struct librg_event_t {
         b32 rejected;
-        librg_void *data;
+        librg_void **data;
         librg_entity_t entity;
     } librg_event_t;
 
@@ -594,7 +595,7 @@ extern "C" {
      * on each incoming message
      */
     typedef struct {
-        librg_data_t data;
+        librg_data_t *data;
         librg_peer_t peer;
         librg_packet_t packet;
     } librg_message_t;
@@ -1613,7 +1614,7 @@ extern "C" {
             if (!entity || !librg_entity_valid(*entity)) return;
 
             librg_event_t event = {0};
-            event.entity = *entity; event.data = (librg_void*)msg->peer;
+            event.entity = *entity; event.data = (librg_void**)msg->peer;
             librg_event_trigger(LIBRG_CONNECTION_DISCONNECT, &event);
 
             librg_table_destroy(&librg_fetch_client(*entity)->last_snapshot);
