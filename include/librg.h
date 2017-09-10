@@ -24,6 +24,7 @@
  * sdl2.h
  *
  * Version History:
+ * 2.2.2 - Fixed client issue with librg_message_send_instream_except
  * 2.2.1 - Fixed cpp issues with librg_data_t pointers
  * 2.2.0 - Inner message system rafactor
  * 2.1.0 - Inner bitstream refactors, with slight interface changes
@@ -48,8 +49,8 @@
 #define LIBRG_INCLUDE_H
 
 #define LIBRG_VERSION_MAJOR 2
-#define LIBRG_VERSION_MINOR 0
-#define LIBRG_VERSION_PATCH 0
+#define LIBRG_VERSION_MINOR 2
+#define LIBRG_VERSION_PATCH 2
 #define LIBRG_VERSION_CREATE(major, minor, patch) (((major)<<16) | ((minor)<<8) | (patch))
 #define LIBRG_VERSION_GET_MAJOR(version) (((version)>>16)&0xFF)
 #define LIBRG_VERSION_GET_MINOR(version) (((version)>>8)&0xFF)
@@ -1425,12 +1426,9 @@ extern "C" {
         for (isize i = 0; i < zpl_array_count(queue); i++) {
             librg_entity_t target = queue[i];
 
-            librg_assert(
-                librg_fetch_client(target) &&
-                librg_fetch_client(target)->peer
-            );
-
+            if (!librg_has_client(target)) continue;
             librg_peer_t peer = librg_fetch_client(target)->peer;
+            librg_assert(peer);
 
             if (peer == ignored) {
                 continue;
