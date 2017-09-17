@@ -3,6 +3,7 @@
 #define LIBRG_PLATFORM_BUILD 3
 #include <librg.h>
 #include <SDL.h>
+#include "demo-defines.h"
 
 #define SIZE_X 800
 #define SIZE_Y 600
@@ -68,16 +69,15 @@ void on_connect_refused(librg_event_t *event) {
 }
 
 void on_entity_create(librg_event_t *event) {
-    // librg_log("on_entity_create: %u\n", event->entity);
+    switch (librg_entity_type(event->entity)) {
+        case DEMO_TYPE_PLAYER: 
+        case DEMO_TYPE_NPC: {
+            hero_t hero_;
+            librg_data_rptr(event->data, &hero_, sizeof(hero_));
 
-    // librg_transform_t *transform = librg_fetch_transform(event->entity);
-
-    // librg_log("spawning entity %u at: %f %f %f\n",
-    //     event->entity,
-    //     transform->position.x,
-    //     transform->position.y,
-    //     transform->position.z
-    // );
+            librg_attach_hero(event->entity, hero_);
+        } break;
+    }
 }
 
 void on_entity_update(librg_event_t *event) {
@@ -120,10 +120,10 @@ void render_entity(librg_entity_t entity) {
     if (entity == player) {
         SDL_SetRenderDrawColor( sdl_renderer, 150, 250, 150, 255 );
     }
-    else if (librg_entity_type(entity) == 1) {
+    else if (librg_entity_type(entity) == DEMO_TYPE_NPC) {
         SDL_SetRenderDrawColor( sdl_renderer, 150, 25, 25, 255 );
     }
-    else if (librg_entity_type(entity) == 2) {
+    else if (librg_entity_type(entity) == DEMO_TYPE_NPC) {
         SDL_SetRenderDrawColor( sdl_renderer, 25, 25, 150, 255 );
     }
     else {
@@ -132,15 +132,27 @@ void render_entity(librg_entity_t entity) {
 
     SDL_Rect position = default_position();
     librg_transform_t *transform = librg_fetch_transform(entity);
+    hero_t *hero = librg_fetch_hero(entity);
 
-    position.x += transform->position.x;
-    position.y += transform->position.y;
+    position.x += transform->position.x - 10;
+    position.y += transform->position.y - 10;
 
     position.w = 20;
     position.h = 20;
 
     // render
     SDL_RenderFillRect( sdl_renderer, &position );
+
+    if (hero && hero->cur_hp > 0) {
+            position.h = 5;
+            SDL_SetRenderDrawColor(sdl_renderer, 255, 0, 0, 150);
+            SDL_RenderFillRect(sdl_renderer, &position);
+
+            position.w = 20 * (hero->cur_hp / (float)hero->max_hp);
+
+            SDL_SetRenderDrawColor(sdl_renderer, 0, 255, 0, 150);
+            SDL_RenderFillRect(sdl_renderer, &position);
+    }
 }
 
 void render()
