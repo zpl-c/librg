@@ -24,6 +24,7 @@
  * sdl2.h
  *
  * Version History:
+ * 2.2.3 - fixed mem leak on net event
  * 2.2.2 - Fixed client issue with librg_message_send_instream_except
  * 2.2.1 - Fixed cpp issues with librg_data_t pointers
  * 2.2.0 - Inner message system rafactor
@@ -50,7 +51,7 @@
 
 #define LIBRG_VERSION_MAJOR 2
 #define LIBRG_VERSION_MINOR 2
-#define LIBRG_VERSION_PATCH 2
+#define LIBRG_VERSION_PATCH 1
 #define LIBRG_VERSION_CREATE(major, minor, patch) (((major)<<16) | ((minor)<<8) | (patch))
 #define LIBRG_VERSION_GET_MAJOR(version) (((version)>>16)&0xFF)
 #define LIBRG_VERSION_GET_MINOR(version) (((version)>>8)&0xFF)
@@ -1490,6 +1491,8 @@ extern "C" {
                 case ENET_EVENT_TYPE_NONE: break;
             }
         }
+
+        librg_data_free(&data);
     }
 
 
