@@ -24,6 +24,9 @@
  * sdl2.h
  *
  * Version History:
+ * 3.0.0 - context switching and component refactor
+ *     and other stuff
+ *
  * 2.2.3 - fixed mem leak on net event
  * 2.2.2 - Fixed client issue with librg_message_send_instream_except
  * 2.2.1 - Fixed cpp issues with librg_data_t pointers
@@ -49,9 +52,9 @@
 #ifndef LIBRG_INCLUDE_H
 #define LIBRG_INCLUDE_H
 
-#define LIBRG_VERSION_MAJOR 2
-#define LIBRG_VERSION_MINOR 2
-#define LIBRG_VERSION_PATCH 1
+#define LIBRG_VERSION_MAJOR 3
+#define LIBRG_VERSION_MINOR 0
+#define LIBRG_VERSION_PATCH 0
 #define LIBRG_VERSION_CREATE(major, minor, patch) (((major)<<16) | ((minor)<<8) | (patch))
 #define LIBRG_VERSION_GET_MAJOR(version) (((version)>>16)&0xFF)
 #define LIBRG_VERSION_GET_MINOR(version) (((version)>>8)&0xFF)
@@ -160,19 +163,19 @@ extern "C" {
     #endif
 
     /**
+     * Table for various entity bool storages
+     */
+    ZPL_TABLE_DECLARE(extern, librg_table_t, librg_table_, u32);
+
+    /**
      *
      * CORE
      *
      */
 
-    typedef enum librg_mode_e {
-
-        /* non-blocking server with run-once loop, manual librg_tick() call required */
+    typedef enum {
         LIBRG_MODE_SERVER,
-
-        /* non-blocking client with run-once loop, manual librg_tick() call required */
         LIBRG_MODE_CLIENT,
-
     } librg_mode_e;
 
     typedef struct librg_config_t {
@@ -193,32 +196,32 @@ extern "C" {
      * Main initialization method
      * MUST BE called in the begging of your application
      */
-    LIBRG_API void librg_init(librg_config_t config);
+    LIBRG_API void librg_init(librg_ctx_t *ctx, librg_config_t config);
 
     /**
      * Main tick method
      * MUST BE called in your loop
      * preferably w/o delays
      */
-    LIBRG_API void librg_tick();
+    LIBRG_API void librg_tick(librg_ctx_t *ctx);
 
     /**
      * Should be called at the end of
      * execution of the program
      */
-    LIBRG_API void librg_free();
+    LIBRG_API void librg_free(librg_ctx_t *ctx);
 
     /**
      * Is librg instance is running
      * in the server mode
      */
-    LIBRG_API b32 librg_is_server();
+    LIBRG_API b32 librg_is_server(librg_ctx_t *ctx);
 
     /**
      * Is librg instance is running
      * in the client mode
      */
-    LIBRG_API b32 librg_is_client();
+    LIBRG_API b32 librg_is_client(librg_ctx_t *ctx);
 
 
 
@@ -277,35 +280,30 @@ extern "C" {
     typedef void (librg_entity_cb_t)(librg_entity_t entity);
 
     /**
-     * Table for various entity bool storages
-     */
-    ZPL_TABLE_DECLARE(extern, librg_table_t, librg_table_, u32);
-
-    /**
      * Create entity and return handle
      */
-    LIBRG_API librg_entity_t librg_entity_create(u32 type);
+    LIBRG_API librg_entity_t librg_entity_create(librg_ctx_t *ctx, u32 type);
 
     /**
      * Create shared entity and return handle
      */
-    LIBRG_API librg_entity_t librg_entity_create_shared(librg_entity_t remote, u32 type);
+    LIBRG_API librg_entity_t librg_entity_create_shared(librg_ctx_t *ctx, librg_entity_t remote, u32 type);
 
     /**
      * Check if provided entity is a valid entity
      */
-    LIBRG_API b32 librg_entity_valid(librg_entity_t entity);
+    LIBRG_API b32 librg_entity_valid(librg_ctx_t *ctx, librg_entity_t entity);
 
     /**
      * Return entity type
      */
-    LIBRG_API u32 librg_entity_type(librg_entity_t entity);
+    LIBRG_API u32 librg_entity_type(librg_ctx_t *ctx, librg_entity_t entity);
 
     /**
      * Auto detach all attached components
      * and destroy entity
      */
-    LIBRG_API void librg_entity_destroy(librg_entity_t entity);
+    LIBRG_API void librg_entity_destroy(librg_ctx_t *ctx, librg_entity_t entity);
 
     /**
      * Method used for interation on the collection of entities
@@ -320,7 +318,7 @@ extern "C" {
      * @param filter
      * @param callback
      */
-    LIBRG_API void librg_entity_each(librg_entity_filter_t filter, librg_entity_cb_t callback);
+    LIBRG_API void librg_entity_each(librg_ctx_t *ctx, librg_entity_filter_t filter, librg_entity_cb_t callback);
 
     /**
      * Macro that declares component structs and methods
@@ -442,7 +440,7 @@ extern "C" {
      * @param  callback
      * @return index of added event, can be used to remove particular event handler
      */
-    LIBRG_API u64 librg_event_add(u64 id, librg_event_cb_t callback);
+    LIBRG_API u64 librg_event_add(librg_ctx_t *ctx, u64 id, librg_event_cb_t callback);
 
     /**
      * Used to trigger execution of all attached
@@ -454,7 +452,7 @@ extern "C" {
      * @param id usually you define event ids inside enum
      * @param event pointer onto data or NULL
      */
-    LIBRG_API void librg_event_trigger(u64 id, librg_event_t *event);
+    LIBRG_API void librg_event_trigger(librg_ctx_t *ctx, u64 id, librg_event_t *event);
 
     /**
      * Used to remove particular callback from
@@ -463,7 +461,7 @@ extern "C" {
      * @param id usually you define event ids inside enum
      * @param index returned by librg_event_add
      */
-    LIBRG_API void librg_event_remove(u64 id, u64 index);
+    LIBRG_API void librg_event_remove(librg_ctx_t *ctx, u64 id, u64 index);
 
     /**
      * Used to reject some event from triggering from
@@ -471,7 +469,7 @@ extern "C" {
      *
      * @param pointer on the event
      */
-    LIBRG_API void librg_event_reject(librg_event_t *event);
+    LIBRG_API void librg_event_reject(librg_ctx_t *ctx, librg_event_t *event);
 
     /**
      * Checks if current event was not rejected
@@ -479,7 +477,7 @@ extern "C" {
      *
      * @param pointer on the event
      */
-    LIBRG_API b32 librg_event_succeeded(librg_event_t *event);
+    LIBRG_API b32 librg_event_succeeded(librg_ctx_t *ctx, librg_event_t *event);
 
 
 
@@ -629,7 +627,7 @@ extern "C" {
     /**
      * Check are we connected
      */
-    LIBRG_API b32 librg_is_connected();
+    LIBRG_API b32 librg_is_connected(librg_ctx_t *ctx);
 
     /**
      * Starts network connection
@@ -639,46 +637,46 @@ extern "C" {
      * For server mode - starts server
      * For client mode - starts client, and connects to provided host & port
      */
-    LIBRG_API void librg_network_start(librg_address_t address);
+    LIBRG_API void librg_network_start(librg_ctx_t *ctx, librg_address_t address);
 
     /**
      * Disconnects (if connected), stops network
      * and releases resources
      */
-    LIBRG_API void librg_network_stop();
+    LIBRG_API void librg_network_stop(librg_ctx_t *ctx);
 
     /**
      * Can be used to add handler
      * to a particular message id
      */
-    LIBRG_API void librg_network_add(u64 id, librg_message_handler_t callback);
+    LIBRG_API void librg_network_add(librg_ctx_t *ctx, u64 id, librg_message_handler_t callback);
 
     /**
      * Can be used to remove a handler
      * from particular message id
      */
-    LIBRG_API void librg_network_remove(u64 id);
+    LIBRG_API void librg_network_remove(librg_ctx_t *ctx, u64 id);
 
     /**
      * Part of message API
      * Takes in initialized void of size pointer with written packet id
      * and sends data to all connected peers ( or to server if its client )
      */
-    LIBRG_API void librg_message_send_all(librg_void *data, usize size);
+    LIBRG_API void librg_message_send_all(librg_ctx_t *ctx, librg_void *data, usize size);
 
     /**
      * Part of message API
      * Applies all from previous mehod
      * But data will be sent only to particular provided peer
      */
-    LIBRG_API void librg_message_send_to(librg_peer_t peer, librg_void *data, usize size);
+    LIBRG_API void librg_message_send_to(librg_ctx_t *ctx, librg_peer_t peer, librg_void *data, usize size);
 
     /**
      * Part of message API
      * Applies all from previous mehod
      * But data will be sent to all except provided peer
      */
-    LIBRG_API void librg_message_send_except(librg_peer_t peer, librg_void *data, usize size);
+    LIBRG_API void librg_message_send_except(librg_ctx_t *ctx, librg_peer_t peer, librg_void *data, usize size);
 
     /**
      * Part of message API
@@ -686,7 +684,7 @@ extern "C" {
      * Data will be sent only to entities, which are inside streamzone
      * for provided entity
      */
-    LIBRG_API void librg_message_send_instream(librg_entity_t entity, librg_void *data, usize size);
+    LIBRG_API void librg_message_send_instream(librg_ctx_t *ctx, librg_entity_t entity, librg_void *data, usize size);
 
     /**
      * Part of message API
@@ -694,7 +692,7 @@ extern "C" {
      * Data will be sent only to entities, which are inside streamzone
      * for provided entity except peer
      */
-    LIBRG_API void librg_message_send_instream_except(librg_entity_t entity, librg_peer_t peer, librg_void *data, usize size);
+    LIBRG_API void librg_message_send_instream_except(librg_ctx_t *ctx, librg_entity_t entity, librg_peer_t peer, librg_void *data, usize size);
 
 
 
@@ -709,19 +707,19 @@ extern "C" {
      * Query for entities that are in stream zone
      * for current entity, and are visible to this entity
      */
-    LIBRG_API zpl_array_t(librg_entity_t) librg_streamer_query(librg_entity_t entity);
+    LIBRG_API zpl_array_t(librg_entity_t) librg_streamer_query(librg_ctx_t *ctx, librg_entity_t entity);
 
     /**
      * Set particular entity visible or invisible
      * for other entities in stream zone
      */
-    LIBRG_API void librg_streamer_set_visible(librg_entity_t entity, b32 state);
+    LIBRG_API void librg_streamer_set_visible(librg_ctx_t *ctx, librg_entity_t entity, b32 state);
 
     /**
      * Set particular entity visible or invisible
      * for other particular entity
      */
-    LIBRG_API void librg_streamer_set_visible_for(librg_entity_t entity, librg_entity_t target, b32 state);
+    LIBRG_API void librg_streamer_set_visible_for(librg_ctx_t *ctx, librg_entity_t entity, librg_entity_t target, b32 state);
 
     /**
      * Set some entity as client streamable
@@ -732,17 +730,17 @@ extern "C" {
      *
      * Setting other client as streamer, will remove previous streamer from entity
      */
-    LIBRG_API void librg_streamer_client_set(librg_entity_t entity, librg_peer_t peer);
+    LIBRG_API void librg_streamer_client_set(librg_ctx_t *ctx, librg_entity_t entity, librg_peer_t peer);
 
     /**
      * Remove some entity from stream ownership of the client
      */
-    LIBRG_API void librg_streamer_client_remove(librg_entity_t entity);
+    LIBRG_API void librg_streamer_client_remove(librg_ctx_t *ctx, librg_entity_t entity);
 
     /**
      * Get entity by peer
      */
-    LIBRG_API librg_entity_t librg_get_client_entity(librg_peer_t peer);
+    LIBRG_API librg_entity_t librg_get_client_entity(librg_ctx_t *ctx, librg_peer_t peer);
 
 
 
