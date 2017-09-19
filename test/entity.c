@@ -53,6 +53,9 @@ typedef struct {
     u32 max_entities;
 } librg_ctx_t;
 
+zpl_inline void librg__component_finish(librg_ctx_t *ctx) {
+    ctx->components.data = zpl_malloc(ctx->components.size);
+}
 
 void librg_component_register(librg_ctx_t *ctx, u32 index, usize component_size) {
     librg_assert(ctx);
@@ -60,11 +63,6 @@ void librg_component_register(librg_ctx_t *ctx, u32 index, usize component_size)
 
     librg_component_meta *header = &ctx->components.headers[index]; librg_assert(header);
     usize size = component_size * ctx->max_entities;
-
-    if (size + ctx->components.size > LIBRG_COMPONENTS_SIZE) {
-        librg_log("reallocating to more size: %d\n", index);
-        ctx->components.data = zpl_resize(zpl_heap_allocator(), ctx->components.data, ctx->components.size, ctx->components.size + size);
-    }
 
     ctx->components.size += size;
     ctx->components.count++;
@@ -95,8 +93,7 @@ void librg_component_detach(librg_ctx_t *ctx, u32 index, librg_entity_t entity) 
     header->used[entity] = false;
 }
 
-void newinit(librg_ctx_t *ctx) {
-    ctx->components.data = zpl_alloc(zpl_heap_allocator(), LIBRG_COMPONENTS_SIZE);
+zpl_inline void newinit(librg_ctx_t *ctx) {
     zpl_buffer_init(ctx->components.headers, zpl_heap_allocator(), LIBRG_COMPONENTS_MAX);
 }
 
@@ -122,6 +119,7 @@ int main() {
     librg_component_register(&ctx, index_comp7, sizeof(comp7));
     librg_component_register(&ctx, index_comp8, sizeof(comp8));
 
+    librg__component_finish(&ctx);
 
     // i32 index = 0;
     // for (int i = 0; i < 10000; ++i) {
