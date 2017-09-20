@@ -131,34 +131,14 @@ extern "C" {
      *
      */
 
-    #ifndef LIBRG_PLATFORM_ID
-    #define LIBRG_PLATFORM_ID 1
-    #endif
-
-    #ifndef LIBRG_PLATFORM_PROTOCOL
-    #define LIBRG_PLATFORM_PROTOCOL 1
-    #endif
-
-    #ifndef LIBRG_PLATFORM_BUILD
-    #define LIBRG_PLATFORM_BUILD 1
-    #endif
-
-    #ifndef LIBRG_DEFAULT_BS_SIZE
-    #define LIBRG_DEFAULT_BS_SIZE 64
-    #endif
-
-    #ifndef LIBRG_NETWORK_MESSAGE_CAPACITY
-    #define LIBRG_NETWORK_MESSAGE_CAPACITY 2048
-    #endif
-
-    #ifndef LIBRG_NETWORK_CHANNELS
-    #define LIBRG_NETWORK_CHANNELS 4
-    #endif
-
-    #ifndef LIBRG_DEFAULT_CLIENT_TYPE
-    #define LIBRG_DEFAULT_CLIENT_TYPE 0
-    #endif
-
+    zpl_global u32 LIBRG_PLATFORM_ID = 1;
+    zpl_global u32 LIBRG_PLATFORM_PROTOCOL = 1;
+    zpl_global u32 LIBRG_PLATFORM_BUILD = 1;
+    zpl_global u32 LIBRG_DEFAULT_BS_SIZE = 64;
+    zpl_global u32 LIBRG_NETWORK_MESSAGE_CAPACITY = 2048;
+    zpl_global u32 LIBRG_NETWORK_CHANNELS = 4;
+    zpl_global u32 LIBRG_DEFAULT_CLIENT_TYPE = 0;
+    
     /**
      *
      * CORE
@@ -207,6 +187,18 @@ extern "C" {
      * execution of the program
      */
     LIBRG_API void librg_free();
+
+    /**
+     * Frees a pointer allocated by library
+     * usually used in bindings.
+     */
+    LIBRG_API void librg_release(void *ptr);
+
+    /**
+     * Frees an array allocated by library
+     * usually used in bindings.
+     */
+    LIBRG_API void librg_release_array(void *ptr);
 
     /**
      * Is librg instance is running
@@ -710,6 +702,13 @@ extern "C" {
      * for current entity, and are visible to this entity
      */
     LIBRG_API zpl_array_t(librg_entity_t) librg_streamer_query(librg_entity_t entity);
+
+    /**
+     * Query for entities that are in stream zone
+     * for current entity, and are visible to this entity
+     * Suitable for bindings as it returns raw pointer with size.
+     */
+    LIBRG_API usize librg_streamer_query_raw(librg_entity_t entity, librg_entity_t **result);
 
     /**
      * Set particular entity visible or invisible
@@ -1809,6 +1808,16 @@ extern "C" {
         return search_result;
     }
 
+    usize librg_streamer_query_raw(librg_entity_t entity, librg_entity_t **result) {
+        librg_assert(result);
+        usize size = 0;
+        zpl_array_t(librg_entity_t) array = librg_streamer_query(entity);
+        size = zpl_array_count(array) * sizeof(librg_entity_t);
+        *result = array;
+
+        return size;
+    }
+
     /**
      * CLIENT-SIDE
      *
@@ -2176,6 +2185,15 @@ extern "C" {
         zpl_array_free(librg__component_pool);
 
         enet_deinitialize();
+    }
+
+    zpl_inline void librg_release(void *ptr) {
+        zpl_mfree(ptr);
+    }
+
+    zpl_inline void librg_release_array(void *ptr) {
+        librg_assert(ptr);
+        zpl_array_free(ptr);
     }
 
 

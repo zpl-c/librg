@@ -1,6 +1,5 @@
 #define LIBRG_DEBUG
 #define LIBRG_IMPLEMENTATION
-#define LIBRG_PLATFORM_BUILD 3
 #include <librg.h>
 #include <SDL.h>
 #include "demo-defines.h"
