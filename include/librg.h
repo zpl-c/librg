@@ -707,6 +707,7 @@ extern "C" {
      * Query for entities that are in stream zone
      * for current entity, and are visible to this entity
      * Suitable for bindings as it returns raw pointer with size.
+     * Free the `result` pointer using librg_release_array once you don't need it!
      */
     LIBRG_API usize librg_streamer_query_raw(librg_entity_t entity, librg_entity_t **result);
 
