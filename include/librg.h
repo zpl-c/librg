@@ -178,7 +178,10 @@ extern "C" {
         LIBRG_LAST_ENUM_NUMBER,
     };
 
-
+    /**
+     * Table for various entity bool storages
+     */
+    ZPL_TABLE_DECLARE(extern, librg_table_t, librg_table_, u32);
 
     /**
      *
@@ -188,9 +191,8 @@ extern "C" {
 
     struct librg_ctx_t;
 
-    typedef librg_void *librg_data_t;
-
     typedef u32 librg_entity_t;
+    typedef librg_void *librg_data_t;
 
     typedef ENetPeer   *librg_peer_t;
     typedef ENetHost   *librg_host_t;
@@ -237,17 +239,6 @@ extern "C" {
 
 
     /**
-     * Callback that will be used to pass
-     * the entity inside the function-handler
-     */
-    typedef void (librg_entity_cb_t)(librg_entity_t entity);
-
-    /**
-     * Table for various entity bool storages
-     */
-    ZPL_TABLE_DECLARE(extern, librg_table_t, librg_table_, u32);
-
-    /**
      * Storage containers
      * for inner librg stuff
      */
@@ -279,7 +270,7 @@ extern "C" {
      * gets returned inside network handler
      * on each incoming message
      */
-    typedef struct {
+    typedef struct librg_message_t {
         struct librg_ctx_t *ctx;
         librg_data_t *data;
         librg_peer_t peer;
@@ -299,6 +290,8 @@ extern "C" {
      */
     typedef void (librg_message_handler_t)(librg_message_t *msg);
     typedef void (librg_event_cb_t)(librg_event_t *event);
+    typedef void (librg_component_cb_t)(struct librg_ctx_t *ctx);
+    typedef void (librg_entity_cb_t)(librg_entity_t entity);
 
 
     /**
@@ -317,7 +310,7 @@ extern "C" {
 
     typedef struct {
         u32 range;
-    } librg_streamable_t;
+    } librg_stream_t;
 
     typedef struct {
         u32 type;
@@ -329,9 +322,17 @@ extern "C" {
         librg_table_t last_snapshot;
     } librg_client_t;
 
+    enum {
+        librg_dummmy,
+        librg_meta,
+        librg_transform,
+        librg_stream,
+        librg_control,
+        librg_client,
+        librg_component_last,
+    };
 
-
-    typedef struct {
+    typedef struct librg_ctx_t {
         zpl_allocator_t allocator;
         zpl_timer_pool  timers;
         zplev_pool      events;
@@ -366,6 +367,7 @@ extern "C" {
             usize size;
             usize count;
             zpl_buffer_t(librg_component_meta) headers;
+            librg_component_cb_t *register_cb;
         } components;
 
         struct {
@@ -393,25 +395,14 @@ extern "C" {
     };
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+    /**
+     * Set global cross-instance option for librg
+     */
     LIBRG_API void librg_options_set(librg_options_e option, u32 value);
+
+    /**
+     * Get global cross-instance option for librg
+     */
     LIBRG_API u32 librg_options_get(librg_options_e option);
 
     /**
@@ -557,6 +548,75 @@ extern "C" {
      * Remove some entity from stream ownership of the client
      */
     LIBRG_API void librg_entity_control_remove(librg_ctx_t *ctx, librg_entity_t entity);
+
+    /**
+     * Try to register provided component
+     */
+    LIBRG_API void librg_component_register(librg_ctx_t *ctx, u32 index, usize component_size);
+
+    /**
+     * Try to attach provided component to/from a particular entity
+     */
+    LIBRG_API librg_void *librg_component_attach(librg_ctx_t *ctx, u32 index, librg_entity_t entity, librg_void *data);
+
+    /**
+     * Try to fetch provided component to/from a particular entity
+     */
+    LIBRG_API librg_void *librg_component_fetch(librg_ctx_t *ctx, u32 index, librg_entity_t entity);
+
+    /**
+     * Try to detach provided component to/from a particular entity
+     */
+    LIBRG_API void librg_component_detach(librg_ctx_t *ctx, u32 index, librg_entity_t entity);
+
+    /**
+     * Try to interate on each entity with particular componnent
+     */
+    LIBRG_API void librg_component_each(librg_ctx_t *ctx, u32 index, librg_entity_cb_t callback);
+
+    /**
+     * Try to interate on each entity with provided component filter
+     */
+    LIBRG_API void librg_entity_each(librg_ctx_t *ctx, librg_filter_t filter, librg_entity_cb_t callback);
+
+    /**
+     * Try to interate on each entity with particular componnent
+     * (macro version, can be used in C/C++ based projects)
+     */
+    #define librg_component_eachx(ctx, index, name, code) do {  \
+        librg_assert(ctx); librg_assert(index < ctx->components.count); \
+        librg_component_meta *header = &ctx->components.headers[index]; librg_assert(header);   \
+        for (usize i = 0; i < zpl_buffer_count(header->used); i++)  \
+            if (header->used[i]) { librg_entity_t name = i; code; } \
+    } while(0);
+
+    /**
+     * Try to interate on each entity with provided component filter
+     * (macro version, can be used in C/C++ based projects)
+     */
+    #define librg_entity_eachx(ctx, filter, name, code) do {                                                        \
+        librg_assert(ctx); if (filter.contains1 == 0) break;                                                        \
+        for (usize _ent = 0, valid = 0; valid < (ctx->entity.native.count + ctx->entity.shared.count)               \
+            && _ent < (librg_is_server(ctx) ? ctx->max_entities : ctx->max_entities * 2); _ent++) {                 \
+            /* check if entity valid */                                                                             \
+            if (!ctx->components.headers[librg_meta].used[_ent]) continue; else valid++;                            \
+            b32 _used = true;                                                                                       \
+            /* check for included components */                                                                     \
+            for (isize k = 0; k < 8 && _used; k++) {                                                                \
+                if (filter.contains[k] == 0) break;                                                                 \
+                librg_component_meta *header = &ctx->components.headers[filter.contains[k]]; librg_assert(header);  \
+                if (!header->used[_ent]) { _used = false; }                                                         \
+            }                                                                                                       \
+            /* check for excluded components */                                                                     \
+            for (isize k = 0; k < 4 && _used; k++) {                                                                \
+                if (filter.excludes[k] == 0) break;                                                                 \
+                librg_component_meta *header = &ctx->components.headers[filter.excludes[k]]; librg_assert(header);  \
+                if (header->used[_ent]) { _used = false; }                                                          \
+            }                                                                                                       \
+            /* execute code */                                                                                      \
+            if (_used) { librg_entity_t name = _ent; code; }                                                        \
+        }                                                                                                           \
+    } while(0)
 
 
 
@@ -834,8 +894,13 @@ extern "C" {
 
     // #define librg_send librg_send_all
 
-    // #define librg_component_declare(NAME) librg_component_declare_inner(,NAME)
-    // #define librg_component(NAME) librg_component_declare(NAME)
+    librg_inline librg_client_t *librg_fetch_client(librg_ctx_t *ctx, librg_entity_t entity) {
+        return (librg_client_t *)librg_component_fetch(ctx, librg_client, entity);
+    }
+
+    librg_inline librg_transform_t *librg_fetch_transform(librg_ctx_t *ctx, librg_entity_t entity) {
+        return (librg_transform_t *)librg_component_fetch(ctx, librg_transform, entity);
+    }
 
 #ifdef __cplusplus
 }
@@ -1222,6 +1287,52 @@ extern "C" {
      *
      */
 
+
+    void librg_component_register(librg_ctx_t *ctx, u32 index, usize component_size) {
+        librg_assert(ctx); librg_assert(component_size);
+        librg_assert_msg(ctx->components.count == index, "you should register components in order");
+
+        librg_component_meta *header = &ctx->components.headers[index]; librg_assert(header);
+        usize size = component_size * ctx->max_entities;
+
+        ctx->components.size += size;
+        ctx->components.count++;
+
+        zpl_buffer_init(header->used, ctx->allocator, ctx->max_entities);
+
+        header->offset = size;
+        header->size   = component_size;
+    }
+
+    librg_void *librg_component_attach(librg_ctx_t *ctx, u32 index, librg_entity_t entity, librg_void *data) {
+        librg_component_meta *header = &ctx->components.headers[index];
+        librg_assert(header && header->size);
+        header->used[entity] = true;
+        librg_void *cdata = ctx->components.data + header->offset;
+        zpl_memcopy(&cdata[entity * header->size], data, (usize)header->size);
+        return &cdata[entity * header->size];
+    }
+
+    librg_inline librg_void *librg_component_fetch(librg_ctx_t *ctx, u32 index, librg_entity_t entity) {
+        librg_component_meta *header = &ctx->components.headers[index]; librg_assert(header);
+        librg_void *cdata = ctx->components.data + header->offset;
+        return header->used[entity] ? &cdata[entity * header->size] : NULL;
+    }
+
+    librg_inline void librg_component_detach(librg_ctx_t *ctx, u32 index, librg_entity_t entity) {
+        librg_component_meta *header = &ctx->components.headers[index]; librg_assert(header);
+        header->used[entity] = false;
+    }
+
+    librg_inline void librg_component_each(librg_ctx_t *ctx, u32 index, librg_entity_cb_t callback) {
+        librg_component_eachx(ctx, index, entity, { callback(entity); });
+    }
+
+    void librg_entity_each(librg_ctx_t *ctx, librg_filter_t filter, librg_entity_cb_t callback) {
+        librg_entity_eachx(ctx, filter, entity, { callback(entity); });
+    }
+
+
 #if 0
 
     /**
@@ -1234,11 +1345,11 @@ extern "C" {
     librg_inline void librg__entity_attach_default(librg_entity_t entity) {
         librg_transform_t t  = {0};
         librg_entitymeta_t m = {0};
-        librg_streamable_t s = {250};
+        librg_stream_t s = {250};
 
         librg_attach_transform(entity,  t);
         librg_attach_entitymeta(entity, m);
-        librg_attach_streamable(entity, s);
+        librg_attach_stream(entity, s);
     }
 
     librg_inline librg_entity_t librg__entity_create(librg_ctx_t *ctx, librg__entity_pool_t *pool) {
@@ -1690,7 +1801,7 @@ extern "C" {
         zpl_array_init(search_result, zpl_heap_allocator());
 
         librg_transform_t  *transform  = librg_fetch_transform(entity);
-        librg_streamable_t *streamable = librg_fetch_streamable(entity);
+        librg_stream_t *streamable = librg_fetch_stream(entity);
         librg_assert(transform && streamable);
 
         zplc_bounds_t search_bounds;
@@ -1740,7 +1851,7 @@ extern "C" {
 
         librg_entity_filter_t filter = {
             librg_index_clientstream(),
-            librg_index_streamable(),
+            librg_index_stream(),
         };
 
         librg_entity_eachx(filter, librg_lambda(entity), {
@@ -1921,7 +2032,7 @@ extern "C" {
     }
 
     librg_inline void librg__entity_execute_insert() {
-        librg_entity_filter_t filter = { librg_index_streamable() };
+        librg_entity_filter_t filter = { librg_index_stream() };
 
         // clear
         zplc_clear(&librg__streamer);
@@ -2043,8 +2154,17 @@ extern "C" {
         zpl_buffer_init(ctx->components.headers, ctx->allocator, ctx->max_components);
         zpl_array_init(ctx->entity.remove_queue, ctx->allocator);
 
-        // streamer
-        // TODO: make 3d
+        librg_component_register(ctx, librg_dummmy, 4);
+        librg_component_register(ctx, librg_meta, sizeof(librg_meta_t));
+        librg_component_register(ctx, librg_transform, sizeof(librg_transform_t));
+        librg_component_register(ctx, librg_stream, sizeof(librg_stream_t));
+        librg_component_register(ctx, librg_control, sizeof(librg_control_t));
+        librg_component_register(ctx, librg_client, sizeof(librg_client_t));
+
+        if (ctx->components.register_cb) ctx->components.register_cb(ctx);
+        ctx->components.data = zpl_malloc(ctx->components.size);
+
+        // streamer // TODO: make 3d
         zplc_bounds_t world = {0};
         world.centre = zplm_vec3(0, 0, 0);
         world.half_size = zplm_vec3(ctx->world_size.x, ctx->world_size.y, 0.0f);
