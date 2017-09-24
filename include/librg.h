@@ -586,7 +586,7 @@ extern "C" {
     #define librg_component_eachx(ctx, index, name, code) do {  \
         librg_assert(ctx); librg_assert(index < ctx->components.count); \
         librg_component_meta *header = &ctx->components.headers[index]; librg_assert(header);   \
-        for (usize i = 0; i < zpl_buffer_count(header->used); i++)  \
+        for (isize i = 0; i < zpl_buffer_count(header->used); i++)  \
             if (header->used[i]) { librg_entity_t name = i; code; } \
     } while(0);
 
@@ -1179,7 +1179,8 @@ extern "C" {
 
     void librg_message_send_all(librg_ctx_t *ctx, librg_void *data, usize size) {
         if (librg_is_client(ctx)) {
-            return librg_message_send_to(ctx, ctx->network.peer, data, size);
+            librg_message_send_to(ctx, ctx->network.peer, data, size);
+			return;
         }
 
         librg_message_send_except(ctx, NULL, data, size);
@@ -1367,9 +1368,9 @@ extern "C" {
         librg_stream_t    s = {250};
         librg_meta_t      m = {0};
 
-        librg_component_attach(ctx, librg_transform, entity, &t);
-        librg_component_attach(ctx, librg_stream,    entity, &s);
-        librg_component_attach(ctx, librg_meta,      entity, &m);
+        librg_component_attach(ctx, librg_transform, entity, (librg_void *)&t);
+        librg_component_attach(ctx, librg_stream,    entity, (librg_void *)&s);
+        librg_component_attach(ctx, librg_meta,      entity, (librg_void *)&m);
     }
 
     librg_inline librg_entity_t librg__entity_create(librg_ctx_t *ctx, librg_entity_pool_t *pool) {
@@ -1455,7 +1456,8 @@ extern "C" {
 
     void librg_entity_destroy(librg_ctx_t *ctx, librg_entity_t id) {
         if (librg_is_client(ctx)) {
-            return librg__entity_destroy(ctx, id);
+            librg__entity_destroy(ctx, id);
+			return;
         }
 
         zpl_array_append(ctx->entity.remove_queue, id);
@@ -1538,7 +1540,7 @@ extern "C" {
         // attach new entity owner
         else {
             librg_control_t cs = { peer };
-            librg_component_attach(ctx, librg_control, entity, &cs);
+            librg_component_attach(ctx, librg_control, entity, (librg_void *)&cs);
         }
 
         librg_send_to(ctx, LIBRG_CLIENT_STREAMER_ADD, peer, librg_lambda(data), {
@@ -1617,7 +1619,7 @@ extern "C" {
 
             // assign default compoenents
             librg_client_t client = { msg->peer };
-            librg_client_t *c = librg_component_attach(msg->ctx, librg_client, entity, &client);
+            librg_client_t *c = (librg_client_t *)librg_component_attach(msg->ctx, librg_client, entity, (librg_void *)&client);
             librg_table_init(&c->last_snapshot, msg->ctx->allocator);
 
             // add client peer to storage
@@ -1756,7 +1758,7 @@ extern "C" {
 
         if (!control) {
             librg_control_t cs = {0};
-            librg_component_attach(msg->ctx, librg_control, entity, &cs);
+            librg_component_attach(msg->ctx, librg_control, entity, (librg_void *)&cs);
 
             librg_event_t event = {0};
             event.data = msg->data; event.entity = entity;
@@ -2039,7 +2041,8 @@ extern "C" {
         librg_assert(ctx);
 
         if (librg_is_client(ctx)) {
-            return librg__update_client(ctx);
+            librg__update_client(ctx);
+			return;
         }
         else {
             // create the server cull tree
@@ -2150,7 +2153,7 @@ extern "C" {
         zplc_free(&ctx->streamer);
         librg_table_destroy(&ctx->entity.ignored);
 
-        for (int i = 0; i < ctx->components.count; ++i) {
+        for (usize i = 0; i < ctx->components.count; ++i) {
             librg_component_meta *header = &ctx->components.headers[i]; librg_assert(header);
             zpl_buffer_free(header->used, ctx->allocator);
         }
