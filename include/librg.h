@@ -1716,26 +1716,26 @@ extern "C" {
             librg_event_trigger(msg->ctx, LIBRG_CLIENT_STREAMER_ADD, &event);
         }
     }
-#if 0
 
     librg_internal void librg__callback_entity_client_streamer_remove(librg_message_t *msg) {
         librg_entity_t entity = librg_data_ru32(msg->data);
 
-        if (!librg_entity_valid(entity)) {
+        if (!librg_entity_valid(msg->ctx, entity)) {
             librg_dbg("trying to remove unknown entity from clientstream!\n");
             return;
         }
 
-        librg_clientstream_t *cli_stream = librg_fetch_clientstream(entity);
+        librg_control_t *control = cast(librg_control_t *)librg_component_fetch(msg->ctx, librg_control, entity);
 
         if (cli_stream) {
-            librg_detach_clientstream(entity);
+            librg_component_detach(msg->ctx, librg_control, entity);
 
             librg_event_t event = {0};
             event.data = msg->data; event.entity = entity;
-            librg_event_trigger(LIBRG_CLIENT_STREAMER_REMOVE, &event);
+            librg_event_trigger(msg->ctx, LIBRG_CLIENT_STREAMER_REMOVE, &event);
         }
     }
+#if 0
 
     librg_internal void librg__callback_entity_client_streamer_update(librg_message_t *msg) {
         u32 amount = librg_data_ru32(msg->data);
