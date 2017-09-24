@@ -65,3 +65,9 @@ if (LIBRG_TEST)
     add_executable(librg_test test/build-test.c)
     target_link_libraries(librg_test librg)
 endif()
+
+# static library
+if (LIBRG_STATIC)
+    add_library(librg test/library.c)
+    target_link_libraries(librg librg)
+endif()
