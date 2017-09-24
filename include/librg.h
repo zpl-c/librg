@@ -570,7 +570,7 @@ extern "C" {
     LIBRG_API void librg_component_detach(librg_ctx_t *ctx, u32 index, librg_entity_t entity);
 
     /**
-     * Try to interate on each entity with particular componnent
+     * Try to interate on each entity with particular component
      */
     LIBRG_API void librg_component_each(librg_ctx_t *ctx, u32 index, librg_entity_cb_t callback);
 
@@ -580,7 +580,7 @@ extern "C" {
     LIBRG_API void librg_entity_each(librg_ctx_t *ctx, librg_filter_t filter, librg_entity_cb_t callback);
 
     /**
-     * Try to interate on each entity with particular componnent
+     * Try to interate on each entity with particular component
      * (macro version, can be used in C/C++ based projects)
      */
     #define librg_component_eachx(ctx, index, name, code) do {  \
@@ -894,17 +894,22 @@ extern "C" {
 
     #define librg_send librg_send_all
 
-    librg_inline librg_client_t *librg_fetch_client(librg_ctx_t *ctx, librg_entity_t entity) {
+    static librg_inline librg_client_t *librg_fetch_client(librg_ctx_t *ctx, librg_entity_t entity) {
         return (librg_client_t *)librg_component_fetch(ctx, librg_client, entity);
     }
 
-    librg_inline librg_transform_t *librg_fetch_transform(librg_ctx_t *ctx, librg_entity_t entity) {
+    static librg_inline librg_transform_t *librg_fetch_transform(librg_ctx_t *ctx, librg_entity_t entity) {
         return (librg_transform_t *)librg_component_fetch(ctx, librg_transform, entity);
     }
 
-    librg_inline librg_meta_t *librg_fetch_meta(librg_ctx_t *ctx, librg_entity_t entity) {
+    static librg_inline librg_meta_t *librg_fetch_meta(librg_ctx_t *ctx, librg_entity_t entity) {
         return (librg_meta_t *)librg_component_fetch(ctx, librg_meta, entity);
     }
+
+    #define librg_component(NAME, INDEX, COMP) \
+        static librg_inline COMP *ZPL_JOIN2(librg_attach_,NAME) (librg_ctx_t *ctx, librg_entity_t entity, COMP *component) { return (COMP *)librg_component_attach(ctx, INDEX, entity, (void *)component); } \
+        static librg_inline COMP *ZPL_JOIN2(librg_fetch_ ,NAME) (librg_ctx_t *ctx, librg_entity_t entity) { return (COMP *)librg_component_fetch(ctx, INDEX, entity); } \
+        static librg_inline void  ZPL_JOIN2(librg_detach_,NAME) (librg_ctx_t *ctx, librg_entity_t entity) { librg_component_detach(ctx, INDEX, entity); }
 
 #ifdef __cplusplus
 }
