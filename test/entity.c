@@ -23,6 +23,7 @@ typedef struct { somemem } comp8;
 
 
 enum {
+    zero_comp,
     index_mycmp,
     index_comp1,
     index_comp2,
@@ -41,7 +42,7 @@ zpl_inline void librg__component_finish(librg_ctx_t *ctx) {
 }
 
 void librg_component_register(librg_ctx_t *ctx, u32 index, usize component_size) {
-    librg_assert(ctx);
+    librg_assert(ctx); librg_assert(component_size);
     librg_assert_msg(ctx->components.count == index, "you should register components in order");
 
     librg_component_meta *header = &ctx->components.headers[index]; librg_assert(header);
@@ -76,9 +77,55 @@ void librg_component_detach(librg_ctx_t *ctx, u32 index, librg_entity_t entity) 
     header->used[entity] = false;
 }
 
+typedef void (librg_component_cb_t)(librg_ctx_t *ctx);
+typedef void (librg_entity_cb_t)(librg_entity_t entity);
+
+#define librg_component_eachx(ctx, index, name, code) do {  \
+        librg_assert(ctx); librg_assert(index < ctx->components.count); \
+        librg_component_meta *header = &ctx->components.headers[index]; librg_assert(header);   \
+        for (usize i = 0; i < zpl_buffer_count(header->used); i++)  \
+            if (header->used[i]) { librg_entity_t name = i; code; } \
+    } while(0);
+
+
+void librg_component_each(librg_ctx_t *ctx, u32 index, librg_entity_cb_t callback) {
+    librg_component_eachx(ctx, index, entity, { callback(entity); });
+}
+
+// #define librg_entity_eachx(FILTER, NAME, CODE) do {                                                             \
+//         u32 entitymeta_id = librg_index_entitymeta();                                                               \
+//         if (entitymeta_id == 0 || FILTER.contains1 == 0) break;                                                     \
+//         for (usize _ent = 0, valid = 0; valid < (librg__entity.native.count + librg__entity.shared.count)           \
+//             && _ent < (librg_is_server() ? librg__config.max_entities : librg__config.max_entities * 2); _ent++) {  \
+//             /* check if entity valid */                                                                             \
+//             { librg__eachmeta(entitymeta_id, _ent); if (!meta->used) continue; } valid++;                           \
+//             b32 _used = true;                                                                                       \
+//             /* check for included components */                                                                     \
+//             for (isize k = 0; k < 8 && _used; k++) {                                                                \
+//                 if (FILTER.contains[k] == 0) break;                                                                 \
+//                 librg__eachmeta(FILTER.contains[k], _ent);                                                          \
+//                 if (!meta->used) { _used = false; }                                                                 \
+//             }                                                                                                       \
+//             /* check for excluded components */                                                                     \
+//             for (isize k = 0; k < 4 && _used; k++) {                                                                \
+//                 if (FILTER.excludes[k] == 0) break;                                                                 \
+//                 librg__eachmeta(FILTER.excludes[k], _ent);                                                          \
+//                 if (meta->used) { _used = false; }                                                                  \
+//             }                                                                                                       \
+//             /* execute code */                                                                                      \
+//             if (_used) { librg_entity_t NAME = _ent; CODE; }                                                        \
+//         }                                                                                                           \
+//     } while(0)
+
+// void librg_entity_each(librg_ctx_t *ctx, librg_filter_t filter, librg_entity_cb_t callback) {
+//     librg_entity_eachx(ctx, filter, entity, { callback(entity); });
+// }
+
 int main() {
     librg_ctx_t ctx = {0};
     librg_init(&ctx);
+
+    librg_assert(0xffffffff == (u32)-1);
 
     librg_component_register(&ctx, index_mycmp, sizeof(mycmp_t));
     librg_component_register(&ctx, index_comp1, sizeof(comp1));
