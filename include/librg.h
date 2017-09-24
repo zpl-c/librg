@@ -971,7 +971,7 @@ extern "C" {
 
         if (librg_is_server(ctx)) {
             librg_table_destroy(&librg_fetch_entitymeta(entity)->ignored);
-            librg_streamer_set_visible(entity, true);
+            librg_streamer_set_visible(ctx, entity, true);
         }
 
         // decrease amount
@@ -1338,7 +1338,7 @@ extern "C" {
         librg_entity_filter_t filter = { librg_index_client() };
 		
 		// fixme
-        librg_entity_eachx(filter, librg_lambda(entity2), {
+       /* librg_entity_eachx(filter, librg_lambda(entity2), {
             librg_client_t *client = librg_fetch_client(entity2);
 
             if (client->peer != peer) {
@@ -1346,7 +1346,7 @@ extern "C" {
                      data, size, ENET_PACKET_FLAG_RELIABLE
                 ));
             }
-        });
+        });*/
     }
 
     librg_inline void librg_message_send_instream(librg_ctx_t *ctx, librg_entity_t entity, librg_void *data, usize size) {
@@ -1407,9 +1407,9 @@ extern "C" {
                     // get curernt packet id
                     u64 id = librg_data_ru64(&data);
 
-                    if (librg__messages[id]) {
+                    if (ctx->librg__messages[id]) {
                         msg.data = &data;
-                        librg__messages[id](&msg);
+                        ctx->librg__messages[id](&msg);
                     }
                     else {
                         librg_dbg("network: unknown message: %llu\n", id);
@@ -1418,8 +1418,8 @@ extern "C" {
                     librg_data_reset(&data);
                     enet_packet_destroy(event.packet);
                 } break;
-                case ENET_EVENT_TYPE_CONNECT:    librg__messages[LIBRG_CONNECTION_INIT](&msg); break;
-                case ENET_EVENT_TYPE_DISCONNECT: librg__messages[LIBRG_CONNECTION_DISCONNECT](&msg); break;
+                case ENET_EVENT_TYPE_CONNECT:    ctx->librg__messages[LIBRG_CONNECTION_INIT](&msg); break;
+                case ENET_EVENT_TYPE_DISCONNECT: ctx->librg__messages[LIBRG_CONNECTION_DISCONNECT](&msg); break;
                 case ENET_EVENT_TYPE_NONE: break;
             }
         }
@@ -1460,7 +1460,7 @@ extern "C" {
 
                 librg_event_t event = { 0 };
                 event.data = &data;
-                librg_event_trigger(LIBRG_CONNECTION_REQUEST, &event);
+                librg_event_trigger(msg->ctx, LIBRG_CONNECTION_REQUEST, &event);
             });
         }
     }
@@ -1482,10 +1482,10 @@ extern "C" {
         }
 
         librg_event_t event = { 0 }; event.data = msg->data;
-        librg_event_trigger(LIBRG_CONNECTION_REQUEST, &event);
+        librg_event_trigger(msg->ctx, LIBRG_CONNECTION_REQUEST, &event);
 
-        if (librg_event_succeeded(&event) && !blocked) {
-            librg_entity_t entity = librg_entity_create(LIBRG_DEFAULT_CLIENT_TYPE);
+        if (librg_event_succeeded(msg->ctx, &event) && !blocked) {
+            librg_entity_t entity = librg_entity_create(msg->ctx, LIBRG_DEFAULT_CLIENT_TYPE);
 
             // assign default compoenents
             librg_client_t client = { msg->peer };
@@ -1699,8 +1699,8 @@ extern "C" {
      */
 
 
-    void librg_streamer_set_visible(librg_entity_t entity, b32 state) {
-        librg_table_set(&librg__entity.ignored, entity, (u32)!state);
+    void librg_streamer_set_visible(librg_ctx_t *ctx, librg_entity_t entity, b32 state) {
+        librg_table_set(&ctx->librg__entity.ignored, entity, (u32)!state);
     }
 
     void librg_streamer_set_visible_for(librg_entity_t entity, librg_entity_t target, b32 state) {
@@ -1708,7 +1708,7 @@ extern "C" {
         librg_table_set(&librg_fetch_entitymeta(entity)->ignored, target, (u32)!state);
     }
 
-    zpl_array_t(librg_entity_t) librg_streamer_query(librg_entity_t entity) {
+    zpl_array_t(librg_entity_t) librg_streamer_query(librg_ctx_t *ctx, librg_entity_t entity) {
         zpl_array_t(zplc_node_t) search_temp;
         zpl_array_t(librg_entity_t) search_result;
 
@@ -1723,13 +1723,13 @@ extern "C" {
         search_bounds.centre = transform->position;
         search_bounds.half_size = zplm_vec3((f32)streamable->range, (f32)streamable->range, (f32)streamable->range);
 
-        zplc_query(&librg__streamer, search_bounds, &search_temp);
+        zplc_query(&ctx->librg__streamer, search_bounds, &search_temp);
 
         for (isize i = 0; i < zpl_array_count(search_temp); i++) {
             librg_entity_t target = (u32)search_temp[i].tag;
-            if (!librg_entity_valid(target)) continue;
+            if (!librg_entity_valid(ctx, target)) continue;
 
-            u32 *global = librg_table_get(&librg__entity.ignored, target);
+            u32 *global = librg_table_get(&ctx->librg__entity.ignored, target);
             u32 *local  = librg_table_get(&librg_fetch_entitymeta(target)->ignored, entity);
 
             if ((global && *global) || (local && *local)) continue;
@@ -1741,10 +1741,10 @@ extern "C" {
         return search_result;
     }
 
-    usize librg_streamer_query_raw(librg_entity_t entity, librg_entity_t **result) {
+    usize librg_streamer_query_raw(librg_ctx_t *ctx, librg_entity_t entity, librg_entity_t **result) {
         librg_assert(result);
         usize size = 0;
-        zpl_array_t(librg_entity_t) array = librg_streamer_query(entity);
+        zpl_array_t(librg_entity_t) array = librg_streamer_query(ctx, entity);
         size = zpl_array_count(array) * sizeof(librg_entity_t);
         *result = array;
 
