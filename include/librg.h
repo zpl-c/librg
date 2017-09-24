@@ -1155,47 +1155,47 @@ extern "C" {
      * Network messages
      */
 
-    // librg_inline void librg_network_add(librg_ctx_t *ctx, u64 id, librg_message_handler_t callback) {
-    //     ctx->messages[id] = callback;
-    // }
+    librg_inline void librg_network_add(librg_ctx_t *ctx, u64 id, librg_message_handler_t callback) {
+        ctx->messages[id] = callback;
+    }
 
-    // librg_inline void librg_network_remove(librg_ctx_t *ctx, u64 id) {
-    //     ctx->messages[id] = NULL;
-    // }
+    librg_inline void librg_network_remove(librg_ctx_t *ctx, u64 id) {
+        ctx->messages[id] = NULL;
+    }
 
-    // /**
-    //  * Senders
-    //  */
+    /**
+     * Senders
+     */
 
-    // void librg_message_send_all(librg_ctx_t *ctx, librg_void *data, usize size) {
-    //     if (librg_is_client(ctx)) {
-    //         return librg_message_send_to(ctx, ctx->network.peer, data, size);
-    //     }
+    void librg_message_send_all(librg_ctx_t *ctx, librg_void *data, usize size) {
+        if (librg_is_client(ctx)) {
+            return librg_message_send_to(ctx, ctx->network.peer, data, size);
+        }
 
-    //     librg_message_send_except(ctx, NULL, data, size);
-    // }
+        librg_message_send_except(ctx, NULL, data, size);
+    }
 
-    // void librg_message_send_to(librg_ctx_t *ctx, librg_peer_t peer, librg_void *data, usize size) {
-    //     zpl_unused(ctx);
-    //     enet_peer_send(peer, LIBRG_NETWORK_MESSAGE_CHANNEL, enet_packet_create(
-    //         data, size, ENET_PACKET_FLAG_RELIABLE
-    //     ));
-    // }
+    void librg_message_send_to(librg_ctx_t *ctx, librg_peer_t peer, librg_void *data, usize size) {
+        zpl_unused(ctx);
+        enet_peer_send(peer, LIBRG_NETWORK_MESSAGE_CHANNEL, enet_packet_create(
+            data, size, ENET_PACKET_FLAG_RELIABLE
+        ));
+    }
 
-    // void librg_message_send_except(librg_ctx_t *ctx, librg_peer_t peer, librg_void *data, usize size) {
-    //     librg_filter_t filter = { librg_index_client() };
+    void librg_message_send_except(librg_ctx_t *ctx, librg_peer_t peer, librg_void *data, usize size) {
+        librg_filter_t filter = { librg_client };
 
-    //     // fixme
-    //    /* librg_entity_eachx(filter, librg_lambda(entity2), {
-    //         librg_client_t *client = librg_fetch_client(entity2);
+        // fixme
+        librg_entity_eachx(ctx, filter, librg_lambda(entity), {
+            librg_client_t *client = librg_fetch_client(ctx, entity);
 
-    //         if (client->peer != peer) {
-    //             enet_peer_send(ctx, client->peer, LIBRG_NETWORK_MESSAGE_CHANNEL, enet_packet_create(
-    //                  data, size, ENET_PACKET_FLAG_RELIABLE
-    //             ));
-    //         }
-    //     });*/
-    // }
+            if (client->peer != peer) {
+                enet_peer_send(ctx, client->peer, LIBRG_NETWORK_MESSAGE_CHANNEL, enet_packet_create(
+                     data, size, ENET_PACKET_FLAG_RELIABLE
+                ));
+            }
+        });
+    }
 
     // librg_inline void librg_message_send_instream(librg_ctx_t *ctx, librg_entity_t entity, librg_void *data, usize size) {
     //     librg_message_send_instream_except(ctx, entity, NULL, data, size);
