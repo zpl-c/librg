@@ -1312,13 +1312,13 @@ extern "C" {
         librg_component_meta *header = &ctx->components.headers[index]; librg_assert(header);
         usize size = component_size * ctx->max_entities;
 
+        header->offset = ctx->components.size;
+        header->size   = component_size;
+
         ctx->components.size += size;
         ctx->components.count++;
 
         zpl_buffer_init(header->used, ctx->allocator, ctx->max_entities);
-
-        header->offset = size;
-        header->size   = component_size;
     }
 
     librg_void *librg_component_attach(librg_ctx_t *ctx, u32 index, librg_entity_t entity, librg_void *data) {
@@ -1603,10 +1603,10 @@ extern "C" {
         u16 platform_build    = librg_data_ru16(msg->data);
         u16 platform_protocol = librg_data_ru16(msg->data);
 
-        b32 blocked = (platform_id != LIBRG_PLATFORM_ID || platform_protocol != LIBRG_PLATFORM_PROTOCOL);
+        b32 blocked = (platform_id != librg_options_get(LIBRG_PLATFORM_ID) || platform_protocol != librg_options_get(LIBRG_PLATFORM_PROTOCOL));
 
-        if (platform_build != LIBRG_PLATFORM_BUILD) {
-            librg_dbg("NOTICE: librg platform build mismatch client %u, server: %u\n", platform_build, LIBRG_PLATFORM_BUILD);
+        if (platform_build != librg_options_get(LIBRG_PLATFORM_BUILD)) {
+            librg_dbg("NOTICE: librg platform build mismatch client %u, server: %u\n", platform_build, librg_options_get(LIBRG_PLATFORM_BUILD));
         }
 
         librg_event_t event = { 0 }; event.data = msg->data;

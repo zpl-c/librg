@@ -18,6 +18,15 @@ enum {
 void on_connect_request(librg_event_t *event) {
     u32 secret = librg_data_ru32(event->data);
 
+    if (secret != 42) {
+        return librg_event_reject(event);
+    }
+}
+
+void on_connect_accepted(librg_event_t *event) {
+    librg_log("on_connect_accepted\n");
+    // librg_attach_foo(event->entity, (foo_t){0});
+
     librg_transform_t *transform = librg_fetch_transform(event->ctx, event->entity);
     transform->position.x = (float)(2000 - rand() % 4000);
     transform->position.y = (float)(2000 - rand() % 4000);
@@ -28,14 +37,6 @@ void on_connect_request(librg_event_t *event) {
         transform->position.z
     );
 
-    if (secret != 42) {
-        return librg_event_reject(event);
-    }
-}
-
-void on_connect_accepted(librg_event_t *event) {
-    librg_log("on_connect_accepted\n");
-    // librg_attach_foo(event->entity, (foo_t){0});
 }
 
 void on_connect_refused(librg_event_t *event) {
@@ -62,7 +63,7 @@ int main() {
 
 
     librg_ctx_t ctx     = {0};
-    ctx.tick_delay      = 1000;
+    ctx.tick_delay      = 32;
     ctx.mode            = LIBRG_MODE_SERVER;
     ctx.world_size      = zplm_vec3(5000.0f, 5000.0f, 0.f);
     ctx.max_entities    = 15000;

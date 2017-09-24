@@ -2,14 +2,14 @@
 #define LIBRG_DEBUG
 #include <librg.h>
 
-typedef struct {
-    zplm_vec3_t a;
-    zplm_vec3_t b;
-    zplm_vec3_t c;
-    zplm_vec3_t d;
-    zplm_vec3_t e;
-    zplm_vec3_t f;
-} librg_component(foo);
+// typedef struct {
+//     zplm_vec3_t a;
+//     zplm_vec3_t b;
+//     zplm_vec3_t c;
+//     zplm_vec3_t d;
+//     zplm_vec3_t e;
+//     zplm_vec3_t f;
+// } librg_component(foo);
 
 void on_connect_request(librg_event_t *event) {
     librg_data_wu32(event->data, 42);
@@ -26,13 +26,13 @@ void on_connect_refused(librg_event_t *event) {
 }
 
 void on_entity_create(librg_event_t *event) {
-    foo_t foo;
-    librg_data_rptr(event->data, &foo, sizeof(foo_t));
-    librg_attach_foo(event->entity, foo);
+    // foo_t foo;
+    // librg_data_rptr(event->data, &foo, sizeof(foo_t));
+    // librg_attach_foo(event->entity, foo);
 }
 
 void on_entity_update(librg_event_t *event) {
-    librg_data_rf32(event->data);
+    // librg_data_rf32(event->data);
     // librg_log("sent: %f on upd", librg_data_rf32(event->data));
 }
 
@@ -74,27 +74,30 @@ int main() {
                  "==================================================\n";
     librg_log("%s\n\n", test);
 
-    librg_init((librg_config_t) {
-        .tick_delay     = 1000,
-        .mode           = LIBRG_MODE_CLIENT,
-        .world_size     = zplm_vec2(5000.0f, 5000.0f),
-    });
+    librg_ctx_t ctx     = {0};
+    ctx.tick_delay      = 32;
+    ctx.mode            = LIBRG_MODE_CLIENT;
+    ctx.world_size      = zplm_vec3(5000.0f, 5000.0f, 0.f);
+    ctx.max_entities    = 15000;
+    ctx.max_connections = 1000;
 
-    librg_event_add(LIBRG_CONNECTION_REQUEST, on_connect_request);
-    librg_event_add(LIBRG_CONNECTION_ACCEPT, on_connect_accepted);
-    librg_event_add(LIBRG_CONNECTION_REFUSE, on_connect_refused);
+    librg_init(&ctx);
 
-    librg_event_add(LIBRG_ENTITY_CREATE, on_entity_create);
-    librg_event_add(LIBRG_ENTITY_UPDATE, on_entity_update);
+    librg_event_add(&ctx, LIBRG_CONNECTION_REQUEST, on_connect_request);
+    librg_event_add(&ctx, LIBRG_CONNECTION_ACCEPT, on_connect_accepted);
+    librg_event_add(&ctx, LIBRG_CONNECTION_REFUSE, on_connect_refused);
 
-    librg_network_start((librg_address_t) { .host = "localhost", .port = 27010 });
+    librg_event_add(&ctx, LIBRG_ENTITY_CREATE, on_entity_create);
+    librg_event_add(&ctx, LIBRG_ENTITY_UPDATE, on_entity_update);
+
+    librg_network_start(&ctx, (librg_address_t) { .host = "localhost", .port = 27010 });
 
     while (true) {
-        librg_tick();
-        zpl_sleep_ms(500);
+        librg_tick(&ctx);
+        zpl_sleep_ms(1);
     }
 
-    librg_network_stop();
-    librg_free();
+    librg_network_stop(&ctx);
+    librg_free(&ctx);
     return 0;
 }
