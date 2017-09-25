@@ -78,6 +78,10 @@
 
 #endif
 
+#if defined(__cplusplus) && defined(LIBRG_CXX11_EXTENSIONS)
+#include <functional>
+#endif
+
 #ifdef LIBRG_SHARED
 
 #if defined(_WIN32)
@@ -301,11 +305,18 @@ extern "C" {
     /**
      * Callbacks
      */
+
+#if defined(__cplusplus) && defined(LIBRG_CXX11_EXTENSIONS)
+    using librg_message_handler_t   = std::function<void(librg_message_t *msg)>;
+    using librg_component_cb_t      = std::function<void(struct librg_ctx_t *ctx)>;
+    using librg_event_cb_t          = std::function<void(librg_event_t *event)>;
+    using librg_entity_cb_t         = std::function<void(librg_entity_t entity)>;
+#else
     typedef void (librg_message_handler_t)(librg_message_t *msg);
     typedef void (librg_event_cb_t)(librg_event_t *event);
     typedef void (librg_component_cb_t)(struct librg_ctx_t *ctx);
     typedef void (librg_entity_cb_t)(librg_entity_t entity);
-
+#endif
 
     /**
      *
@@ -361,7 +372,11 @@ extern "C" {
         u32 max_components;
         zplm_vec3_t world_size;
 
+    #if defined(__cplusplus) && defined(LIBRG_CXX11_EXTENSIONS)
+        zpl_buffer_t(librg_message_handler_t) messages;
+    #else
         zpl_buffer_t(librg_message_handler_t *) messages;
+    #endif
 
         struct {
             librg_peer_t peer;
@@ -952,7 +967,11 @@ extern "C" {
      */
 
     librg_inline u64 librg_event_add(librg_ctx_t *ctx, u64 id, librg_event_cb_t callback) {
+    #if defined(__cplusplus) && defined(LIBRG_CXX11_EXTENSIONS)
+        return zplev_add(&ctx->events, id, (zplev_cb *)callback.target<zplev_cb>());
+    #else
         return zplev_add(&ctx->events, id, (zplev_cb *)callback);
+    #endif
     }
 
     void librg_event_trigger(librg_ctx_t *ctx, u64 id, librg_event_t *event) {
@@ -1300,8 +1319,6 @@ extern "C" {
 
         librg_data_free(&data);
     }
-
-
 
 
 

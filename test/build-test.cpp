@@ -1,4 +1,5 @@
 #define LIBRG_IMPLEMENTATION
+#define LIBRG_CXX11_EXTENSIONS
 #include <librg.h>
 
 void on_connect_accepted(librg_event_t *event) {
@@ -13,7 +14,9 @@ int main() {
     ctx.mode         = LIBRG_MODE_SERVER;
     ctx.world_size   = zplm_vec3(5000.0f, 5000.0f, 0.0f);
 
-    librg_init(&ctx, NULL);
+    librg_init(&ctx, [](librg_ctx_t *ctx) {
+        librg_log("wee\n");
+    });
 
     // adding event handlers
     librg_event_add(&ctx, LIBRG_CONNECTION_ACCEPT, on_connect_accepted);

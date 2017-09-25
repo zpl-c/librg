@@ -63,6 +63,9 @@ void on_components_register(librg_ctx_t *ctx) {
     librg_component_register(ctx, component_foo, sizeof(foo_t));
 }
 
+void custom_handler(librg_message_t *msg) {
+
+}
 
 int main() {
     char *test = "===============      SERVER      =================\n" \
@@ -89,6 +92,7 @@ int main() {
     librg_event_add(&ctx, LIBRG_ENTITY_CREATE, on_entity_create);
     librg_event_add(&ctx, LIBRG_ENTITY_UPDATE, on_entity_update);
 
+    librg_network_add(&ctx, 42, custom_handler);
 
     librg_network_start(&ctx, (librg_address_t) { .host = "localhost", .port = 27010 });
 
