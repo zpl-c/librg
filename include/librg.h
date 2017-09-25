@@ -78,10 +78,17 @@
 
 #endif
 
+#ifdef LIBRG_SHARED
+#if defined(_WIN32)
+#define LIBRG_API ZPL_EXTERN __declspec(dllexport)
+#else
+#define LIBRG_API ZPL_EXTERN __attribute__((visibility("default")))
+#endif
+#endif
+
 #ifdef __cplusplus
 extern "C" {
 #endif
-
 
 
     /**
@@ -90,7 +97,6 @@ extern "C" {
      *
      */
 
-    #define LIBRG_API           ZPL_DEF
     #define librg_log           zpl_printf
     #define librg_assert        ZPL_ASSERT
     #define librg_assert_msg    ZPL_ASSERT_MSG

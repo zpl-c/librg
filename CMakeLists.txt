@@ -28,7 +28,7 @@ else()
 endif()
 
 # special flags for MSVC
-if (MSVC)
+if (LIBRG_STATIC AND MSVC)
     set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} /MT")
     set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} /MTd")
 endif()
@@ -48,7 +48,7 @@ target_link_libraries(librg INTERFACE
 
 if (WIN32)
     # windows libraries for enet
-    target_link_libraries(librg INTERFACE ws2_32 winmm)
+    target_link_libraries(librg INTERFACE Ws2_32 Winmm)
 elseif (UNIX)
     # unix math library for us
     target_link_libraries(librg INTERFACE m)
@@ -74,12 +74,14 @@ endif()
 
 # static library
 if (LIBRG_STATIC)
+    add_definitions(-DLIBRG_STATIC)
     add_library(librg_static test/library.c)
-    target_link_libraries(librg_static librg enet)
+    target_link_libraries(librg_static librg)
+endif()
 
-    if (WIN32)
-        target_link_libraries(librg_static ws2_32)
-    elseif (UNIX)
-        target_link_libraries(librg_static m)
-    endif()
+# static library
+if (LIBRG_SHARED)
+    add_definitions(-DLIBRG_SHARED)
+    add_library(librg_shared SHARED test/library.c)
+    target_link_libraries(librg_shared librg)
 endif()
