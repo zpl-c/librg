@@ -79,11 +79,18 @@
 #endif
 
 #ifdef LIBRG_SHARED
+
 #if defined(_WIN32)
 #define LIBRG_API ZPL_EXTERN __declspec(dllexport)
 #else
 #define LIBRG_API ZPL_EXTERN __attribute__((visibility("default")))
 #endif
+#else
+
+#ifndef LIBRG_API
+#define LIBRG_API ZPL_DEF
+#endif
+
 #endif
 
 #ifdef __cplusplus
