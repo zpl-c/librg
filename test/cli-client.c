@@ -73,7 +73,7 @@ void on_entity_update(librg_event_t *event) {
 
 
 void on_components_register(librg_ctx_t *ctx) {
-
+    librg_component_register(ctx, component_foo, sizeof(foo_t));
 }
 
 

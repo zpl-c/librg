@@ -1326,7 +1326,8 @@ extern "C" {
         librg_assert(header && header->size);
         header->used[entity] = true;
         librg_void *cdata = ctx->components.data + header->offset;
-        zpl_memcopy(&cdata[entity * header->size], data, (usize)header->size);
+        if (data == NULL) zpl_memset(&cdata[entity * header->size], 0, (usize)header->size);
+        else zpl_memcopy(&cdata[entity * header->size], data, (usize)header->size);
         return &cdata[entity * header->size];
     }
 

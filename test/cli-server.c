@@ -31,8 +31,7 @@ void on_connect_request(librg_event_t *event) {
 
 void on_connect_accepted(librg_event_t *event) {
     librg_log("on_connect_accepted\n");
-    foo_t foo = {0};
-    librg_attach_foo(event->ctx, event->entity, &foo);
+    librg_attach_foo(event->ctx, event->entity, NULL);
 
     librg_transform_t *transform = librg_fetch_transform(event->ctx, event->entity);
     transform->position.x = (float)(2000 - rand() % 4000);
@@ -96,7 +95,7 @@ int main() {
     for (isize i = 0; i < 10000; i++) {
         librg_entity_t enemy = librg_entity_create(&ctx, 0);
         librg_transform_t *transform = librg_fetch_transform(&ctx, enemy);
-        // librg_attach_foo(enemy, (foo_t){0});
+        librg_attach_foo(&ctx, enemy, NULL);
         transform->position.x = (float)(2000 - rand() % 4000);
         transform->position.y = (float)(2000 - rand() % 4000);
     }

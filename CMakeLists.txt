@@ -27,6 +27,12 @@ else()
     target_compile_options(librg INTERFACE -std=c99)
 endif()
 
+# special flags for MSVC
+if (MSVC AND NOT DEFINED LIBRG_NO_MSVC_FLAGS)
+    set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} /MT")
+    set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} /MTd")
+endif()
+
 # proxy our includes to outside world
 target_include_directories(librg INTERFACE include
     ${LIBRG_VENDOR_FOLDER}/zpl${LIBRG_POSTFIX}/include
