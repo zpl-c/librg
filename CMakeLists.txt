@@ -28,7 +28,7 @@ else()
 endif()
 
 # special flags for MSVC
-if (MSVC AND NOT DEFINED LIBRG_NO_MSVC_FLAGS)
+if (MSVC)
     set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} /MT")
     set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} /MTd")
 endif()
