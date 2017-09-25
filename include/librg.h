@@ -1323,7 +1323,7 @@ extern "C" {
 
     librg_void *librg_component_attach(librg_ctx_t *ctx, u32 index, librg_entity_t entity, librg_void *data) {
         librg_component_meta *header = &ctx->components.headers[index];
-        librg_assert(header && header->size);
+        librg_assert_msg(header && header->size, "make sure you registered component you are trying to use");
         header->used[entity] = true;
         librg_void *cdata = ctx->components.data + header->offset;
         if (data == NULL) zpl_memset(&cdata[entity * header->size], 0, (usize)header->size);
