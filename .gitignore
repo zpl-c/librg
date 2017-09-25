@@ -4,3 +4,7 @@ node_modules/
 
 # Other
 .DS_store
+
+# local build scripts
+build.sh
+build.bat
