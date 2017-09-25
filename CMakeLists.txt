@@ -65,3 +65,15 @@ if (LIBRG_TEST)
     add_executable(librg_test test/build-test.c)
     target_link_libraries(librg_test librg)
 endif()
+
+# static library
+if (LIBRG_STATIC)
+    add_library(librg_static test/library.c)
+    target_link_libraries(librg_static librg enet)
+
+    if (WIN32)
+        target_link_libraries(librg_static ws2_32)
+    elseif (UNIX)
+        target_link_libraries(librg_static m)
+    endif()
+endif()
