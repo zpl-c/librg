@@ -6,14 +6,20 @@ enum {
     TYPE_VEHICLE = 242,
 };
 
-// typedef struct {
-//     zplm_vec3_t a;
-//     zplm_vec3_t b;
-//     zplm_vec3_t c;
-//     zplm_vec3_t d;
-//     zplm_vec3_t e;
-//     zplm_vec3_t f;
-// } librg_component(foo);
+typedef struct {
+    zplm_vec3_t a;
+    zplm_vec3_t b;
+    zplm_vec3_t c;
+    zplm_vec3_t d;
+    zplm_vec3_t e;
+    zplm_vec3_t f;
+} foo_t;
+
+enum {
+    component_foo = librg_component_last,
+};
+
+librg_component(foo, component_foo, foo_t);
 
 void on_connect_request(librg_event_t *event) {
     u32 secret = librg_data_ru32(event->data);
@@ -25,7 +31,8 @@ void on_connect_request(librg_event_t *event) {
 
 void on_connect_accepted(librg_event_t *event) {
     librg_log("on_connect_accepted\n");
-    // librg_attach_foo(event->entity, (foo_t){0});
+    foo_t foo = {0};
+    librg_attach_foo(event->ctx, event->entity, &foo);
 
     librg_transform_t *transform = librg_fetch_transform(event->ctx, event->entity);
     transform->position.x = (float)(2000 - rand() % 4000);
@@ -44,14 +51,19 @@ void on_connect_refused(librg_event_t *event) {
 }
 
 void on_entity_create(librg_event_t *event) {
-    // foo_t *foo = librg_fetch_foo(event->entity);
-    // if (foo)
-    // librg_data_wptr(event->data, foo, sizeof(foo_t));
+    foo_t *foo = librg_fetch_foo(event->ctx, event->entity);
+    if (foo)
+    librg_data_wptr(event->data, foo, sizeof(foo_t));
 }
 
 void on_entity_update(librg_event_t *event) {
-    // librg_data_wf32(event->data, librg_fetch_foo(event->entity)->a.x);
+    librg_data_wf32(event->data, librg_fetch_foo(event->ctx, event->entity)->a.x);
 }
+
+void on_components_register(librg_ctx_t *ctx) {
+    librg_component_register(ctx, component_foo, sizeof(foo_t));
+}
+
 
 int main() {
     char *test = "===============      SERVER      =================\n" \
@@ -69,7 +81,7 @@ int main() {
     ctx.max_entities    = 15000;
     ctx.max_connections = 1000;
 
-    librg_init(&ctx);
+    librg_init(&ctx, on_components_register);
 
     librg_event_add(&ctx, LIBRG_CONNECTION_REQUEST, on_connect_request);
     librg_event_add(&ctx, LIBRG_CONNECTION_ACCEPT, on_connect_accepted);

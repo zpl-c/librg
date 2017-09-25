@@ -2,14 +2,20 @@
 #define LIBRG_DEBUG
 #include <librg.h>
 
-// typedef struct {
-//     zplm_vec3_t a;
-//     zplm_vec3_t b;
-//     zplm_vec3_t c;
-//     zplm_vec3_t d;
-//     zplm_vec3_t e;
-//     zplm_vec3_t f;
-// } librg_component(foo);
+typedef struct {
+    zplm_vec3_t a;
+    zplm_vec3_t b;
+    zplm_vec3_t c;
+    zplm_vec3_t d;
+    zplm_vec3_t e;
+    zplm_vec3_t f;
+} foo_t;
+
+enum {
+    component_foo = librg_component_last,
+};
+
+librg_component(foo, component_foo, foo_t);
 
 void on_connect_request(librg_event_t *event) {
     librg_data_wu32(event->data, 42);
@@ -26,13 +32,13 @@ void on_connect_refused(librg_event_t *event) {
 }
 
 void on_entity_create(librg_event_t *event) {
-    // foo_t foo;
-    // librg_data_rptr(event->data, &foo, sizeof(foo_t));
-    // librg_attach_foo(event->entity, foo);
+    foo_t foo;
+    librg_data_rptr(event->data, &foo, sizeof(foo_t));
+    librg_attach_foo(event->ctx, event->entity, &foo);
 }
 
 void on_entity_update(librg_event_t *event) {
-    // librg_data_rf32(event->data);
+    librg_data_rf32(event->data);
     // librg_log("sent: %f on upd", librg_data_rf32(event->data));
 }
 
@@ -66,6 +72,11 @@ void on_entity_update(librg_event_t *event) {
 // }
 
 
+void on_components_register(librg_ctx_t *ctx) {
+
+}
+
+
 int main() {
     char *test = "===============      CLIENT      =================\n" \
                  "==                                              ==\n" \
@@ -81,7 +92,7 @@ int main() {
     ctx.max_entities    = 15000;
     ctx.max_connections = 1000;
 
-    librg_init(&ctx);
+    librg_init(&ctx, on_components_register);
 
     librg_event_add(&ctx, LIBRG_CONNECTION_REQUEST, on_connect_request);
     librg_event_add(&ctx, LIBRG_CONNECTION_ACCEPT, on_connect_accepted);

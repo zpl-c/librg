@@ -367,7 +367,6 @@ extern "C" {
             usize size;
             usize count;
             zpl_buffer_t(librg_component_meta) headers;
-            librg_component_cb_t *register_cb;
         } components;
 
         struct {
@@ -409,7 +408,7 @@ extern "C" {
      * Main initialization method
      * MUST BE called in the begging of your application
      */
-    LIBRG_API void librg_init(librg_ctx_t *ctx);
+    LIBRG_API void librg_init(librg_ctx_t *ctx, librg_component_cb_t component_callback);
 
     /**
      * Main tick method
@@ -2064,7 +2063,7 @@ extern "C" {
      *
      */
 
-    void librg_init(librg_ctx_t *ctx) {
+    void librg_init(librg_ctx_t *ctx, librg_component_cb_t component_callback) {
         librg_dbg("librg_init\n");
 
         #define librg_set_default(expr, value) if (!expr) expr = value
@@ -2093,14 +2092,14 @@ extern "C" {
         zpl_buffer_init(ctx->components.headers, ctx->allocator, ctx->max_components);
         zpl_array_init(ctx->entity.remove_queue, ctx->allocator);
 
-        librg_component_register(ctx, librg_dummmy, 4);
-        librg_component_register(ctx, librg_meta, sizeof(librg_meta_t));
-        librg_component_register(ctx, librg_transform, sizeof(librg_transform_t));
-        librg_component_register(ctx, librg_stream, sizeof(librg_stream_t));
-        librg_component_register(ctx, librg_control, sizeof(librg_control_t));
-        librg_component_register(ctx, librg_client, sizeof(librg_client_t));
+        librg_component_register(ctx, librg_dummmy,     4);
+        librg_component_register(ctx, librg_meta,       sizeof(librg_meta_t));
+        librg_component_register(ctx, librg_transform,  sizeof(librg_transform_t));
+        librg_component_register(ctx, librg_stream,     sizeof(librg_stream_t));
+        librg_component_register(ctx, librg_control,    sizeof(librg_control_t));
+        librg_component_register(ctx, librg_client,     sizeof(librg_client_t));
 
-        if (ctx->components.register_cb) ctx->components.register_cb(ctx);
+        if (component_callback) component_callback(ctx);
         ctx->components.data = zpl_malloc(ctx->components.size);
 
         // streamer // TODO: make 3d
