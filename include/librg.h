@@ -2117,7 +2117,7 @@ extern "C" {
         librg_component_register(ctx, librg_client,     sizeof(librg_client_t));
 
         if (component_callback) component_callback(ctx);
-        ctx->components.data = zpl_malloc(ctx->components.size);
+        ctx->components.data = (librg_void *)zpl_malloc(ctx->components.size);
 
         // streamer // TODO: make 3d
         zplc_bounds_t world = {0};
