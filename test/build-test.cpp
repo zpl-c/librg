@@ -14,12 +14,13 @@ int main() {
     ctx.mode         = LIBRG_MODE_SERVER;
     ctx.world_size   = zplm_vec3(5000.0f, 5000.0f, 0.0f);
 
-    librg_init(&ctx, [](librg_ctx_t *ctx) {
-        librg_log("wee\n");
-    });
+    librg_init(&ctx, NULL);
 
     // adding event handlers
     librg_event_add(&ctx, LIBRG_CONNECTION_ACCEPT, on_connect_accepted);
+
+    librg_event_t e = {0};
+    librg_event_trigger(&ctx, 42, &e);
 
     // starting server
     librg_address_t address = {0}; address.port = 27010;

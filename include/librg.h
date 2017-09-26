@@ -78,10 +78,6 @@
 
 #endif
 
-#if defined(__cplusplus) && defined(LIBRG_CXX11_EXTENSIONS)
-#include <functional>
-#endif
-
 #ifdef LIBRG_SHARED
 
 #if defined(_WIN32)
@@ -109,11 +105,11 @@ extern "C" {
      */
 
     #define librg_log           zpl_printf
-    #define librg_assert        ZPL_ASSERT
-    #define librg_assert_msg    ZPL_ASSERT_MSG
     #define librg_global        zpl_global
     #define librg_inline        zpl_inline
     #define librg_internal      zpl_internal
+    #define librg_assert        ZPL_ASSERT
+    #define librg_assert_msg    ZPL_ASSERT_MSG
     #define librg_lambda(name)  name
 
     #if defined(__cplusplus) || defined(_MSC_VER)
@@ -173,7 +169,7 @@ extern "C" {
      * Default built-in events
      * define your events likes this:
      *     enum {
-     *         MY_NEW_EVENT_1 = LIBRG_LAST_ENUM_NUMBER,
+     *         MY_NEW_EVENT_1 = LIBRG_LAST_EVENT,
      *         MY_NEW_EVENT_2,
      *         MY_NEW_EVENT_3,
      *     };
@@ -192,7 +188,7 @@ extern "C" {
         LIBRG_CLIENT_STREAMER_REMOVE,
         LIBRG_CLIENT_STREAMER_UPDATE,
 
-        LIBRG_LAST_ENUM_NUMBER,
+        LIBRG_EVENT_LAST,
     };
 
     /**
@@ -306,17 +302,10 @@ extern "C" {
      * Callbacks
      */
 
-#if defined(__cplusplus) && defined(LIBRG_CXX11_EXTENSIONS)
-    using librg_message_handler_t   = std::function<void(librg_message_t *msg)>;
-    using librg_component_cb_t      = std::function<void(struct librg_ctx_t *ctx)>;
-    using librg_event_cb_t          = std::function<void(librg_event_t *event)>;
-    using librg_entity_cb_t         = std::function<void(librg_entity_t entity)>;
-#else
     typedef void (librg_message_handler_t)(librg_message_t *msg);
     typedef void (librg_event_cb_t)(librg_event_t *event);
     typedef void (librg_component_cb_t)(struct librg_ctx_t *ctx);
     typedef void (librg_entity_cb_t)(librg_entity_t entity);
-#endif
 
     /**
      *
@@ -363,7 +352,7 @@ extern "C" {
         zplc_t          streamer;
 
         // core
-        u8  mode;
+        u8 mode;
         u16 tick_delay;
 
         // streamer configuration
@@ -372,11 +361,7 @@ extern "C" {
         u32 max_components;
         zplm_vec3_t world_size;
 
-    #if defined(__cplusplus) && defined(LIBRG_CXX11_EXTENSIONS)
-        zpl_buffer_t(librg_message_handler_t) messages;
-    #else
         zpl_buffer_t(librg_message_handler_t *) messages;
-    #endif
 
         struct {
             librg_peer_t peer;
@@ -967,11 +952,7 @@ extern "C" {
      */
 
     librg_inline u64 librg_event_add(librg_ctx_t *ctx, u64 id, librg_event_cb_t callback) {
-    #if defined(__cplusplus) && defined(LIBRG_CXX11_EXTENSIONS)
-        return zplev_add(&ctx->events, id, (zplev_cb *)callback.target<zplev_cb>());
-    #else
         return zplev_add(&ctx->events, id, (zplev_cb *)callback);
-    #endif
     }
 
     void librg_event_trigger(librg_ctx_t *ctx, u64 id, librg_event_t *event) {

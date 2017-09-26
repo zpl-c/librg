@@ -1,5 +1,5 @@
 enum {
-	DEMO_SPAWN_BLOCK = LIBRG_LAST_ENUM_NUMBER,
+	DEMO_SPAWN_BLOCK = LIBRG_LAST_EVENT,
 };
 
 enum {
@@ -7,6 +7,9 @@ enum {
 	DEMO_TYPE_NPC,
 };
 
+enum {
+    component_hero = librg_last_component,
+};
 
 typedef struct {
 	zplm_vec3_t accel;
