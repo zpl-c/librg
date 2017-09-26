@@ -85,30 +85,38 @@ int main() {
                  "==================================================\n";
     librg_log("%s\n\n", test);
 
-    librg_ctx_t ctx     = {0};
-    ctx.tick_delay      = 32;
-    ctx.mode            = LIBRG_MODE_CLIENT;
-    ctx.world_size      = zplm_vec3(5000.0f, 5000.0f, 0.f);
-    ctx.max_entities    = 15000;
-    ctx.max_connections = 1000;
+    librg_ctx_t original     = {0};
+    original.tick_delay      = 1000;
+    original.mode            = LIBRG_MODE_CLIENT;
+    original.world_size      = zplm_vec3(5000.0f, 5000.0f, 0.f);
+    original.max_entities    = 12000;
+    original.max_connections = 1500;
 
-    librg_init(&ctx, on_components_register);
+    const isize size = 1200;
+    librg_ctx_t ctxs[size];
 
-    librg_event_add(&ctx, LIBRG_CONNECTION_REQUEST, on_connect_request);
-    librg_event_add(&ctx, LIBRG_CONNECTION_ACCEPT, on_connect_accepted);
-    librg_event_add(&ctx, LIBRG_CONNECTION_REFUSE, on_connect_refused);
+    for (int i = 0; i < size; ++i) {
+        ctxs[i] = original;
 
-    librg_event_add(&ctx, LIBRG_ENTITY_CREATE, on_entity_create);
-    librg_event_add(&ctx, LIBRG_ENTITY_UPDATE, on_entity_update);
+        librg_init(&ctxs[i], on_components_register);
 
-    librg_network_start(&ctx, (librg_address_t) { .host = "localhost", .port = 27010 });
+        librg_event_add(&ctxs[i], LIBRG_CONNECTION_REQUEST, on_connect_request);
+        librg_event_add(&ctxs[i], LIBRG_CONNECTION_ACCEPT, on_connect_accepted);
+        librg_event_add(&ctxs[i], LIBRG_CONNECTION_REFUSE, on_connect_refused);
 
-    while (true) {
-        librg_tick(&ctx);
-        zpl_sleep_ms(1);
+        librg_event_add(&ctxs[i], LIBRG_ENTITY_CREATE, on_entity_create);
+        librg_event_add(&ctxs[i], LIBRG_ENTITY_UPDATE, on_entity_update);
+
+        librg_network_start(&ctxs[i], (librg_address_t) { .host = "localhost", .port = 27010 });
     }
 
-    librg_network_stop(&ctx);
-    librg_free(&ctx);
+    while (true) {
+        for (int i = 0; i < size; ++i) {
+            librg_tick(&ctxs[i]);
+        }
+
+        zpl_sleep_ms(100);
+    }
+
     return 0;
 }

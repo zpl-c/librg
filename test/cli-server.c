@@ -77,10 +77,10 @@ int main() {
 
 
     librg_ctx_t ctx     = {0};
-    ctx.tick_delay      = 32;
+    ctx.tick_delay      = 1000;
     ctx.mode            = LIBRG_MODE_SERVER;
     ctx.world_size      = zplm_vec3(5000.0f, 5000.0f, 0.f);
-    ctx.max_entities    = 15000;
+    ctx.max_entities    = 12000;
     ctx.max_connections = 1000;
 
     librg_init(&ctx, on_components_register);
@@ -108,7 +108,7 @@ int main() {
         librg_tick(&ctx);
         librg_log("librg_update: took %f ms.      \r", ctx.last_update);
 
-        zpl_sleep_ms(1);
+        zpl_sleep_ms(100);
     }
 
     librg_network_stop(&ctx);
