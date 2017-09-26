@@ -302,10 +302,10 @@ extern "C" {
      * Callbacks
      */
 
-    typedef void (librg_message_handler_t)(librg_message_t *msg);
-    typedef void (librg_event_cb_t)(librg_event_t *event);
-    typedef void (librg_component_cb_t)(struct librg_ctx_t *ctx);
-    typedef void (librg_entity_cb_t)(librg_entity_t entity);
+    typedef void (librg_component_cb)(struct librg_ctx_t *ctx);
+    typedef void (librg_message_cb)(librg_message_t *msg);
+    typedef void (librg_event_cb)(librg_event_t *event);
+    typedef void (librg_entity_cb)(librg_entity_t entity);
 
     /**
      *
@@ -361,7 +361,7 @@ extern "C" {
         u32 max_components;
         zplm_vec3_t world_size;
 
-        zpl_buffer_t(librg_message_handler_t *) messages;
+        zpl_buffer_t(librg_message_cb *) messages;
 
         struct {
             librg_peer_t peer;
@@ -421,7 +421,7 @@ extern "C" {
      * Main initialization method
      * MUST BE called in the begging of your application
      */
-    LIBRG_API void librg_init(librg_ctx_t *ctx, librg_component_cb_t component_callback);
+    LIBRG_API void librg_init(librg_ctx_t *ctx, librg_component_cb component_callback);
 
     /**
      * Main tick method
@@ -584,12 +584,12 @@ extern "C" {
     /**
      * Try to interate on each entity with particular component
      */
-    LIBRG_API void librg_component_each(librg_ctx_t *ctx, u32 index, librg_entity_cb_t callback);
+    LIBRG_API void librg_component_each(librg_ctx_t *ctx, u32 index, librg_entity_cb callback);
 
     /**
      * Try to interate on each entity with provided component filter
      */
-    LIBRG_API void librg_entity_each(librg_ctx_t *ctx, librg_filter_t filter, librg_entity_cb_t callback);
+    LIBRG_API void librg_entity_each(librg_ctx_t *ctx, librg_filter_t filter, librg_entity_cb callback);
 
     /**
      * Try to interate on each entity with particular component
@@ -651,7 +651,7 @@ extern "C" {
      * @param  callback
      * @return index of added event, can be used to remove particular event handler
      */
-    LIBRG_API u64 librg_event_add(librg_ctx_t *ctx, u64 id, librg_event_cb_t callback);
+    LIBRG_API u64 librg_event_add(librg_ctx_t *ctx, u64 id, librg_event_cb callback);
 
     /**
      * Used to trigger execution of all attached
@@ -812,7 +812,7 @@ extern "C" {
      * Can be used to add handler
      * to a particular message id
      */
-    LIBRG_API void librg_network_add(librg_ctx_t *ctx, u64 id, librg_message_handler_t callback);
+    LIBRG_API void librg_network_add(librg_ctx_t *ctx, u64 id, librg_message_cb callback);
 
     /**
      * Can be used to remove a handler
@@ -951,7 +951,7 @@ extern "C" {
      *
      */
 
-    librg_inline u64 librg_event_add(librg_ctx_t *ctx, u64 id, librg_event_cb_t callback) {
+    librg_inline u64 librg_event_add(librg_ctx_t *ctx, u64 id, librg_event_cb callback) {
         return zplev_add(&ctx->events, id, (zplev_cb *)callback);
     }
 
@@ -1177,7 +1177,7 @@ extern "C" {
      * Network messages
      */
 
-    librg_inline void librg_network_add(librg_ctx_t *ctx, u64 id, librg_message_handler_t callback) {
+    librg_inline void librg_network_add(librg_ctx_t *ctx, u64 id, librg_message_cb callback) {
         ctx->messages[id] = callback;
     }
 
@@ -1353,11 +1353,11 @@ extern "C" {
         header->used[entity] = false;
     }
 
-    librg_inline void librg_component_each(librg_ctx_t *ctx, u32 index, librg_entity_cb_t callback) {
+    librg_inline void librg_component_each(librg_ctx_t *ctx, u32 index, librg_entity_cb callback) {
         librg_component_eachx(ctx, index, entity, { callback(entity); });
     }
 
-    void librg_entity_each(librg_ctx_t *ctx, librg_filter_t filter, librg_entity_cb_t callback) {
+    void librg_entity_each(librg_ctx_t *ctx, librg_filter_t filter, librg_entity_cb callback) {
         librg_entity_eachx(ctx, filter, entity, { callback(entity); });
     }
 
@@ -2078,7 +2078,7 @@ extern "C" {
      *
      */
 
-    void librg_init(librg_ctx_t *ctx, librg_component_cb_t component_callback) {
+    void librg_init(librg_ctx_t *ctx, librg_component_cb component_callback) {
         librg_dbg("librg_init\n");
 
         #define librg_set_default(expr, value) if (!expr) expr = value
