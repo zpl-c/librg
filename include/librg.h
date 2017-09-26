@@ -2095,7 +2095,7 @@ extern "C" {
             librg__execute_client_update(ctx); /* send information about client updates */
         }
 
-        ctx->last_update = (zpl_utc_time_now() - start) / 1000.0;
+        ctx->last_update = (zpl_utc_time_now() - start) / 1000.0f;
     }
 
 
