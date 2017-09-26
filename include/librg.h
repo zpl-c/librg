@@ -1297,8 +1297,6 @@ extern "C" {
         }
 
         ENetEvent event;
-        librg_data_t data;
-        librg_data_init(&data);
 
         while (enet_host_service(ctx->network.host, &event, 0) > 0) {
             librg_message_t msg = {0};
@@ -1309,11 +1307,10 @@ extern "C" {
 
             switch (event.type) {
                 case ENET_EVENT_TYPE_RECEIVE: {
-                    // read our data (TODO: remove copying, insert raw poninter from enet)
-                    librg_data_wptr(&data,
-                        event.packet->data,
-                        event.packet->dataLength
-                    );
+                    librg_data_t data = {0};
+
+                    data.rawptr = event.packet->data;
+                    data.capacity = event.packet->dataLength;
 
                     // get curernt packet id
                     u64 id = librg_data_ru64(&data);
@@ -1334,8 +1331,6 @@ extern "C" {
                 case ENET_EVENT_TYPE_NONE: break;
             }
         }
-
-        librg_data_free(&data);
     }
 
 
@@ -1918,14 +1913,6 @@ extern "C" {
      */
     librg_internal void librg__execute_server_entity_update(librg_ctx_t *ctx) {
         librg_filter_t filter = { librg_client };
-
-        // create data and write inital stuff
-        librg_data_t for_create;
-        librg_data_t for_update;
-
-        librg_data_init(&for_create);
-        librg_data_init(&for_update);
-
         librg_entity_eachx(ctx, filter, librg_lambda(player), {
             librg_client_t *client = librg_fetch_client(ctx, player);
 
@@ -1942,11 +1929,11 @@ extern "C" {
             u32 removed_entities = 0;
 
             // write packet headers
-            librg_data_wu64(&for_create, LIBRG_ENTITY_CREATE);
-            librg_data_wu32(&for_create, created_entities);
+            librg_data_wu64(&ctx->stream_upd_reliable, LIBRG_ENTITY_CREATE);
+            librg_data_wu32(&ctx->stream_upd_reliable, created_entities);
 
-            librg_data_wu64(&for_update, LIBRG_ENTITY_UPDATE);
-            librg_data_wu32(&for_update, updated_entities);
+            librg_data_wu64(&ctx->stream_upd_unreliable, LIBRG_ENTITY_UPDATE);
+            librg_data_wu32(&ctx->stream_upd_unreliable, updated_entities);
 
             // add entity creates and updates
             for (isize i = 0; i < zpl_array_count(queue); ++i) {
@@ -1966,13 +1953,13 @@ extern "C" {
                     created_entities++;
 
                     // write all basic data
-                    librg_data_wu32(&for_create, entity);
-                    librg_data_wu32(&for_create, librg_fetch_meta(ctx, entity)->type);
-                    librg_data_wptr(&for_create, librg_fetch_transform(ctx, entity), sizeof(librg_transform_t));
+                    librg_data_wu32(&ctx->stream_upd_reliable, entity);
+                    librg_data_wu32(&ctx->stream_upd_reliable, librg_fetch_meta(ctx, entity)->type);
+                    librg_data_wptr(&ctx->stream_upd_reliable, librg_fetch_transform(ctx, entity), sizeof(librg_transform_t));
 
                     // request custom data from user
                     librg_event_t event = {0};
-                    event.data = &for_create; event.entity = entity;
+                    event.data = &ctx->stream_upd_reliable; event.entity = entity;
                     librg_event_trigger(ctx, LIBRG_ENTITY_CREATE, &event);
                 }
                 else {
@@ -1988,12 +1975,12 @@ extern "C" {
                     }
                     // write update
                     else {
-                        librg_data_wu32(&for_update, entity);
-                        librg_data_wptr(&for_update, librg_fetch_transform(ctx, entity), sizeof(librg_transform_t));
+                        librg_data_wu32(&ctx->stream_upd_unreliable, entity);
+                        librg_data_wptr(&ctx->stream_upd_unreliable, librg_fetch_transform(ctx, entity), sizeof(librg_transform_t));
 
                         // request custom data from user
                         librg_event_t event = {0};
-                        event.data = &for_update; event.entity = entity;
+                        event.data = &ctx->stream_upd_unreliable; event.entity = entity;
                         librg_event_trigger(ctx, LIBRG_ENTITY_UPDATE, &event);
                     }
                 }
@@ -2003,12 +1990,12 @@ extern "C" {
             }
 
             // write our calcualted amounts right after packet id (from the beginning)
-            librg_data_wu32_at(&for_create, created_entities, sizeof(u64));
-            librg_data_wu32_at(&for_update, updated_entities, sizeof(u64));
+            librg_data_wu32_at(&ctx->stream_upd_reliable, created_entities, sizeof(u64));
+            librg_data_wu32_at(&ctx->stream_upd_unreliable, updated_entities, sizeof(u64));
 
             // save pos for remove data counter
-            usize write_pos = librg_data_get_wpos(&for_create);
-            librg_data_wu32(&for_create, 0);
+            usize write_pos = librg_data_get_wpos(&ctx->stream_upd_reliable);
+            librg_data_wu32(&ctx->stream_upd_reliable, 0);
 
             // add entity removes
             for (isize i = 0; i < zpl_array_count(last_snapshot->entries); ++i) {
@@ -2020,39 +2007,37 @@ extern "C" {
                 if (entity == player) continue;
 
                 // write id
-                librg_data_wu32(&for_create, entity);
+                librg_data_wu32(&ctx->stream_upd_reliable, entity);
                 removed_entities++;
 
                 // write the rest
                 librg_event_t event = {0};
-                event.data = &for_create; event.entity = entity;
+                event.data = &ctx->stream_upd_reliable; event.entity = entity;
                 librg_event_trigger(ctx, LIBRG_ENTITY_REMOVE, &event);
             }
-            librg_data_wu32_at(&for_create, removed_entities, write_pos);
+            librg_data_wu32_at(&ctx->stream_upd_reliable, removed_entities, write_pos);
 
 
             librg_table_destroy(&client->last_snapshot);
             *last_snapshot = next_snapshot;
 
             // send the data, via differnt channels and reliability setting
-            if (librg_data_get_wpos(&for_create) > (sizeof(u64) + sizeof(u32) * 2)) {
+            if (librg_data_get_wpos(&ctx->stream_upd_reliable) > (sizeof(u64) + sizeof(u32) * 2)) {
                 enet_peer_send(client->peer, librg_options_get(LIBRG_NETWORK_PRIMARY_CHANNEL),
-                    enet_packet_create(for_create.rawptr, librg_data_get_wpos(&for_create), ENET_PACKET_FLAG_RELIABLE)
+                    enet_packet_create(ctx->stream_upd_reliable.rawptr, librg_data_get_wpos(&ctx->stream_upd_reliable), ENET_PACKET_FLAG_RELIABLE)
                 );
             }
 
             enet_peer_send(client->peer, librg_options_get(LIBRG_NETWORK_SECONDARY_CHANNEL),
-                enet_packet_create(for_update.rawptr, librg_data_get_wpos(&for_update), ENET_PACKET_FLAG_UNRELIABLE_FRAGMENT)
+                enet_packet_create(ctx->stream_upd_unreliable.rawptr, librg_data_get_wpos(&ctx->stream_upd_unreliable), ENET_PACKET_FLAG_UNRELIABLE_FRAGMENT)
             );
 
             // and cleanup
             zpl_array_free(queue);
-            librg_data_reset(&for_create);
-            librg_data_reset(&for_update);
-        });
 
-        librg_data_free(&for_create);
-        librg_data_free(&for_update);
+            librg_data_reset(&ctx->stream_upd_reliable);
+            librg_data_reset(&ctx->stream_upd_unreliable);
+        });
     }
 
     librg_inline void librg__execute_server_entity_insert(librg_ctx_t *ctx) {
