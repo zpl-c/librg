@@ -311,10 +311,10 @@ extern "C" {
      * Callbacks
      */
 
+    typedef void (librg_entity_cb)(struct librg_ctx_t *ctx, librg_entity_t entity);
     typedef void (librg_component_cb)(struct librg_ctx_t *ctx);
     typedef void (librg_message_cb)(librg_message_t *msg);
     typedef void (librg_event_cb)(librg_event_t *event);
-    typedef void (librg_entity_cb)(librg_entity_t entity);
 
     /**
      *
@@ -378,10 +378,16 @@ extern "C" {
             librg_table_t connected_peers;
         } network;
 
-        struct {
-            librg_data_t input;
-            librg_data_t output;
-        } streams;
+        union {
+            struct {
+                librg_data_t stream_input;
+                librg_data_t stream_output;
+                librg_data_t stream_upd_reliable;
+                librg_data_t stream_upd_unreliable;
+            };
+
+            librg_data_t streams[4];
+        };
 
         struct {
             librg_void *data;
@@ -1384,11 +1390,11 @@ extern "C" {
     }
 
     librg_inline void librg_component_each(librg_ctx_t *ctx, u32 index, librg_entity_cb callback) {
-        librg_component_eachx(ctx, index, entity, { callback(entity); });
+        librg_component_eachx(ctx, index, entity, { callback(ctx, entity); });
     }
 
     void librg_entity_each(librg_ctx_t *ctx, librg_filter_t filter, librg_entity_cb callback) {
-        librg_entity_eachx(ctx, filter, entity, { callback(entity); });
+        librg_entity_eachx(ctx, filter, entity, { callback(ctx, entity); });
     }
 
     librg_inline u32 librg_entity_type(librg_ctx_t *ctx, librg_entity_t entity) {

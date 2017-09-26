@@ -1,5 +1,5 @@
 enum {
-	DEMO_SPAWN_BLOCK = LIBRG_LAST_EVENT,
+	DEMO_SPAWN_BLOCK = LIBRG_EVENT_LAST,
 };
 
 enum {
@@ -8,7 +8,7 @@ enum {
 };
 
 enum {
-    component_hero = librg_last_component,
+    component_hero = librg_component_last,
 };
 
 typedef struct {
@@ -17,4 +17,7 @@ typedef struct {
 	f32 cooldown;
 	i32 max_hp;
 	i32 cur_hp;
-} librg_component(hero);
+} hero_t;
+
+// generate methods for components
+librg_component(hero, component_hero, hero_t);
