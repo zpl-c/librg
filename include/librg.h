@@ -1075,7 +1075,7 @@ extern "C" {
         librg_assert_msg(position + size <= librg_data_capacity(data),
             "librg_data: trying to read from outside of the bounds");
 
-        zpl_memcopy(ptr, data->rawptr + position, size);
+        zpl_memcopy(ptr, (char *)data->rawptr + position, size);
     }
 
     librg_inline void librg_data_wptr_at(librg_data_t *data, void *ptr, usize size, isize position) {
@@ -1085,7 +1085,7 @@ extern "C" {
             librg_data_grow(data, librg_data_capacity(data) + size + position);
         }
 
-        zpl_memcopy(data->rawptr + position, ptr, size);
+        zpl_memcopy((char *)data->rawptr + position, ptr, size);
     }
 
     librg_inline void librg_data_rptr(librg_data_t *data, void *ptr, usize size) {
