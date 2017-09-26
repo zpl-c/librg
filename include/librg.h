@@ -136,6 +136,7 @@ extern "C" {
     #define librg_bit_clear(A,k)   ( A[(k/32)] &= ~(1 << (k%32)) )
     #define librg_bit_test(A,k)    ( A[(k/32)] & (1 << (k%32)) )
 
+    #define LIBRG_DATA_STREAMS_AMOUNT 4
 
     /**
      *
@@ -386,7 +387,7 @@ extern "C" {
                 librg_data_t stream_upd_unreliable;
             };
 
-            librg_data_t streams[4];
+            librg_data_t streams[LIBRG_DATA_STREAMS_AMOUNT];
         };
 
         struct {
@@ -2147,6 +2148,10 @@ extern "C" {
         if (component_callback) component_callback(ctx);
         ctx->components.data = (librg_void *)zpl_malloc(ctx->components.size);
 
+        for (isize i = 0; i < LIBRG_DATA_STREAMS_AMOUNT; ++i) {
+            librg_data_init(&ctx->streams[i]);
+        }
+
         // streamer // TODO: make 3d
         zplc_bounds_t world = {0};
         world.centre = zplm_vec3(0, 0, 0);
@@ -2197,6 +2202,10 @@ extern "C" {
         for (usize i = 0; i < ctx->components.count; ++i) {
             librg_component_meta *header = &ctx->components.headers[i]; librg_assert(header);
             zpl_buffer_free(header->used, ctx->allocator);
+        }
+
+        for (isize i = 0; i < LIBRG_DATA_STREAMS_AMOUNT; ++i) {
+            librg_data_free(&ctx->streams[i]);
         }
 
         zpl_free(ctx->allocator, ctx->components.data);
