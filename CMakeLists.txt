@@ -27,12 +27,6 @@ else()
     target_compile_options(librg INTERFACE -std=c99)
 endif()
 
-# special flags for MSVC
-if (LIBRG_STATIC AND MSVC)
-    set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} /MT")
-    set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} /MTd")
-endif()
-
 # proxy our includes to outside world
 target_include_directories(librg INTERFACE include
     ${LIBRG_VENDOR_FOLDER}/zpl${LIBRG_POSTFIX}/include
@@ -74,12 +68,46 @@ endif()
 
 # static library
 if (LIBRG_STATIC)
+    # special flags for MSVC
+    if (MSVC OR "${CMAKE_GENERATOR}" MATCHES "(Win64|IA64)")
+
+        # This piece of crap could be very well replaced by something
+        # like replace(ARRAY PRED VALUE)
+        # But instead, we get to use this. Uh!
+        set(CompilerFlags
+            CMAKE_CXX_FLAGS
+            CMAKE_CXX_FLAGS_DEBUG
+            CMAKE_CXX_FLAGS_RELEASE
+            CMAKE_C_FLAGS
+            CMAKE_C_FLAGS_DEBUG
+            CMAKE_C_FLAGS_RELEASE
+        )
+        foreach(CompilerFlag ${CompilerFlags})
+          string(REPLACE "/MD" "/MT" ${CompilerFlag} "${${CompilerFlag}}")
+        endforeach()
+    endif()
+
     add_definitions(-DLIBRG_STATIC)
-    add_library(librg_static test/library.c)
-    target_link_libraries(librg_static librg)
+
+    # Once again, one has to hack in cmake to achieve what he needs...
+    add_library(librg_static STATIC test/library.c
+        ${LIBRG_VENDOR_FOLDER}/enet${LIBRG_POSTFIX}/callbacks.c
+        ${LIBRG_VENDOR_FOLDER}/enet${LIBRG_POSTFIX}/compress.c
+        ${LIBRG_VENDOR_FOLDER}/enet${LIBRG_POSTFIX}/host.c
+        ${LIBRG_VENDOR_FOLDER}/enet${LIBRG_POSTFIX}/list.c
+        ${LIBRG_VENDOR_FOLDER}/enet${LIBRG_POSTFIX}/packet.c
+        ${LIBRG_VENDOR_FOLDER}/enet${LIBRG_POSTFIX}/peer.c
+        ${LIBRG_VENDOR_FOLDER}/enet${LIBRG_POSTFIX}/protocol.c
+        ${LIBRG_VENDOR_FOLDER}/enet${LIBRG_POSTFIX}/unix.c
+        ${LIBRG_VENDOR_FOLDER}/enet${LIBRG_POSTFIX}/win32.c
+    )
+
+    # This doesn't actually make any significant difference, only
+    # makes sure the includes are further propagated.
+    target_link_libraries(librg_static librg enet)
 endif()
 
-# static library
+# shared library
 if (LIBRG_SHARED)
     add_definitions(-DLIBRG_SHARED)
     add_library(librg_shared SHARED test/library.c)
