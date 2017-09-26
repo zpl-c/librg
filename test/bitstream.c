@@ -10,7 +10,7 @@ typedef struct {
     zplm_vec3_t d;
     zplm_vec3_t e;
     zplm_vec3_t f;
-} librg_component(foo);
+} foo_t;
 
 // typedef struct temp {
 //     zpl_allocator_t allocator;
@@ -29,11 +29,11 @@ void aaaaa(librg_event_t *e, foo_t foo) {
 
 int main() {
 
-    librg_init((librg_config_t) {
-        .tick_delay     = 32,
-        .mode           = LIBRG_MODE_SERVER,
-        .world_size     = zplm_vec2(5000.0f, 5000.0f),
-    });
+    // librg_init((librg_config_t) {
+    //     .tick_delay     = 32,
+    //     .mode           = LIBRG_MODE_SERVER,
+    //     .world_size     = zplm_vec2(5000.0f, 5000.0f),
+    // });
 
     librg_data_t data;
     librg_data_init(&data);
@@ -47,9 +47,9 @@ int main() {
         librg_data_ru32(&data)
     );
 
-    librg_log("current wpos: %u\n", librg_data_get_wpos(&data));
+    librg_log("current wpos: %zu\n", librg_data_get_wpos(&data));
     librg_data_reset(&data);
-    librg_log("current wpos: %u\n", librg_data_get_wpos(&data));
+    librg_log("current wpos: %zu\n", librg_data_get_wpos(&data));
 
     foo_t foo = { 0 };
 
@@ -59,11 +59,12 @@ int main() {
         aaaaa(&e, foo);
         librg_data_wptr(&data, &foo, sizeof(foo_t));
     }
+    librg_log("current wpos: %zu\n", librg_data_get_wpos(&data));
 
     // librg_data_rptr()
 
     librg_data_free(&data);
 
-    librg_free();
+    // librg_free();
     return 0;
 }

@@ -205,11 +205,20 @@ extern "C" {
     struct librg_ctx_t;
 
     typedef u32 librg_entity_t;
-    typedef librg_void *librg_data_t;
 
     typedef ENetPeer   *librg_peer_t;
     typedef ENetHost   *librg_host_t;
     typedef ENetPacket *librg_packet_t;
+
+    typedef struct {
+        void *rawptr;
+
+        usize capacity;
+        usize read_pos;
+        usize write_pos;
+
+        zpl_allocator_t allocator;
+    } librg_data_t;
 
 
     /**
@@ -292,7 +301,7 @@ extern "C" {
 
     typedef struct librg_event_t {
         struct librg_ctx_t *ctx;
-        librg_void **data;
+        librg_data_t *data;
         librg_entity_t entity;
         void *userptr;
         b32 rejected;
@@ -867,14 +876,14 @@ extern "C" {
     #define librg_send_all(CTX, ID, NAME, CALLBACK_CODE) do {            \
         librg_data_t NAME; librg_data_init(&NAME);                  \
         librg_data_wu64(&NAME, ID); CALLBACK_CODE;                  \
-        librg_message_send_all(CTX, NAME, librg_data_get_wpos(&NAME));   \
+        librg_message_send_all(CTX, NAME.rawptr, librg_data_get_wpos(&NAME));   \
         librg_data_free(&NAME);                                     \
     } while(0);
 
     #define librg_send_to(CTX, ID, PEER, NAME, CALLBACK_CODE) do {       \
         librg_data_t NAME; librg_data_init(&NAME);                  \
         librg_data_wu64(&NAME, ID); CALLBACK_CODE;                  \
-        librg_message_send_to(CTX, PEER, NAME,                           \
+        librg_message_send_to(CTX, PEER, NAME.rawptr,                           \
             librg_data_get_wpos(&NAME));                            \
         librg_data_free(&NAME);                                     \
     } while(0);
@@ -882,7 +891,7 @@ extern "C" {
     #define librg_send_except(CTX, ID, PEER, NAME, CALLBACK_CODE) do {   \
         librg_data_t NAME; librg_data_init(&NAME);                  \
         librg_data_wu64(&NAME, ID); CALLBACK_CODE;                  \
-        librg_message_send_except(CTX, PEER, NAME,                       \
+        librg_message_send_except(CTX, PEER, NAME.rawptr,                       \
             librg_data_get_wpos(&NAME));                            \
         librg_data_free(&NAME);                                     \
     } while(0);
@@ -890,7 +899,7 @@ extern "C" {
     #define librg_send_instream(CTX, ID, ENTITY, NAME, CALLBACK_CODE) do { \
         librg_data_t NAME; librg_data_init(&NAME);                  \
         librg_data_wu64(&NAME, ID); CALLBACK_CODE;                  \
-        librg_message_send_instream(CTX, ENTITY, NAME,                   \
+        librg_message_send_instream(CTX, ENTITY, NAME.rawptr,                   \
             librg_data_get_wpos(&NAME));                            \
         librg_data_free(&NAME);                                     \
     } while(0);
@@ -898,7 +907,7 @@ extern "C" {
     #define librg_send_instream_except(CTX, ID, ENTITY, PEER, NAME, CALLBACK_CODE) do { \
         librg_data_t NAME; librg_data_init(&NAME);                  \
         librg_data_wu64(&NAME, ID); CALLBACK_CODE;                  \
-        librg_message_send_instream_except(CTX, ENTITY, PEER, NAME,      \
+        librg_message_send_instream_except(CTX, ENTITY, PEER, NAME.rawptr,      \
             librg_data_get_wpos(&NAME));                            \
         librg_data_free(&NAME);                                     \
     } while(0);
@@ -988,16 +997,23 @@ extern "C" {
      */
 
     librg_inline void librg_data_init_size(librg_data_t *data, usize size) {
-        librg_assert_msg(data, "librg_data_init: you need to provide data with &");
-        zpl_bs_init(*data, zpl_heap_allocator(), size);
+        librg_assert(data);
+
+        data->capacity  = size;
+        data->read_pos  = 0;
+        data->write_pos = 0;
+        data->allocator = zpl_heap_allocator();
+        data->rawptr    = zpl_alloc(data->allocator, size);
     }
 
     librg_inline void librg_data_init(librg_data_t *data) {
+        librg_assert(data);
         librg_data_init_size(data, librg_options_get(LIBRG_DEFAULT_DATA_SIZE));
     }
 
     librg_inline void librg_data_free(librg_data_t *data) {
-        zpl_bs_free(*data);
+        librg_assert(data && data->rawptr);
+        zpl_free(data->allocator, data->rawptr);
     }
 
     librg_inline void librg_data_reset(librg_data_t *data) {
@@ -1006,27 +1022,39 @@ extern "C" {
     }
 
     librg_inline void librg_data_grow(librg_data_t *data, usize min_size) {
-        zpl_bs_grow(*data, min_size);
+        librg_assert(data && data->rawptr);
+
+        usize new_capacity = ZPL_BS_GROW_FORMULA(data->capacity);
+        if (new_capacity < (min_size))
+            new_capacity = (min_size);
+
+        void *newptr = zpl_alloc(data->allocator, new_capacity);
+
+        zpl_memmove(newptr, data->rawptr, data->capacity);
+        zpl_free(data->allocator, data->rawptr);
+
+        data->capacity = new_capacity;
+        data->rawptr = newptr;
     }
 
     librg_inline usize librg_data_capacity(librg_data_t *data) {
-        return ZPL_BS_HEADER(*data)->capacity;
+        librg_assert(data); return data->capacity;
     }
 
     librg_inline usize librg_data_get_rpos(librg_data_t *data) {
-        return ZPL_BS_HEADER(*data)->read_pos;
+        librg_assert(data); return data->read_pos;
     }
 
     librg_inline usize librg_data_get_wpos(librg_data_t *data) {
-        return ZPL_BS_HEADER(*data)->write_pos;
+        librg_assert(data); return data->write_pos;
     }
 
     librg_inline void librg_data_set_rpos(librg_data_t *data, usize position) {
-        ZPL_BS_HEADER(*data)->read_pos = position;
+        librg_assert(data); data->read_pos = position;
     }
 
     librg_inline void librg_data_set_wpos(librg_data_t *data, usize position) {
-        ZPL_BS_HEADER(*data)->write_pos = position;
+        librg_assert(data); data->write_pos = position;
     }
 
 
@@ -1034,31 +1062,35 @@ extern "C" {
      * Pointer writers and readers
      */
 
-    librg_inline void librg_data_rptr(librg_data_t *data, void *ptr, usize size) {
-        librg_data_rptr_at(data, ptr, size, librg_data_get_rpos(data));
-        ZPL_BS_HEADER(*data)->read_pos += size;
-    }
-
-    librg_inline void librg_data_wptr(librg_data_t *data, void *ptr, usize size) {
-        librg_data_wptr_at(data, ptr, size, librg_data_get_wpos(data));
-        ZPL_BS_HEADER(*data)->write_pos += size;
-    }
-
     librg_inline void librg_data_rptr_at(librg_data_t *data, void *ptr, usize size, isize position) {
-        librg_assert(*data);
+        librg_assert(data && data->rawptr && ptr);
+
         librg_assert_msg(position + size <= librg_data_capacity(data),
             "librg_data: trying to read from outside of the bounds");
 
-        zpl_memcopy(ptr, *data + position, size);
+        zpl_memcopy(ptr, data->rawptr + position, size);
     }
 
     librg_inline void librg_data_wptr_at(librg_data_t *data, void *ptr, usize size, isize position) {
-        librg_assert(*data);
+        librg_assert(data && data->rawptr && ptr);
+
         if (position + size > librg_data_capacity(data)) {
             librg_data_grow(data, librg_data_capacity(data) + size + position);
         }
 
-        zpl_memcopy(*data + position, ptr, size);
+        zpl_memcopy(data->rawptr + position, ptr, size);
+    }
+
+    librg_inline void librg_data_rptr(librg_data_t *data, void *ptr, usize size) {
+        librg_assert(data && data->rawptr && ptr);
+        librg_data_rptr_at(data, ptr, size, librg_data_get_rpos(data));
+        data->read_pos += size;
+    }
+
+    librg_inline void librg_data_wptr(librg_data_t *data, void *ptr, usize size) {
+        librg_assert(data && data->rawptr && ptr);
+        librg_data_wptr_at(data, ptr, size, librg_data_get_wpos(data));
+        data->write_pos += size;
     }
 
     /**
@@ -1095,8 +1127,6 @@ extern "C" {
         LIBRG_GEN_DATA_READWRITE(b32);
 
     #undef LIBRG_GEN_DATA_READWRITE
-
-
 
 
 
@@ -1680,7 +1710,7 @@ extern "C" {
             if (!entity || !librg_entity_valid(msg->ctx, *entity)) return;
 
             librg_event_t event = {0};
-            event.entity = *entity; event.data = (librg_void**)msg->peer;
+            event.entity = *entity; event.userptr = (void *)msg->peer;
             librg_event_trigger(msg->ctx, LIBRG_CONNECTION_DISCONNECT, &event);
 
             librg_table_destroy(&librg_fetch_client(msg->ctx, *entity)->last_snapshot);
@@ -1854,7 +1884,7 @@ extern "C" {
             librg_data_wu32(&data, librg_data_get_wpos(&subdata));
 
             // write sub-bitstream to main bitstream
-            librg_data_wptr(&data, subdata, librg_data_get_wpos(&subdata));
+            librg_data_wptr(&data, subdata.rawptr, librg_data_get_wpos(&subdata));
             librg_data_free(&subdata);
 
             amount++;
@@ -1868,7 +1898,7 @@ extern "C" {
         librg_data_wu32_at(&data, amount, sizeof(u64));
 
         enet_peer_send(ctx->network.peer, librg_options_get(LIBRG_NETWORK_SECONDARY_CHANNEL),
-            enet_packet_create(data, librg_data_get_wpos(&data), ENET_PACKET_FLAG_UNRELIABLE_FRAGMENT)
+            enet_packet_create(data.rawptr, librg_data_get_wpos(&data), ENET_PACKET_FLAG_UNRELIABLE_FRAGMENT)
         );
 
         librg_data_free(&data);
@@ -2000,12 +2030,12 @@ extern "C" {
             // send the data, via differnt channels and reliability setting
             if (librg_data_get_wpos(&for_create) > (sizeof(u64) + sizeof(u32) * 2)) {
                 enet_peer_send(client->peer, librg_options_get(LIBRG_NETWORK_PRIMARY_CHANNEL),
-                    enet_packet_create(for_create, librg_data_get_wpos(&for_create), ENET_PACKET_FLAG_RELIABLE)
+                    enet_packet_create(for_create.rawptr, librg_data_get_wpos(&for_create), ENET_PACKET_FLAG_RELIABLE)
                 );
             }
 
             enet_peer_send(client->peer, librg_options_get(LIBRG_NETWORK_SECONDARY_CHANNEL),
-                enet_packet_create(for_update, librg_data_get_wpos(&for_update), ENET_PACKET_FLAG_UNRELIABLE_FRAGMENT)
+                enet_packet_create(for_update.rawptr, librg_data_get_wpos(&for_update), ENET_PACKET_FLAG_UNRELIABLE_FRAGMENT)
             );
 
             // and cleanup
@@ -2177,7 +2207,6 @@ extern "C" {
         librg_assert(ptr);
         zpl_array_free(ptr);
     }
-
 
 #ifdef __cplusplus
 }
