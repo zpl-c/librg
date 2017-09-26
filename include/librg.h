@@ -366,7 +366,6 @@ extern "C" {
         struct {
             librg_peer_t peer;
             librg_host_t host;
-
             librg_table_t connected_peers;
         } network;
 
@@ -386,10 +385,11 @@ extern "C" {
             librg_table_t ignored;
             librg_entity_pool_t shared;
             librg_entity_pool_t native;
-
-            // zpl_array_t(void *) component_pool;
             zpl_array_t(librg_entity_t) remove_queue;
         } entity;
+
+        // temp service stuff
+        f32 last_update;
 
     } librg_ctx_t;
 
@@ -1457,14 +1457,6 @@ extern "C" {
         }
     }
 
-    void librg__entity_execute_destroy(librg_ctx_t *ctx) {
-        for (isize i = 0; i < zpl_array_count(ctx->entity.remove_queue); i++) {
-            librg__entity_destroy(ctx, ctx->entity.remove_queue[i]);
-        }
-
-        zpl_array_clear(ctx->entity.remove_queue);
-    }
-
     void librg_entity_destroy(librg_ctx_t *ctx, librg_entity_t id) {
         if (librg_is_client(ctx)) {
             librg__entity_destroy(ctx, id);
@@ -1835,7 +1827,7 @@ extern "C" {
      *
      * Responsive for updating the client side streamer
      */
-    librg_internal void librg__update_client(librg_ctx_t *ctx) {
+    librg_internal void librg__execute_client_update(librg_ctx_t *ctx) {
         u32 amount = 0;
         librg_data_t data;
         librg_data_init(&data);
@@ -1887,7 +1879,7 @@ extern "C" {
      *
      * Responsive for udpating the server-side streamer
      */
-    librg_internal void librg__update_server(librg_ctx_t *ctx) {
+    librg_internal void librg__execute_server_entity_update(librg_ctx_t *ctx) {
         librg_filter_t filter = { librg_client };
 
         // create data and write inital stuff
@@ -2026,7 +2018,7 @@ extern "C" {
         librg_data_free(&for_update);
     }
 
-    librg_inline void librg__entity_execute_insert(librg_ctx_t *ctx) {
+    librg_inline void librg__execute_server_entity_insert(librg_ctx_t *ctx) {
         librg_filter_t filter = { librg_stream };
 
         // clear
@@ -2046,26 +2038,28 @@ extern "C" {
         });
     }
 
+    librg_inline void librg__execute_server_entity_destroy(librg_ctx_t *ctx) {
+        for (isize i = 0; i < zpl_array_count(ctx->entity.remove_queue); i++) {
+            librg__entity_destroy(ctx, ctx->entity.remove_queue[i]);
+        }
+
+        zpl_array_clear(ctx->entity.remove_queue);
+    }
+
     librg_internal void librg__tick_cb(void *data) {
-        u64 start = zpl_utc_time_now();
+        u64 start  = zpl_utc_time_now();
         librg_ctx_t *ctx = (librg_ctx_t *)data;
         librg_assert(ctx);
 
-        if (librg_is_client(ctx)) {
-            librg__update_client(ctx);
-			return;
-        }
-        else {
-            // create the server cull tree
-            librg__entity_execute_insert(ctx);
-
-            librg__update_server(ctx);
-
-            // destroy entities queued for removal
-            librg__entity_execute_destroy(ctx);
+        if (librg_is_server(ctx)) {
+            librg__execute_server_entity_insert(ctx); /* create the server cull tree */
+            librg__execute_server_entity_update(ctx); /* create and send updates to all clients */
+            librg__execute_server_entity_destroy(ctx); /* destroy queued entities */
+        } else {
+            librg__execute_client_update(ctx); /* send information about client updates */
         }
 
-        librg_dbg(" [update: %fms]   \r", (zpl_utc_time_now() - start) / 1000.f);
+        ctx->last_update = (zpl_utc_time_now() - start) / 1000.0;
     }
 
 

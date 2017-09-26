@@ -105,7 +105,11 @@ int main() {
     }
 
     while (true) {
+        u64 start  = zpl_utc_time_now();
         librg_tick(&ctx);
+        f32 result = (zpl_utc_time_now() - start) / 1000.0;
+        librg_log("librg_tick: took %f ms.      \r", result);
+
         zpl_sleep_ms(1);
     }
 
