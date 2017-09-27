@@ -138,6 +138,7 @@ extern "C" {
 
     #define LIBRG_DATA_STREAMS_AMOUNT 4
     #define LIBRG_MESSAGE_ID u16
+    #define LIBRG_ENTITY_ID u32
 
     /**
      *
@@ -1516,12 +1517,10 @@ extern "C" {
 
         for (isize i = 0; i < zpl_array_count(search_temp); i++) {
             librg_entity_t target = (u32)search_temp[i].tag;
+
             if (!librg_entity_valid(ctx, target)) continue;
-
-            u32 *global = librg_table_get(&ctx->entity.ignored, target);
-            u32 *local  = librg_table_get(&librg_fetch_meta(ctx, target)->ignored, entity);
-
-            if ((global && *global) || (local && *local)) continue;
+            if (!librg_entity_get_visible(ctx, target)) continue;
+            if (!librg_entity_get_visible_for(ctx, target, entity)) continue;
 
             zpl_array_append(search_result, target);
         }
