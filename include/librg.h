@@ -340,7 +340,7 @@ extern "C" {
 
     typedef struct { u32 type; librg_table_t ignored; } librg_meta_t;
     typedef struct { zplm_vec3_t position; } librg_transform_t;
-    typedef struct { u32 range; } librg_stream_t;
+    typedef struct { u32 range; zpl_array_t(librg_entity_t) last_query; } librg_stream_t;
     typedef struct { librg_peer_t *peer; } librg_control_t;
     typedef struct { librg_peer_t *peer; librg_table_t last_snapshot; } librg_client_t;
 
@@ -514,7 +514,7 @@ extern "C" {
      * Query for entities that are in stream zone
      * for current entity, and are visible to this entity
      */
-    LIBRG_API zpl_array_t(librg_entity_t) librg_entity_query(librg_ctx_t *ctx, librg_entity_t entity);
+    LIBRG_API void librg_entity_query(librg_ctx_t *ctx, librg_entity_t entity, librg_entity_t **result);
 
     /**
      * Query for entities that are in stream zone
@@ -925,6 +925,10 @@ extern "C" {
         return (librg_meta_t *)librg_component_fetch(ctx, librg_meta, entity);
     }
 
+    static librg_inline librg_stream_t *librg_fetch_stream(librg_ctx_t *ctx, librg_entity_t entity) {
+        return (librg_stream_t *)librg_component_fetch(ctx, librg_stream, entity);
+    }
+
     #define librg_component(NAME, INDEX, COMP) \
         static librg_inline COMP *ZPL_JOIN2(librg_attach_,NAME) (librg_ctx_t *ctx, librg_entity_t entity, COMP *component) { return (COMP *)librg_component_attach(ctx, INDEX, entity, (void *)component); } \
         static librg_inline COMP *ZPL_JOIN2(librg_fetch_ ,NAME) (librg_ctx_t *ctx, librg_entity_t entity) { return (COMP *)librg_component_fetch(ctx, INDEX, entity); } \
@@ -1253,7 +1257,9 @@ extern "C" {
     }
 
     void librg_message_send_instream_except(librg_ctx_t *ctx, librg_entity_t entity, librg_peer_t * ignored, void *data, usize size) {
-        zpl_array_t(librg_entity_t) queue = librg_entity_query(ctx, entity);
+        zpl_array_t(librg_entity_t) queue; // TODO: remove
+        zpl_array_init(queue, zpl_heap_allocator());
+        librg_entity_query(ctx, entity, &queue);
 
         for (isize i = 0; i < zpl_array_count(queue); i++) {
             librg_entity_t target = queue[i];
@@ -1439,6 +1445,8 @@ extern "C" {
 
         librg_entity_t entity = librg__entity_create(ctx, pool);
         librg_fetch_meta(ctx, entity)->type = type;
+        zpl_array_init(librg_fetch_stream(ctx, entity)->last_query, ctx->allocator);
+
         return entity;
     }
 
@@ -1450,6 +1458,7 @@ extern "C" {
         librg_assert_msg(++pool->count < pool->limit_upper, "entity limit");
         librg__entity_attach_default(ctx, entity);
         librg_fetch_meta(ctx, entity)->type = type;
+        zpl_array_init(librg_fetch_stream(ctx, entity)->last_query, ctx->allocator);
 
         return entity;
     }
@@ -1470,6 +1479,8 @@ extern "C" {
             librg_table_destroy(&librg_fetch_meta(ctx, entity)->ignored);
             librg_entity_set_visible(ctx, entity, true);
         }
+
+        zpl_array_free(librg_fetch_stream(ctx, entity)->last_query);
 
         // decrease amount
         pool->count--;
@@ -1510,47 +1521,66 @@ extern "C" {
         return !(ignored && *ignored);
     }
 
-    zpl_array_t(librg_entity_t) librg_entity_query(librg_ctx_t *ctx, librg_entity_t entity) {
-        // TODO: optimize the query. add preallocated array
-        zpl_array_t(zplc_node_t) search_temp;
-        zpl_array_t(librg_entity_t) search_result;
 
-        zpl_array_init(search_temp, ctx->allocator);
-        zpl_array_init(search_result, ctx->allocator);
+    /**
+     * Queriying
+     */
+
+    // custom query method
+    void librg__entity_query(librg_ctx_t *ctx, librg_entity_t entity, zplc_t *c, zplc_bounds_t bounds, librg_entity_t **out_entities) {
+        if (c->nodes == NULL) return;
+        if (!zplc__intersects(c->dimensions, c->boundary, bounds)) return;
+
+        isize nodes_count = zpl_array_count(c->nodes);
+        for (i32 i = 0; i < nodes_count; ++i) {
+            b32 inside = zplc__contains(c->dimensions, bounds, c->nodes[i].position.e);
+
+            if (inside) {
+                librg_entity_t target = (LIBRG_ENTITY_ID)c->nodes[i].tag;
+
+                if (!librg_entity_valid(ctx, target)) continue;
+                if (!librg_entity_get_visible(ctx, target)) continue;
+                if (!librg_entity_get_visible_for(ctx, target, entity)) continue;
+
+                zpl_array_append(*out_entities, target);
+            }
+        }
+
+        if(c->trees == NULL) return;
+
+        isize trees_count = zpl_array_count(c->trees);
+        if (trees_count == 0) return;
+
+        for (i32 i = 0; i < trees_count; ++i) {
+            librg__entity_query(ctx, entity, (c->trees+i), bounds, out_entities);
+        }
+    }
+
+    librg_inline void librg_entity_query(librg_ctx_t *ctx, librg_entity_t entity, librg_entity_t **out_entities) {
+        librg_assert(ctx && out_entities);
 
         librg_transform_t *transform = (librg_transform_t *)librg_component_fetch(ctx, librg_transform, entity);
         librg_stream_t    *stream    = (librg_stream_t *)   librg_component_fetch(ctx, librg_stream, entity);
+
         librg_assert(transform && stream);
+        zpl_array_count(*out_entities) = 0; /* reset previous count */
 
         zplc_bounds_t search_bounds;
-        search_bounds.centre = transform->position;
+        search_bounds.centre    = transform->position;
         search_bounds.half_size = zplm_vec3((f32)stream->range, (f32)stream->range, (f32)stream->range);
 
-        zplc_query(&ctx->streamer, search_bounds, &search_temp);
-
-        for (isize i = 0; i < zpl_array_count(search_temp); i++) {
-            librg_entity_t target = (LIBRG_ENTITY_ID)search_temp[i].tag;
-
-            if (!librg_entity_valid(ctx, target)) continue;
-            if (!librg_entity_get_visible(ctx, target)) continue;
-            if (!librg_entity_get_visible_for(ctx, target, entity)) continue;
-
-            zpl_array_append(search_result, target);
-        }
-
-        zpl_array_free(search_temp);
-        return search_result;
+        librg__entity_query(ctx, entity, &ctx->streamer, search_bounds, out_entities);
     }
 
-    usize librg_entity_query_raw(librg_ctx_t *ctx, librg_entity_t entity, librg_entity_t **result) {
-        librg_assert(result);
-        usize size = 0;
-        zpl_array_t(librg_entity_t) array = librg_entity_query(ctx, entity);
-        size = zpl_array_count(array) * sizeof(librg_entity_t);
-        *result = array;
+    // usize librg_entity_query_raw(librg_ctx_t *ctx, librg_entity_t entity, librg_entity_t **result) {
+    //     librg_assert(result);
+    //     usize size = 0;
+    //     zpl_array_t(librg_entity_t) array = librg_entity_query(ctx, entity);
+    //     size = zpl_array_count(array) * sizeof(librg_entity_t);
+    //     *result = array;
 
-        return size;
-    }
+    //     return size;
+    // }
 
     librg_entity_t librg_entity_get(librg_ctx_t *ctx, librg_peer_t *peer) {
         librg_assert(ctx && peer);
@@ -1920,6 +1950,7 @@ extern "C" {
         librg_filter_t filter = { librg_client };
         librg_entity_eachx(ctx, filter, librg_lambda(player), {
             librg_client_t *client = librg_fetch_client(ctx, player);
+            librg_stream_t *stream = librg_fetch_stream(ctx, player);
 
             // get old, and preapre new snapshot handlers
             librg_table_t *last_snapshot = &client->last_snapshot;
@@ -1927,10 +1958,10 @@ extern "C" {
             librg_table_init(&next_snapshot, ctx->allocator);
 
             // fetch entities in the steram zone
-            zpl_array_t(librg_entity_t) queue = librg_entity_query(ctx, player);
+            librg_entity_query(ctx, player, &stream->last_query);
 
             u32 created_entities = 0;
-            u32 updated_entities = (u32) zpl_array_count(queue);
+            u32 updated_entities = (u32) zpl_array_count(stream->last_query);
             u32 removed_entities = 0;
 
             // write packet headers
@@ -1941,8 +1972,8 @@ extern "C" {
             librg_data_wu32(&ctx->stream_upd_unreliable, updated_entities);
 
             // add entity creates and updates
-            for (isize i = 0; i < zpl_array_count(queue); ++i) {
-                librg_entity_t entity = (LIBRG_ENTITY_ID)queue[i];
+            for (isize i = 0; i < zpl_array_count(stream->last_query); ++i) {
+                librg_entity_t entity = (LIBRG_ENTITY_ID)stream->last_query[i];
 
                 // fetch value of entity in the last snapshot
                 u32 *existed_in_last = librg_table_get(last_snapshot, entity);
@@ -2044,8 +2075,6 @@ extern "C" {
             );
 
             // and cleanup
-            zpl_array_free(queue);
-
             librg_data_reset(&ctx->stream_upd_reliable);
             librg_data_reset(&ctx->stream_upd_unreliable);
         });
