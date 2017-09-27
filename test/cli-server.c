@@ -67,6 +67,21 @@ void custom_handler(librg_message_t *msg) {
 
 }
 
+void measure(void *userptr) {
+    librg_ctx_t *ctx = (librg_ctx_t *)userptr;
+
+    static u32 lastdl = 0;
+    static u32 lastup = 0;
+
+    f32 dl = (ctx->network.host->totalReceivedData - lastdl) * 8.0f / ( 1000.0f * 1000 ) ; // mbps
+    f32 up = (ctx->network.host->totalSentData     - lastup) * 8.0f / ( 1000.0f * 1000 ) ; // mbps
+
+    lastdl = ctx->network.host->totalReceivedData;
+    lastup = ctx->network.host->totalSentData;
+
+    librg_log("librg_update: took %f ms. Current used bandwidth D/U: (%f / %f) mbps. \r", ctx->last_update, dl, up);
+}
+
 int main() {
     char *test = "===============      SERVER      =================\n" \
                  "==                                              ==\n" \
@@ -77,7 +92,7 @@ int main() {
 
 
     librg_ctx_t ctx     = {0};
-    ctx.tick_delay      = 1000;
+    ctx.tick_delay      = 32;
     ctx.mode            = LIBRG_MODE_SERVER;
     ctx.world_size      = zplm_vec3(5000.0f, 5000.0f, 0.f);
     ctx.max_entities    = 12000;
@@ -104,11 +119,15 @@ int main() {
         transform->position.y = (float)(2000 - rand() % 4000);
     }
 
+    zpl_timer_t *tick_timer = zpl_timer_add(ctx.timers);
+    tick_timer->userptr = (void *)&ctx; /* provide ctx as a argument to timer */
+    zpl_timer_set(tick_timer, 1000 * 1000, -1, measure);
+    zpl_timer_start(tick_timer, 1000);
+
+
     while (true) {
         librg_tick(&ctx);
-        librg_log("librg_update: took %f ms.      \r", ctx.last_update);
-
-        zpl_sleep_ms(100);
+        zpl_sleep_ms(1);
     }
 
     librg_network_stop(&ctx);
