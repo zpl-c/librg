@@ -137,6 +137,7 @@ extern "C" {
     #define librg_bit_test(A,k)    ( A[(k/32)] & (1 << (k%32)) )
 
     #define LIBRG_DATA_STREAMS_AMOUNT 4
+    #define LIBRG_MESSAGE_ID u16
 
     /**
      *
@@ -794,7 +795,8 @@ extern "C" {
     #define librg_data_rentity librg_data_ru32
     #define librg_data_wentity librg_data_wu32
 
-
+    #define librg_data_wmid ZPL_JOIN2(librg_data_w, LIBRG_MESSAGE_ID)
+    #define librg_data_rmid ZPL_JOIN2(librg_data_r, LIBRG_MESSAGE_ID)
 
     /**
      *
@@ -828,34 +830,34 @@ extern "C" {
      * Can be used to add handler
      * to a particular message id
      */
-    LIBRG_API void librg_network_add(librg_ctx_t *ctx, u64 id, librg_message_cb callback);
+    LIBRG_API void librg_network_add(librg_ctx_t *ctx, LIBRG_MESSAGE_ID id, librg_message_cb callback);
 
     /**
      * Can be used to remove a handler
      * from particular message id
      */
-    LIBRG_API void librg_network_remove(librg_ctx_t *ctx, u64 id);
+    LIBRG_API void librg_network_remove(librg_ctx_t *ctx, LIBRG_MESSAGE_ID id);
 
     /**
      * Part of message API
      * Takes in initialized void of size pointer with written packet id
      * and sends data to all connected peers ( or to server if its client )
      */
-    LIBRG_API void librg_message_send_all(librg_ctx_t *ctx, librg_void *data, usize size);
+    LIBRG_API void librg_message_send_all(librg_ctx_t *ctx, void *data, usize size);
 
     /**
      * Part of message API
      * Applies all from previous mehod
      * But data will be sent only to particular provided peer
      */
-    LIBRG_API void librg_message_send_to(librg_ctx_t *ctx, librg_peer_t *peer, librg_void *data, usize size);
+    LIBRG_API void librg_message_send_to(librg_ctx_t *ctx, librg_peer_t *peer, void *data, usize size);
 
     /**
      * Part of message API
      * Applies all from previous mehod
      * But data will be sent to all except provided peer
      */
-    LIBRG_API void librg_message_send_except(librg_ctx_t *ctx, librg_peer_t *peer, librg_void *data, usize size);
+    LIBRG_API void librg_message_send_except(librg_ctx_t *ctx, librg_peer_t *peer, void *data, usize size);
 
     /**
      * Part of message API
@@ -863,7 +865,7 @@ extern "C" {
      * Data will be sent only to entities, which are inside streamzone
      * for provided entity
      */
-    LIBRG_API void librg_message_send_instream(librg_ctx_t *ctx, librg_entity_t entity, librg_void *data, usize size);
+    LIBRG_API void librg_message_send_instream(librg_ctx_t *ctx, librg_entity_t entity, void *data, usize size);
 
     /**
      * Part of message API
@@ -871,7 +873,7 @@ extern "C" {
      * Data will be sent only to entities, which are inside streamzone
      * for provided entity except peer
      */
-    LIBRG_API void librg_message_send_instream_except(librg_ctx_t *ctx, librg_entity_t entity, librg_peer_t *peer, librg_void *data, usize size);
+    LIBRG_API void librg_message_send_instream_except(librg_ctx_t *ctx, librg_entity_t entity, librg_peer_t *peer, void *data, usize size);
 
 
     /**
@@ -880,45 +882,42 @@ extern "C" {
      *
      */
 
-    #define librg_send_all(CTX, ID, NAME, CALLBACK_CODE) do {            \
-        librg_data_t NAME; librg_data_init(&NAME);                  \
-        librg_data_wu64(&NAME, ID); CALLBACK_CODE;                  \
-        librg_message_send_all(CTX, NAME.rawptr, librg_data_get_wpos(&NAME));   \
-        librg_data_free(&NAME);                                     \
+    #define librg__send_internal(CTX, ID, NAME, CALLBACK_CODE, SEND_CODE) \
+        librg_data_t NAME; \
+        librg_data_init(&NAME); \
+        librg_data_wmid(&NAME, ID); \
+        CALLBACK_CODE; SEND_CODE; \
+        librg_data_free(&NAME);
+
+    #define librg_send_all(CTX, ID, NAME, CALLBACK_CODE) do { \
+        librg__send_internal(CTX, ID, NAME, CALLBACK_CODE, { \
+            librg_message_send_all(CTX, NAME.rawptr, librg_data_get_wpos(&NAME)); \
+        }); \
     } while(0);
 
-    #define librg_send_to(CTX, ID, PEER, NAME, CALLBACK_CODE) do {       \
-        librg_data_t NAME; librg_data_init(&NAME);                  \
-        librg_data_wu64(&NAME, ID); CALLBACK_CODE;                  \
-        librg_message_send_to(CTX, PEER, NAME.rawptr,                           \
-            librg_data_get_wpos(&NAME));                            \
-        librg_data_free(&NAME);                                     \
+    #define librg_send_to(CTX, ID, PEER, NAME, CALLBACK_CODE) do { \
+        librg__send_internal(CTX, ID, NAME, CALLBACK_CODE, { \
+            librg_message_send_to(CTX, PEER, NAME.rawptr, librg_data_get_wpos(&NAME)); \
+        }); \
     } while(0);
 
-    #define librg_send_except(CTX, ID, PEER, NAME, CALLBACK_CODE) do {   \
-        librg_data_t NAME; librg_data_init(&NAME);                  \
-        librg_data_wu64(&NAME, ID); CALLBACK_CODE;                  \
-        librg_message_send_except(CTX, PEER, NAME.rawptr,                       \
-            librg_data_get_wpos(&NAME));                            \
-        librg_data_free(&NAME);                                     \
+    #define librg_send_except(CTX, ID, PEER, NAME, CALLBACK_CODE) do { \
+        librg__send_internal(CTX, ID, NAME, CALLBACK_CODE, { \
+            librg_message_send_except(CTX, PEER, NAME.rawptr, librg_data_get_wpos(&NAME)); \
+        }); \
     } while(0);
 
     #define librg_send_instream(CTX, ID, ENTITY, NAME, CALLBACK_CODE) do { \
-        librg_data_t NAME; librg_data_init(&NAME);                  \
-        librg_data_wu64(&NAME, ID); CALLBACK_CODE;                  \
-        librg_message_send_instream(CTX, ENTITY, NAME.rawptr,                   \
-            librg_data_get_wpos(&NAME));                            \
-        librg_data_free(&NAME);                                     \
+        librg__send_internal(CTX, ID, NAME, CALLBACK_CODE, { \
+            librg_message_send_instream(CTX, ENTITY, NAME.rawptr, librg_data_get_wpos(&NAME)); \
+        }); \
     } while(0);
 
     #define librg_send_instream_except(CTX, ID, ENTITY, PEER, NAME, CALLBACK_CODE) do { \
-        librg_data_t NAME; librg_data_init(&NAME);                  \
-        librg_data_wu64(&NAME, ID); CALLBACK_CODE;                  \
-        librg_message_send_instream_except(CTX, ENTITY, PEER, NAME.rawptr,      \
-            librg_data_get_wpos(&NAME));                            \
-        librg_data_free(&NAME);                                     \
+        librg__send_internal(CTX, ID, NAME, CALLBACK_CODE, { \
+            librg_message_send_instream(CTX, ENTITY, PEER, NAME.rawptr, librg_data_get_wpos(&NAME)); \
+        }); \
     } while(0);
-
 
     #define librg_send librg_send_all
 
@@ -1214,11 +1213,11 @@ extern "C" {
      * Network messages
      */
 
-    librg_inline void librg_network_add(librg_ctx_t *ctx, u64 id, librg_message_cb callback) {
+    librg_inline void librg_network_add(librg_ctx_t *ctx, LIBRG_MESSAGE_ID id, librg_message_cb callback) {
         ctx->messages[id] = callback;
     }
 
-    librg_inline void librg_network_remove(librg_ctx_t *ctx, u64 id) {
+    librg_inline void librg_network_remove(librg_ctx_t *ctx, LIBRG_MESSAGE_ID id) {
         ctx->messages[id] = NULL;
     }
 
@@ -1226,7 +1225,7 @@ extern "C" {
      * Senders
      */
 
-    void librg_message_send_all(librg_ctx_t *ctx, librg_void *data, usize size) {
+    void librg_message_send_all(librg_ctx_t *ctx, void *data, usize size) {
         if (librg_is_client(ctx)) {
             librg_message_send_to(ctx, ctx->network.peer, data, size);
 			return;
@@ -1235,14 +1234,14 @@ extern "C" {
         librg_message_send_except(ctx, NULL, data, size);
     }
 
-    void librg_message_send_to(librg_ctx_t *ctx, librg_peer_t *peer, librg_void *data, usize size) {
+    void librg_message_send_to(librg_ctx_t *ctx, librg_peer_t *peer, void *data, usize size) {
         zpl_unused(ctx);
         enet_peer_send(peer, librg_options_get(LIBRG_NETWORK_MESSAGE_CHANNEL),
             enet_packet_create(data, size, ENET_PACKET_FLAG_RELIABLE)
         );
     }
 
-    void librg_message_send_except(librg_ctx_t *ctx, librg_peer_t *peer, librg_void *data, usize size) {
+    void librg_message_send_except(librg_ctx_t *ctx, librg_peer_t *peer, void *data, usize size) {
         librg_filter_t filter = { librg_client };
 
         // fixme
@@ -1257,11 +1256,11 @@ extern "C" {
         });
     }
 
-    librg_inline void librg_message_send_instream(librg_ctx_t *ctx, librg_entity_t entity, librg_void *data, usize size) {
+    librg_inline void librg_message_send_instream(librg_ctx_t *ctx, librg_entity_t entity, void *data, usize size) {
         librg_message_send_instream_except(ctx, entity, NULL, data, size);
     }
 
-    void librg_message_send_instream_except(librg_ctx_t *ctx, librg_entity_t entity, librg_peer_t * ignored, librg_void *data, usize size) {
+    void librg_message_send_instream_except(librg_ctx_t *ctx, librg_entity_t entity, librg_peer_t * ignored, void *data, usize size) {
         zpl_array_t(librg_entity_t) queue = librg_entity_query(ctx, entity);
 
         for (isize i = 0; i < zpl_array_count(queue); i++) {
@@ -1313,14 +1312,15 @@ extern "C" {
                     data.capacity = event.packet->dataLength;
 
                     // get curernt packet id
-                    u64 id = librg_data_ru64(&data);
+                    LIBRG_MESSAGE_ID id = librg_data_rmid(&data);
 
                     if (ctx->messages[id]) {
                         msg.data = &data;
                         ctx->messages[id](&msg);
                     }
                     else {
-                        librg_dbg("network: unknown message: %llu\n", id);
+                        /* print message id, casted to biggest size */
+                        librg_dbg("network: unknown message: %llu\n", (u64)id);
                     }
 
                     enet_packet_destroy(event.packet);
@@ -1863,7 +1863,7 @@ extern "C" {
         librg_data_t data;
         librg_data_init(&data);
 
-        librg_data_wu64(&data, LIBRG_CLIENT_STREAMER_UPDATE);
+        librg_data_wmid(&data, LIBRG_CLIENT_STREAMER_UPDATE);
         librg_data_wu32(&data, 0); // amount of entities to be sent (updates)
 
         librg_filter_t filter = {
@@ -1895,8 +1895,8 @@ extern "C" {
             return;
         }
 
-        // write amountafter packet id
-        librg_data_wu32_at(&data, amount, sizeof(u64));
+        // write amount after packet id
+        librg_data_wu32_at(&data, amount, sizeof(LIBRG_MESSAGE_ID));
 
         enet_peer_send(ctx->network.peer, librg_options_get(LIBRG_NETWORK_SECONDARY_CHANNEL),
             enet_packet_create(data.rawptr, librg_data_get_wpos(&data), ENET_PACKET_FLAG_UNRELIABLE_FRAGMENT)
@@ -1928,10 +1928,10 @@ extern "C" {
             u32 removed_entities = 0;
 
             // write packet headers
-            librg_data_wu64(&ctx->stream_upd_reliable, LIBRG_ENTITY_CREATE);
+            librg_data_wmid(&ctx->stream_upd_reliable, LIBRG_ENTITY_CREATE);
             librg_data_wu32(&ctx->stream_upd_reliable, created_entities);
 
-            librg_data_wu64(&ctx->stream_upd_unreliable, LIBRG_ENTITY_UPDATE);
+            librg_data_wmid(&ctx->stream_upd_unreliable, LIBRG_ENTITY_UPDATE);
             librg_data_wu32(&ctx->stream_upd_unreliable, updated_entities);
 
             // add entity creates and updates
@@ -1989,8 +1989,8 @@ extern "C" {
             }
 
             // write our calcualted amounts right after packet id (from the beginning)
-            librg_data_wu32_at(&ctx->stream_upd_reliable, created_entities, sizeof(u64));
-            librg_data_wu32_at(&ctx->stream_upd_unreliable, updated_entities, sizeof(u64));
+            librg_data_wu32_at(&ctx->stream_upd_reliable, created_entities, sizeof(LIBRG_MESSAGE_ID));
+            librg_data_wu32_at(&ctx->stream_upd_unreliable, updated_entities, sizeof(LIBRG_MESSAGE_ID));
 
             // save pos for remove data counter
             usize write_pos = librg_data_get_wpos(&ctx->stream_upd_reliable);
@@ -2021,7 +2021,7 @@ extern "C" {
             *last_snapshot = next_snapshot;
 
             // send the data, via differnt channels and reliability setting
-            if (librg_data_get_wpos(&ctx->stream_upd_reliable) > (sizeof(u64) + sizeof(u32) * 2)) {
+            if (librg_data_get_wpos(&ctx->stream_upd_reliable) > (sizeof(LIBRG_MESSAGE_ID) + sizeof(u32) * 2)) {
                 enet_peer_send(client->peer, librg_options_get(LIBRG_NETWORK_PRIMARY_CHANNEL),
                     enet_packet_create(ctx->stream_upd_reliable.rawptr, librg_data_get_wpos(&ctx->stream_upd_reliable), ENET_PACKET_FLAG_RELIABLE)
                 );
