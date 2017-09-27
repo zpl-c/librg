@@ -67,6 +67,21 @@ void custom_handler(librg_message_t *msg) {
 
 }
 
+void measure(void *userptr) {
+    librg_ctx_t *ctx = (librg_ctx_t *)userptr;
+
+    static u32 lastdl = 0;
+    static u32 lastup = 0;
+
+    f32 dl = (ctx->network.host->totalReceivedData - lastdl) * 8.0f / ( 1000.0f * 1000 ) ; // mbps
+    f32 up = (ctx->network.host->totalSentData     - lastup) * 8.0f / ( 1000.0f * 1000 ) ; // mbps
+
+    lastdl = ctx->network.host->totalReceivedData;
+    lastup = ctx->network.host->totalSentData;
+
+    librg_log("librg_update: took %f ms. Current used bandwidth D/U: (%f / %f) mbps. \r", ctx->last_update, dl, up);
+}
+
 int main() {
     char *test = "===============      SERVER      =================\n" \
                  "==                                              ==\n" \
@@ -75,13 +90,14 @@ int main() {
                  "==================================================\n";
     librg_log("%s\n\n", test);
 
+    librg_option_set(LIBRG_MAX_ENTITIES_PER_BRANCH, 64);
 
     librg_ctx_t ctx     = {0};
     ctx.tick_delay      = 1000;
     ctx.mode            = LIBRG_MODE_SERVER;
     ctx.world_size      = zplm_vec3(5000.0f, 5000.0f, 0.f);
     ctx.max_entities    = 12000;
-    ctx.max_connections = 1000;
+    ctx.max_connections = 1500;
 
     librg_init(&ctx, on_components_register);
 
@@ -94,7 +110,7 @@ int main() {
 
     librg_network_add(&ctx, 42, custom_handler);
 
-    librg_network_start(&ctx, (librg_address_t) { .host = "localhost", .port = 27010 });
+    librg_network_start(&ctx, (librg_address_t) { .host = "localhost", .port = 7777 });
 
     for (isize i = 0; i < 10000; i++) {
         librg_entity_t enemy = librg_entity_create(&ctx, 0);
@@ -104,11 +120,15 @@ int main() {
         transform->position.y = (float)(2000 - rand() % 4000);
     }
 
+    zpl_timer_t *tick_timer = zpl_timer_add(ctx.timers);
+    tick_timer->userptr = (void *)&ctx; /* provide ctx as a argument to timer */
+    zpl_timer_set(tick_timer, 1000 * 1000, -1, measure);
+    zpl_timer_start(tick_timer, 1000);
+
+
     while (true) {
         librg_tick(&ctx);
-        librg_log("librg_update: took %f ms.      \r", ctx.last_update);
-
-        zpl_sleep_ms(100);
+        zpl_sleep_ms(1);
     }
 
     librg_network_stop(&ctx);

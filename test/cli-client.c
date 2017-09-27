@@ -90,7 +90,6 @@ int main() {
     original.mode            = LIBRG_MODE_CLIENT;
     original.world_size      = zplm_vec3(5000.0f, 5000.0f, 0.f);
     original.max_entities    = 12000;
-    original.max_connections = 1500;
 
     const isize size = 1200;
     librg_ctx_t ctxs[size];
@@ -107,7 +106,7 @@ int main() {
         librg_event_add(&ctxs[i], LIBRG_ENTITY_CREATE, on_entity_create);
         librg_event_add(&ctxs[i], LIBRG_ENTITY_UPDATE, on_entity_update);
 
-        librg_network_start(&ctxs[i], (librg_address_t) { .host = "localhost", .port = 27010 });
+        librg_network_start(&ctxs[i], (librg_address_t) { .host = "localhost", .port = 7777 });
     }
 
     while (true) {
