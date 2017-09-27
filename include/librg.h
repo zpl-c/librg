@@ -2140,7 +2140,7 @@ extern "C" {
         zplc_bounds_t world = {0};
         world.centre = zplm_vec3(0, 0, 0);
         world.half_size = zplm_vec3(ctx->world_size.x, ctx->world_size.y, ctx->world_size.z);
-        zplc_init(&ctx->streamer, ctx->allocator, ctx->world_size.z == 0.0f ? zplc_dim_2d_ev : zplc_dim_3d_ev, world, 4);}
+        zplc_init(&ctx->streamer, ctx->allocator, ctx->world_size.z == 0.0f ? zplc_dim_2d_ev : zplc_dim_3d_ev, world, 4);
         librg_table_init(&ctx->entity.ignored, ctx->allocator);
 
         // events
