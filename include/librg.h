@@ -1323,7 +1323,6 @@ extern "C" {
                         librg_dbg("network: unknown message: %llu\n", id);
                     }
 
-                    librg_data_reset(&data);
                     enet_packet_destroy(event.packet);
                 } break;
                 case ENET_EVENT_TYPE_CONNECT:    ctx->messages[LIBRG_CONNECTION_INIT](&msg); break;
@@ -2015,8 +2014,8 @@ extern "C" {
                 event.data = &ctx->stream_upd_reliable; event.entity = entity;
                 librg_event_trigger(ctx, LIBRG_ENTITY_REMOVE, &event);
             }
-            librg_data_wu32_at(&ctx->stream_upd_reliable, removed_entities, write_pos);
 
+            librg_data_wu32_at(&ctx->stream_upd_reliable, removed_entities, write_pos);
 
             librg_table_destroy(&client->last_snapshot);
             *last_snapshot = next_snapshot;
