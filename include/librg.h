@@ -138,6 +138,7 @@ extern "C" {
 
     #define LIBRG_DATA_STREAMS_AMOUNT 4
     #define LIBRG_MESSAGE_ID u16
+    #define LIBRG_ENTITY_ID u32
 
     /**
      *
@@ -321,32 +322,14 @@ extern "C" {
     typedef void (librg_event_cb)(librg_event_t *event);
 
     /**
-     *
-     * COMPONENTS
-     *
+     * Default components
      */
 
-    typedef struct {
-        zplm_vec3_t position;
-    } librg_transform_t;
-
-    typedef struct {
-        librg_peer_t *peer;
-    } librg_control_t;
-
-    typedef struct {
-        u32 range;
-    } librg_stream_t;
-
-    typedef struct {
-        u32 type;
-        librg_table_t ignored;
-    } librg_meta_t;
-
-    typedef struct {
-        librg_peer_t *peer;
-        librg_table_t last_snapshot;
-    } librg_client_t;
+    typedef struct { u32 type; librg_table_t ignored; } librg_meta_t;
+    typedef struct { zplm_vec3_t position; } librg_transform_t;
+    typedef struct { u32 range; } librg_stream_t;
+    typedef struct { librg_peer_t *peer; } librg_control_t;
+    typedef struct { librg_peer_t *peer; librg_table_t last_snapshot; } librg_client_t;
 
     enum {
         librg_dummmy,
@@ -481,14 +464,11 @@ extern "C" {
     LIBRG_API b32 librg_is_client(librg_ctx_t *ctx);
 
 
-
-
     /**
      *
      * ENTITIES
      *
      */
-
 
     /**
      * Create entity and return handle
@@ -574,7 +554,7 @@ extern "C" {
     /**
      * Get controller of the entity
      */
-    LIBRG_API librg_peer_t * librg_entity_control_get(librg_ctx_t *ctx, librg_entity_t entity);
+    LIBRG_API librg_peer_t *librg_entity_control_get(librg_ctx_t *ctx, librg_entity_t entity);
 
     /**
      * Remove some entity from stream ownership of the client
@@ -651,13 +631,11 @@ extern "C" {
     } while(0)
 
 
-
     /**
      *
      * EVENTS
      *
      */
-
 
     /**
      * Used to attach event handler
@@ -711,13 +689,11 @@ extern "C" {
     LIBRG_API b32 librg_event_succeeded(librg_event_t *event);
 
 
-
     /**
      *
      * BINARY DATA (BITSTREAM)
      *
      */
-
 
     /**
      * Initialize new bitstream with default mem size
@@ -801,12 +777,12 @@ extern "C" {
     #define librg_data_wmid ZPL_JOIN2(librg_data_w, LIBRG_MESSAGE_ID)
     #define librg_data_rmid ZPL_JOIN2(librg_data_r, LIBRG_MESSAGE_ID)
 
+
     /**
      *
      * NETWORK
      *
      */
-
 
     /**
      * Check are we connected
@@ -1501,13 +1477,24 @@ extern "C" {
     }
 
 
-    void librg_entity_set_visible(librg_ctx_t *ctx, librg_entity_t entity, b32 state) {
+    librg_inline void librg_entity_set_visible(librg_ctx_t *ctx, librg_entity_t entity, b32 state) {
         librg_table_set(&ctx->entity.ignored, entity, (u32)!state);
     }
 
-    void librg_entity_set_visible_for(librg_ctx_t *ctx, librg_entity_t entity, librg_entity_t target, b32 state) {
+    librg_inline b32 librg_entity_get_visible(librg_ctx_t *ctx, librg_entity_t entity) {
+        u32 *ignored = librg_table_get(&ctx->entity.ignored, entity);
+        return !(ignored && *ignored);
+    }
+
+    librg_inline void librg_entity_set_visible_for(librg_ctx_t *ctx, librg_entity_t entity, librg_entity_t target, b32 state) {
         librg_meta_t *meta = librg_fetch_meta(ctx, entity); librg_assert(meta);
         librg_table_set(&meta->ignored, target, (u32)!state);
+    }
+
+    librg_inline b32 librg_entity_get_visible_for(librg_ctx_t *ctx, librg_entity_t entity, librg_entity_t target) {
+        librg_meta_t *meta = librg_fetch_meta(ctx, entity); librg_assert(meta);
+        u32 *ignored = librg_table_get(&meta->ignored, target);
+        return !(ignored && *ignored);
     }
 
     zpl_array_t(librg_entity_t) librg_entity_query(librg_ctx_t *ctx, librg_entity_t entity) {
@@ -1530,12 +1517,10 @@ extern "C" {
 
         for (isize i = 0; i < zpl_array_count(search_temp); i++) {
             librg_entity_t target = (u32)search_temp[i].tag;
+
             if (!librg_entity_valid(ctx, target)) continue;
-
-            u32 *global = librg_table_get(&ctx->entity.ignored, target);
-            u32 *local  = librg_table_get(&librg_fetch_meta(ctx, target)->ignored, entity);
-
-            if ((global && *global) || (local && *local)) continue;
+            if (!librg_entity_get_visible(ctx, target)) continue;
+            if (!librg_entity_get_visible_for(ctx, target, entity)) continue;
 
             zpl_array_append(search_result, target);
         }
@@ -1583,6 +1568,12 @@ extern "C" {
         librg_send_to(ctx, LIBRG_CLIENT_STREAMER_ADD, peer, librg_lambda(data), {
             librg_data_wentity(&data, entity);
         });
+    }
+
+    librg_inline librg_peer_t *librg_entity_control_get(librg_ctx_t *ctx, librg_entity_t entity) {
+        librg_assert(ctx);
+        librg_control_t *control = cast(librg_control_t *)librg_component_fetch(ctx, librg_control, entity);
+        return (control && control->peer) ? control->peer : NULL;
     }
 
     void librg_entity_control_remove(librg_ctx_t *ctx, librg_entity_t entity) {
