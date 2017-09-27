@@ -553,7 +553,7 @@ extern "C" {
     /**
      * Get controller of the entity
      */
-    LIBRG_API librg_peer_t * librg_entity_control_get(librg_ctx_t *ctx, librg_entity_t entity);
+    LIBRG_API librg_peer_t *librg_entity_control_get(librg_ctx_t *ctx, librg_entity_t entity);
 
     /**
      * Remove some entity from stream ownership of the client
@@ -1569,6 +1569,12 @@ extern "C" {
         librg_send_to(ctx, LIBRG_CLIENT_STREAMER_ADD, peer, librg_lambda(data), {
             librg_data_wentity(&data, entity);
         });
+    }
+
+    librg_inline librg_peer_t *librg_entity_control_get(librg_ctx_t *ctx, librg_entity_t entity) {
+        librg_assert(ctx);
+        librg_control_t *control = cast(librg_control_t *)librg_component_fetch(ctx, librg_control, entity);
+        return (control && control->peer) ? control->peer : NULL;
     }
 
     void librg_entity_control_remove(librg_ctx_t *ctx, librg_entity_t entity) {
