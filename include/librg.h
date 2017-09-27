@@ -299,8 +299,10 @@ extern "C" {
      */
     typedef struct {
         struct librg_ctx_t *ctx;
-        librg_data_t *data;
+
         librg_peer_t *peer;
+        librg_data_t *data;
+
         librg_packet_t *packet;
     } librg_message_t;
 
