@@ -1,6 +1,7 @@
 # Folders
 build/*
 node_modules/
+build-win/*
 
 # Other
 .DS_store

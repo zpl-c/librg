@@ -60,6 +60,14 @@ if (LIBRG_DEMO)
     target_link_libraries(librg_demo_client librg SDL2)
 endif()
 
+if (LIBRG_CLI_TEST)
+    add_executable(librg_cli_server test/cli-server.c)
+    add_executable(librg_cli_client test/cli-client.c)
+
+    target_link_libraries(librg_cli_server librg)
+    target_link_libraries(librg_cli_client librg)
+endif()
+
 # test for travis/etc
 if (LIBRG_TEST)
     add_executable(librg_test test/build-test.c)

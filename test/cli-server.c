@@ -1,5 +1,5 @@
 #define LIBRG_IMPLEMENTATION
-#define LIBRG_DEBUG
+// #define LIBRG_DEBUG
 #include <librg.h>
 
 enum {
@@ -90,7 +90,7 @@ int main() {
                  "==================================================\n";
     librg_log("%s\n\n", test);
 
-    librg_option_set(LIBRG_MAX_ENTITIES_PER_BRANCH, 8);
+    librg_option_set(LIBRG_MAX_ENTITIES_PER_BRANCH, 4);
 
     librg_ctx_t ctx     = {0};
     ctx.tick_delay      = 1000;
