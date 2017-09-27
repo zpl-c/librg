@@ -1565,7 +1565,7 @@ extern "C" {
     }
 
     librg_inline usize librg_entity_query(librg_ctx_t *ctx, librg_entity_t entity, librg_entity_t **out_entities) {
-        librg_assert(ctx && out_entities);
+        librg_assert(ctx && out_entities && *out_entities);
 
         librg_transform_t *transform = (librg_transform_t *)librg_component_fetch(ctx, librg_transform, entity);
         librg_stream_t    *stream    = (librg_stream_t *)   librg_component_fetch(ctx, librg_stream, entity);
@@ -1960,10 +1960,9 @@ extern "C" {
     librg_internal void librg__execute_server_entity_update(librg_ctx_t *ctx) {
         librg_assert(ctx);
         librg_component_meta *header = &ctx->components.headers[librg_client]; librg_assert(header);
-        for (isize j = 0, valid_entities = 0; j < ctx->max_entities && valid_entities < (ctx->entity.native.count + ctx->entity.shared.count); j++) {
-            if (!header->used[j]) continue;
-
+        for (isize j = 0, valid_entities = 0; j < ctx->max_entities && valid_entities < ctx->entity.shared.count; j++) {
             valid_entities++;
+            if (!header->used[j]) continue;
 
             // assume that entity is valid, having the client
             librg_entity_t player = j;
@@ -2106,7 +2105,7 @@ extern "C" {
         zplc_clear(&ctx->streamer);
 
         // fill up
-        for (isize j = 0, valid_entities = 0; j < ctx->max_entities && valid_entities < (ctx->entity.native.count + ctx->entity.shared.count); j++) {
+        for (isize j = 0, valid_entities = 0; j < ctx->max_entities && valid_entities < ctx->entity.shared.count; j++) {
             valid_entities++;
 
             librg_transform_t *transform = librg_fetch_transform(ctx, j);
