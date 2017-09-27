@@ -1476,13 +1476,24 @@ extern "C" {
     }
 
 
-    void librg_entity_set_visible(librg_ctx_t *ctx, librg_entity_t entity, b32 state) {
+    librg_inline void librg_entity_set_visible(librg_ctx_t *ctx, librg_entity_t entity, b32 state) {
         librg_table_set(&ctx->entity.ignored, entity, (u32)!state);
     }
 
-    void librg_entity_set_visible_for(librg_ctx_t *ctx, librg_entity_t entity, librg_entity_t target, b32 state) {
+    librg_inline b32 librg_entity_get_visible(librg_ctx_t *ctx, librg_entity_t entity) {
+        u32 *ignored = librg_table_get(&ctx->entity.ignored, entity);
+        return !(ignored && *ignored);
+    }
+
+    librg_inline void librg_entity_set_visible_for(librg_ctx_t *ctx, librg_entity_t entity, librg_entity_t target, b32 state) {
         librg_meta_t *meta = librg_fetch_meta(ctx, entity); librg_assert(meta);
         librg_table_set(&meta->ignored, target, (u32)!state);
+    }
+
+    librg_inline b32 librg_entity_get_visible_for(librg_ctx_t *ctx, librg_entity_t entity, librg_entity_t target) {
+        librg_meta_t *meta = librg_fetch_meta(ctx, entity); librg_assert(meta);
+        u32 *ignored = librg_table_get(&meta->ignored, target);
+        return !(ignored && *ignored);
     }
 
     zpl_array_t(librg_entity_t) librg_entity_query(librg_ctx_t *ctx, librg_entity_t entity) {
