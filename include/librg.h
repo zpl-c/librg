@@ -514,7 +514,7 @@ extern "C" {
      * Query for entities that are in stream zone
      * for current entity, and are visible to this entity
      */
-    LIBRG_API void librg_entity_query(librg_ctx_t *ctx, librg_entity_t entity, librg_entity_t **result);
+    LIBRG_API usize librg_entity_query(librg_ctx_t *ctx, librg_entity_t entity, librg_entity_t **result);
 
     /**
      * Query for entities that are in stream zone
@@ -1556,7 +1556,7 @@ extern "C" {
         }
     }
 
-    librg_inline void librg_entity_query(librg_ctx_t *ctx, librg_entity_t entity, librg_entity_t **out_entities) {
+    librg_inline usize librg_entity_query(librg_ctx_t *ctx, librg_entity_t entity, librg_entity_t **out_entities) {
         librg_assert(ctx && out_entities);
 
         librg_transform_t *transform = (librg_transform_t *)librg_component_fetch(ctx, librg_transform, entity);
@@ -1570,17 +1570,20 @@ extern "C" {
         search_bounds.half_size = zplm_vec3((f32)stream->range, (f32)stream->range, (f32)stream->range);
 
         librg__entity_query(ctx, entity, &ctx->streamer, search_bounds, out_entities);
+        return zpl_array_count(*out_entities);
     }
 
-    // usize librg_entity_query_raw(librg_ctx_t *ctx, librg_entity_t entity, librg_entity_t **result) {
-    //     librg_assert(result);
-    //     usize size = 0;
-    //     zpl_array_t(librg_entity_t) array = librg_entity_query(ctx, entity);
-    //     size = zpl_array_count(array) * sizeof(librg_entity_t);
-    //     *result = array;
+    usize librg_entity_query_raw(librg_ctx_t *ctx, librg_entity_t entity, librg_entity_t **result) {
+        librg_assert(result);
+        zpl_array_t(librg_entity_t) array;
+        zpl_array_init(array, ctx->allocator);
 
-    //     return size;
-    // }
+        librg_entity_query(ctx, entity, &array);
+        usize size = zpl_array_count(array) * sizeof(librg_entity_t);
+        *result = array;
+
+        return size;
+    }
 
     librg_entity_t librg_entity_get(librg_ctx_t *ctx, librg_peer_t *peer) {
         librg_assert(ctx && peer);
