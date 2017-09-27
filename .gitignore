@@ -3,7 +3,9 @@ build/*
 node_modules/
 build-win/*
 
+# vs shit
 *.dir/
+x64/
 
 # Other
 .DS_store
