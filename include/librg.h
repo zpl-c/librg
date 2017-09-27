@@ -1958,8 +1958,16 @@ extern "C" {
      * Responsive for udpating the server-side streamer
      */
     librg_internal void librg__execute_server_entity_update(librg_ctx_t *ctx) {
-        librg_filter_t filter = { librg_client };
-        librg_entity_eachx(ctx, filter, librg_lambda(player), {
+        librg_assert(ctx);
+        librg_component_meta *header = &ctx->components.headers[librg_client]; librg_assert(header);
+        for (isize j = 0, valid_entities = 0; j < ctx->max_entities && valid_entities < (ctx->entity.native.count + ctx->entity.shared.count); j++) {
+            if (!header->used[j]) continue;
+
+            valid_entities++;
+
+            // assume that entity is valid, having the client
+            librg_entity_t player = j;
+
             librg_client_t *client = librg_fetch_client(ctx, player);
             librg_stream_t *stream = librg_fetch_stream(ctx, player);
 
@@ -2088,27 +2096,29 @@ extern "C" {
             // and cleanup
             librg_data_reset(&ctx->stream_upd_reliable);
             librg_data_reset(&ctx->stream_upd_unreliable);
-        });
+        }
     }
 
     librg_inline void librg__execute_server_entity_insert(librg_ctx_t *ctx) {
-        librg_filter_t filter = { librg_stream };
+        librg_assert(ctx);
 
         // clear
         zplc_clear(&ctx->streamer);
 
         // fill up
-        librg_entity_eachx(ctx, filter, librg_lambda(entity), {
-            librg_transform_t *transform = librg_fetch_transform(ctx, entity);
+        for (isize j = 0, valid_entities = 0; j < ctx->max_entities && valid_entities < (ctx->entity.native.count + ctx->entity.shared.count); j++) {
+            valid_entities++;
+
+            librg_transform_t *transform = librg_fetch_transform(ctx, j);
             librg_assert(transform);
 
             zplc_node_t node = { 0 };
 
-            node.tag      = entity;
+            node.tag      = j;
             node.position = transform->position;
 
             zplc_insert(&ctx->streamer, node);
-        });
+        }
     }
 
     librg_inline void librg__execute_server_entity_destroy(librg_ctx_t *ctx) {
