@@ -159,6 +159,8 @@ extern "C" {
         LIBRG_NETWORK_SECONDARY_CHANNEL,
         LIBRG_NETWORK_MESSAGE_CHANNEL,
 
+        LIBRG_MAX_ENTITIES_PER_BRANCH,
+
         LIBRG_OPTIONS_SIZE,
     } librg_options_e;
 
@@ -420,7 +422,8 @@ extern "C" {
         /*LIBRG_NETWORK_CHANNELS*/          4,
         /*LIBRG_NETWORK_PRIMARY_CHANNEL*/   1,
         /*LIBRG_NETWORK_SECONDARY_CHANNEL*/ 2,
-        /*LIBRG_NETWORK_MESSAGE_CHANNEL*/   3
+        /*LIBRG_NETWORK_MESSAGE_CHANNEL*/   3,
+        /*LIBRG_MAX_ENTITIES_PER_BRANCH*/   4,
     };
 
 
@@ -2140,7 +2143,8 @@ extern "C" {
         zplc_bounds_t world = {0};
         world.centre = zplm_vec3(0, 0, 0);
         world.half_size = zplm_vec3(ctx->world_size.x, ctx->world_size.y, ctx->world_size.z);
-        zplc_init(&ctx->streamer, ctx->allocator, ctx->world_size.z == 0.0f ? zplc_dim_2d_ev : zplc_dim_3d_ev, world, 4);
+        zplc_dim_e dimension = ctx->world_size.z == 0.0f ? zplc_dim_2d_ev : zplc_dim_3d_ev;
+        zplc_init(&ctx->streamer, ctx->allocator, dimension, world, librg_options_get(LIBRG_MAX_ENTITIES_PER_BRANCH));
         librg_table_init(&ctx->entity.ignored, ctx->allocator);
 
         // events
