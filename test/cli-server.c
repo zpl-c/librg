@@ -70,6 +70,8 @@ void custom_handler(librg_message_t *msg) {
 void measure(void *userptr) {
     librg_ctx_t *ctx = (librg_ctx_t *)userptr;
 
+    if (!ctx || !ctx->network.host) return;
+
     static u32 lastdl = 0;
     static u32 lastup = 0;
 

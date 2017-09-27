@@ -61,6 +61,11 @@
 #define LIBRG_VERSION_GET_PATCH(version) ((version)&0xFF)
 #define LIBRG_VERSION LIBRG_VERSION_CREATE(LIBRG_VERSION_MAJOR, LIBRG_VERSION_MINOR, LIBRG_VERSION_PATCH)
 
+// disable asserts for release build
+#if !defined(LIBRG_DEBUG)
+#define ZPL_ASSERT_MSG(cond, msg, ...)
+#endif
+
 #ifndef LIBRG_CUSTOM_INCLUDES
 
 #ifdef LIBRG_IMPLEMENTATION
@@ -108,8 +113,8 @@ extern "C" {
     #define librg_global        zpl_global
     #define librg_inline        zpl_inline
     #define librg_internal      zpl_internal
-    #define librg_assert        ZPL_ASSERT
-    #define librg_assert_msg    ZPL_ASSERT_MSG
+    #define librg_assert(cond)
+    #define librg_assert_msg(cond, msg)
     #define librg_lambda(name)  name
 
     #if defined(__cplusplus) || defined(_MSC_VER)
@@ -1414,7 +1419,9 @@ extern "C" {
     }
 
     librg_inline librg_entity_t librg__entity_create(librg_ctx_t *ctx, librg_entity_pool_t *pool) {
-        librg_assert_msg(++pool->count < pool->limit_upper, "entity limit");
+        ++pool->count;
+
+        librg_assert_msg(pool->count < pool->limit_upper, "entity limit");
 
         if (pool->cursor == pool->limit_upper || pool->cursor == 0) {
             pool->cursor = pool->limit_lower;
@@ -1455,7 +1462,8 @@ extern "C" {
         librg_assert_msg(!librg_entity_valid(ctx, entity), "entity with such id already exsits");
 
         librg_entity_pool_t *pool = &ctx->entity.shared;
-        librg_assert_msg(++pool->count < pool->limit_upper, "entity limit");
+        pool->count++;
+        librg_assert_msg(pool->count < pool->limit_upper, "entity limit");
         librg__entity_attach_default(ctx, entity);
         librg_fetch_meta(ctx, entity)->type = type;
         zpl_array_init(librg_fetch_stream(ctx, entity)->last_query, ctx->allocator);
@@ -2200,7 +2208,8 @@ extern "C" {
         zpl_timer_start(tick_timer, 1000);
 
         // network
-        librg_assert_msg(enet_initialize() == 0, "cannot initialize enet");
+        u8 enet_init = enet_initialize();
+        librg_assert_msg(enet_init == 0, "cannot initialize enet");
 
         // add event handlers for our network stufz
         ctx->messages[LIBRG_CONNECTION_INIT]        = librg__callback_connection_init;
