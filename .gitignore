@@ -3,6 +3,8 @@ build/*
 node_modules/
 build-win/*
 
+*.dir/
+
 # Other
 .DS_store
 

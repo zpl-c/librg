@@ -113,8 +113,8 @@ extern "C" {
     #define librg_global        zpl_global
     #define librg_inline        zpl_inline
     #define librg_internal      zpl_internal
-    #define librg_assert(cond)
-    #define librg_assert_msg(cond, msg)
+    #define librg_assert        ZPL_ASSERT
+    #define librg_assert_msg    ZPL_ASSERT_MSG
     #define librg_lambda(name)  name
 
     #if defined(__cplusplus) || defined(_MSC_VER)
