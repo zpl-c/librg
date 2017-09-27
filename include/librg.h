@@ -321,32 +321,14 @@ extern "C" {
     typedef void (librg_event_cb)(librg_event_t *event);
 
     /**
-     *
-     * COMPONENTS
-     *
+     * Default components
      */
 
-    typedef struct {
-        zplm_vec3_t position;
-    } librg_transform_t;
-
-    typedef struct {
-        librg_peer_t *peer;
-    } librg_control_t;
-
-    typedef struct {
-        u32 range;
-    } librg_stream_t;
-
-    typedef struct {
-        u32 type;
-        librg_table_t ignored;
-    } librg_meta_t;
-
-    typedef struct {
-        librg_peer_t *peer;
-        librg_table_t last_snapshot;
-    } librg_client_t;
+    typedef struct { u32 type; librg_table_t ignored; } librg_meta_t;
+    typedef struct { zplm_vec3_t position; } librg_transform_t;
+    typedef struct { u32 range; } librg_stream_t;
+    typedef struct { librg_peer_t *peer; } librg_control_t;
+    typedef struct { librg_peer_t *peer; librg_table_t last_snapshot; } librg_client_t;
 
     enum {
         librg_dummmy,
@@ -481,14 +463,11 @@ extern "C" {
     LIBRG_API b32 librg_is_client(librg_ctx_t *ctx);
 
 
-
-
     /**
      *
      * ENTITIES
      *
      */
-
 
     /**
      * Create entity and return handle
@@ -651,13 +630,11 @@ extern "C" {
     } while(0)
 
 
-
     /**
      *
      * EVENTS
      *
      */
-
 
     /**
      * Used to attach event handler
@@ -711,13 +688,11 @@ extern "C" {
     LIBRG_API b32 librg_event_succeeded(librg_event_t *event);
 
 
-
     /**
      *
      * BINARY DATA (BITSTREAM)
      *
      */
-
 
     /**
      * Initialize new bitstream with default mem size
@@ -801,12 +776,12 @@ extern "C" {
     #define librg_data_wmid ZPL_JOIN2(librg_data_w, LIBRG_MESSAGE_ID)
     #define librg_data_rmid ZPL_JOIN2(librg_data_r, LIBRG_MESSAGE_ID)
 
+
     /**
      *
      * NETWORK
      *
      */
-
 
     /**
      * Check are we connected
