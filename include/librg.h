@@ -429,8 +429,8 @@ extern "C" {
             zpl_array_t(librg_entity_t) remove_queue;
         } entity;
 
-        // temp service stuff
         f32 last_update;
+		void *user_data;
 
     } librg_ctx_t;
 
