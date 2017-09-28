@@ -2137,10 +2137,12 @@ extern "C" {
 		while (true) {
 			i32 signal = zpl_atomic32_load(&ctx->threading.signal);
 
-			if (signal == librg_thread_idle) {
-				zpl_yield_thread();
-				continue;
+			while (signal == librg_thread_idle) {
+				zpl_sleep_ms(1);
+				signal = zpl_atomic32_load(&ctx->threading.signal);
+				zpl_mfence();
 			};
+
 			if (signal == librg_thread_exit) break;
 			
 			zpl_atomic32_fetch_add(&ctx->threading.work_count, 1);

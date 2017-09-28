@@ -93,7 +93,7 @@ int main() {
     librg_log("%s\n\n", test);
 
     librg_option_set(LIBRG_MAX_ENTITIES_PER_BRANCH, 4);
-	//librg_option_set(LIBRG_MAX_THREADS_PER_UPDATE, 4);
+	//librg_option_set(LIBRG_MAX_THREADS_PER_UPDATE, 8);
 
     librg_ctx_t ctx     = {0};
     ctx.tick_delay      = 1000;
