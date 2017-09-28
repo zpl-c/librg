@@ -412,6 +412,7 @@ extern "C" {
 			zpl_atomic32_t signal;
 			zpl_atomic32_t work_count;
 			zpl_thread_t   *update_workers;
+			zpl_mutex_t    send_lock;
 		} threading;
 
         struct {
@@ -1384,7 +1385,7 @@ extern "C" {
         ctx->components.size += size;
         ctx->components.count++;
 
-        zpl_buffer_init(header->used, ctx->allocator, ctx->max_entities);
+        zpl_buffer_init(cast(usize *)header->used, ctx->allocator, ctx->max_entities);
     }
 
     librg_void *librg_component_attach(librg_ctx_t *ctx, u32 index, librg_entity_t entity, librg_void *data) {
@@ -2103,6 +2104,8 @@ extern "C" {
 				librg_table_destroy(&client->last_snapshot);
 				*last_snapshot = next_snapshot;
 
+				if (librg_option_get(LIBRG_MAX_THREADS_PER_UPDATE) > 0) zpl_mutex_lock(&ctx->threading.send_lock);
+
 				// send the data, via differnt channels and reliability setting
 				if (librg_data_get_wpos(reliable) > (sizeof(LIBRG_MESSAGE_ID) + sizeof(u32) * 2)) {
 					enet_peer_send(client->peer, librg_option_get(LIBRG_NETWORK_PRIMARY_CHANNEL),
@@ -2113,6 +2116,8 @@ extern "C" {
 				enet_peer_send(client->peer, librg_option_get(LIBRG_NETWORK_SECONDARY_CHANNEL),
 					enet_packet_create(unreliable->rawptr, librg_data_get_wpos(unreliable), ENET_PACKET_FLAG_UNRELIABLE_FRAGMENT)
 				);
+
+				if (librg_option_get(LIBRG_MAX_THREADS_PER_UPDATE) > 0) zpl_mutex_unlock(&ctx->threading.send_lock);
 
 				// and cleanup
 				librg_data_reset(&reliable);
@@ -2132,7 +2137,10 @@ extern "C" {
 		while (true) {
 			i32 signal = zpl_atomic32_load(&ctx->threading.signal);
 
-			if (signal == librg_thread_idle) continue;
+			if (signal == librg_thread_idle) {
+				zpl_yield_thread();
+				continue;
+			};
 			if (signal == librg_thread_exit) break;
 			
 			zpl_atomic32_fetch_add(&ctx->threading.work_count, 1);
@@ -2279,6 +2287,7 @@ extern "C" {
 		if (thread_count > 0) {
 			ctx->threading.update_workers = zpl_alloc(ctx->allocator, sizeof(zpl_thread_t)*thread_count);
 			usize step = ctx->max_entities / thread_count;
+			zpl_mutex_init(&ctx->threading.send_lock);
 
 			usize offset = 0;
 			for (usize i = 0; i < thread_count; ++i) {
@@ -2349,6 +2358,7 @@ extern "C" {
 			}
 
 			zpl_free(ctx->allocator, ctx->threading.update_workers);
+			zpl_mutex_destroy(&ctx->threading.send_lock);
 		}
 
         for (usize i = 0; i < ctx->components.count; ++i) {

@@ -91,7 +91,7 @@ int main() {
     original.world_size      = zplm_vec3(5000.0f, 5000.0f, 0.f);
     original.max_entities    = 12000;
 
-	#define size 1200
+	#define size 8
     librg_ctx_t ctxs[size];
 
     for (int i = 0; i < size; ++i) {

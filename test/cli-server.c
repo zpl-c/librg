@@ -93,13 +93,13 @@ int main() {
     librg_log("%s\n\n", test);
 
     librg_option_set(LIBRG_MAX_ENTITIES_PER_BRANCH, 4);
-	librg_option_set(LIBRG_MAX_THREADS_PER_UPDATE, 4);
+	//librg_option_set(LIBRG_MAX_THREADS_PER_UPDATE, 4);
 
     librg_ctx_t ctx     = {0};
     ctx.tick_delay      = 1000;
     ctx.mode            = LIBRG_MODE_SERVER;
     ctx.world_size      = zplm_vec3(5000.0f, 5000.0f, 0.f);
-    ctx.max_entities    = 5000;
+    ctx.max_entities    = 12000;
     ctx.max_connections = 1500;
 
     librg_init(&ctx, on_components_register);
@@ -115,7 +115,7 @@ int main() {
 
     librg_network_start(&ctx, (librg_address_t) { .host = "localhost", .port = 7777 });
 
-    for (isize i = 0; i < 4000; i++) {
+    for (isize i = 0; i < 10000; i++) {
         librg_entity_t enemy = librg_entity_create(&ctx, 0);
         librg_transform_t *transform = librg_fetch_transform(&ctx, enemy);
         librg_attach_foo(&ctx, enemy, NULL);
