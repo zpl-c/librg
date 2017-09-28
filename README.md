@@ -3,7 +3,7 @@
 </div>
 
 <div align="center">
-    <a href="https://travis-ci.org/librg/librg"><img src="https://travis-ci.org/librg/librg.svg" alt="Build status" /></a>
+    <a href="https://travis-ci.org/librg/librg"><img src="https://travis-ci.org/librg/librg.svg?branch=master" alt="Build status" /></a>
     <a href="https://www.npmjs.com/package/librg.c"><img src="https://img.shields.io/npm/v/librg.c.svg?maxAge=3600" alt="NPM version" /></a>
     <a href="https://david-dm.org/librg/librg"><img src="https://img.shields.io/david/librg/librg.svg?maxAge=3600" alt="Dependencies" /></a>
     <a href="https://kiwiirc.com/client/irc.handmade.network:+7777/?nick=guest|?#librg"><img src="https://img.shields.io/badge/IRC-%23librg-blue.svg" alt="IRC server"/></a>
