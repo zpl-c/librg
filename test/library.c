@@ -1,5 +1,4 @@
 #define LIBRG_IMPLEMENTATION
-#define LIBRG_DEBUG
 
 // Windows stub, it is needed since CMake won't do this for us..
 //

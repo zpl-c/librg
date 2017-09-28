@@ -166,6 +166,7 @@ extern "C" {
         LIBRG_NETWORK_MESSAGE_CHANNEL,
 
         LIBRG_MAX_ENTITIES_PER_BRANCH,
+		LIBRG_MAX_THREADS_PER_UPDATE,
 
         LIBRG_OPTIONS_SIZE,
     } librg_option_e;
@@ -359,6 +360,19 @@ extern "C" {
         librg_component_last,
     };
 
+	enum {
+		librg_thread_idle,
+		librg_thread_work,
+		librg_thread_exit,
+	};
+
+	typedef struct {
+		usize id;
+		usize offset;
+		usize count;
+		struct librg_ctx_t *ctx;
+	} librg_update_worker_si_t;
+
     typedef struct librg_ctx_t {
         zpl_allocator_t allocator;
         zpl_timer_pool  timers;
@@ -394,6 +408,12 @@ extern "C" {
             librg_data_t streams[LIBRG_DATA_STREAMS_AMOUNT];
         };
 
+		struct {
+			zpl_atomic32_t signal;
+			zpl_atomic32_t work_count;
+			zpl_thread_t   *update_workers;
+		} threading;
+
         struct {
             librg_void *data;
             usize size;
@@ -425,6 +445,7 @@ extern "C" {
         /*LIBRG_NETWORK_SECONDARY_CHANNEL*/ 2,
         /*LIBRG_NETWORK_MESSAGE_CHANNEL*/   3,
         /*LIBRG_MAX_ENTITIES_PER_BRANCH*/   4,
+		/*LIBRG_MAX_THREADS_PER_UPDATE*/    0, /* MT is disabled by default = 0 */
     };
 
 
@@ -1955,147 +1976,195 @@ extern "C" {
     /**
      * SERVER-SIDE
      *
-     * Responsive for udpating the server-side streamer
+     * Responsive for updating the server-side streamer
      */
+
+	void librg__execute_server_entity_update_proc(librg_ctx_t *ctx, librg_data_t *reliable, librg_data_t *unreliable, usize offset, usize count) {
+		{
+			librg_component_meta *header = &ctx->components.headers[librg_client]; librg_assert(header);
+			for (isize j = offset, valid_entities = 0; j < offset+count && valid_entities < ctx->entity.shared.count; j++) {
+				valid_entities++;
+				if (!header->used[j]) continue;
+
+				// assume that entity is valid, having the client
+				librg_entity_t player = j;
+
+				librg_client_t *client = librg_fetch_client(ctx, player);
+				librg_stream_t *stream = librg_fetch_stream(ctx, player);
+
+				// get old, and preapre new snapshot handlers
+				librg_table_t *last_snapshot = &client->last_snapshot;
+				librg_table_t next_snapshot = { 0 };
+				librg_table_init(&next_snapshot, ctx->allocator);
+
+				// fetch entities in the steram zone
+				librg_entity_query(ctx, player, &stream->last_query);
+
+				u32 created_entities = 0;
+				u32 updated_entities = (u32)zpl_array_count(stream->last_query);
+				u32 removed_entities = 0;
+
+				// write packet headers
+				librg_data_wmid(reliable, LIBRG_ENTITY_CREATE);
+				librg_data_wu32(reliable, created_entities);
+
+				librg_data_wmid(unreliable, LIBRG_ENTITY_UPDATE);
+				librg_data_wu32(unreliable, updated_entities);
+
+				// add entity creates and updates
+				for (isize i = 0; i < zpl_array_count(stream->last_query); ++i) {
+					librg_entity_t entity = (LIBRG_ENTITY_ID)stream->last_query[i];
+
+					// fetch value of entity in the last snapshot
+					u32 *existed_in_last = librg_table_get(last_snapshot, entity);
+
+					// write create
+					if (!existed_in_last) {
+						updated_entities--;
+
+						// skip entity create if this is player's entity
+						if (entity == player) continue;
+
+						// increase write amount for create counter
+						created_entities++;
+
+						// write all basic data
+						librg_data_went(reliable, entity);
+						librg_data_wu32(reliable, librg_fetch_meta(ctx, entity)->type);
+						librg_data_wptr(reliable, librg_fetch_transform(ctx, entity), sizeof(librg_transform_t));
+
+						// request custom data from user
+						librg_event_t event = { 0 };
+						event.data = reliable; event.entity = entity;
+						librg_event_trigger(ctx, LIBRG_ENTITY_CREATE, &event);
+
+						// TODO: add ability to reject
+					}
+					else {
+						// mark entity as still alive, for the remove cycle
+						librg_table_set(last_snapshot, entity, 0);
+
+						// fetch client streamer
+						librg_control_t *control = cast(librg_control_t *)librg_component_fetch(ctx, librg_control, entity);
+
+						// if this entity is client streamable and this client is owner
+						if (control && control->peer == client->peer) {
+							updated_entities--;
+						}
+						// write update
+						else {
+							librg_data_went(unreliable, entity);
+							librg_data_wptr(unreliable, librg_fetch_transform(ctx, entity), sizeof(librg_transform_t));
+
+							// request custom data from user
+							librg_event_t event = { 0 };
+							event.data = unreliable; event.entity = entity;
+							librg_event_trigger(ctx, LIBRG_ENTITY_UPDATE, &event);
+
+							// TODO: add ability to reject
+						}
+					}
+
+					// mark entity as existed for the next update
+					librg_table_set(&next_snapshot, entity, 1);
+				}
+
+				// write our calcualted amounts right after packet id (from the beginning)
+				librg_data_wu32_at(reliable, created_entities, sizeof(LIBRG_MESSAGE_ID));
+				librg_data_wu32_at(unreliable, updated_entities, sizeof(LIBRG_MESSAGE_ID));
+
+				// save pos for remove data counter
+				usize write_pos = librg_data_get_wpos(reliable);
+				librg_data_wu32(reliable, 0);
+
+				// add entity removes
+				for (isize i = 0; i < zpl_array_count(last_snapshot->entries); ++i) {
+					librg_entity_t entity = (LIBRG_ENTITY_ID)last_snapshot->entries[i].key;
+					b32 not_existed = last_snapshot->entries[i].value;
+					if (not_existed == 0) continue;
+
+					// skip entity delete if this is player's entity
+					if (entity == player) continue;
+
+					// write id
+					librg_data_went(reliable, entity);
+					removed_entities++;
+
+					// write the rest
+					librg_event_t event = { 0 };
+					event.data = reliable; event.entity = entity;
+					librg_event_trigger(ctx, LIBRG_ENTITY_REMOVE, &event);
+
+					// TODO: add ability to reject
+				}
+
+				librg_data_wu32_at(reliable, removed_entities, write_pos);
+
+				librg_table_destroy(&client->last_snapshot);
+				*last_snapshot = next_snapshot;
+
+				// send the data, via differnt channels and reliability setting
+				if (librg_data_get_wpos(reliable) > (sizeof(LIBRG_MESSAGE_ID) + sizeof(u32) * 2)) {
+					enet_peer_send(client->peer, librg_option_get(LIBRG_NETWORK_PRIMARY_CHANNEL),
+						enet_packet_create(reliable->rawptr, librg_data_get_wpos(reliable), ENET_PACKET_FLAG_RELIABLE)
+					);
+				}
+
+				enet_peer_send(client->peer, librg_option_get(LIBRG_NETWORK_SECONDARY_CHANNEL),
+					enet_packet_create(unreliable->rawptr, librg_data_get_wpos(unreliable), ENET_PACKET_FLAG_UNRELIABLE_FRAGMENT)
+				);
+
+				// and cleanup
+				librg_data_reset(&reliable);
+				librg_data_reset(&unreliable);
+			}
+		}
+	}
+
+	void librg__execute_server_entity_update_worker(zpl_thread_t *thread) {
+		librg_update_worker_si_t *si = cast(librg_update_worker_si_t *)thread->user_data;
+		librg_ctx_t *ctx = si->ctx;
+
+		librg_data_t reliable, unreliable;
+		librg_data_init(&reliable);
+		librg_data_init(&unreliable);
+
+		while (true) {
+			i32 signal = zpl_atomic32_load(&ctx->threading.signal);
+
+			if (signal == librg_thread_idle) continue;
+			if (signal == librg_thread_exit) break;
+			
+			zpl_atomic32_fetch_add(&ctx->threading.work_count, 1);
+			librg__execute_server_entity_update_proc(ctx, &reliable, &unreliable, si->offset, si->count);
+			zpl_atomic32_fetch_add(&ctx->threading.work_count, -1);
+		}
+
+		librg_data_free(&reliable);
+		librg_data_free(&unreliable);
+
+		zpl_free(ctx->allocator, si);
+		thread->return_value = 0;
+	}
+
     librg_internal void librg__execute_server_entity_update(librg_ctx_t *ctx) {
         librg_assert(ctx);
-        librg_component_meta *header = &ctx->components.headers[librg_client]; librg_assert(header);
-        for (isize j = 0, valid_entities = 0; j < ctx->max_entities && valid_entities < ctx->entity.shared.count; j++) {
-            valid_entities++;
-            if (!header->used[j]) continue;
 
-            // assume that entity is valid, having the client
-            librg_entity_t player = j;
+		if (librg_option_get(LIBRG_MAX_THREADS_PER_UPDATE) == 0) {
+			librg__execute_server_entity_update_proc(ctx, &ctx->stream_upd_reliable, &ctx->stream_upd_unreliable, 0, ctx->max_entities);
+			return;
+		}
+        
+		zpl_atomic32_store(&ctx->threading.signal, librg_thread_work);
+		
+		i32 work_count = zpl_atomic32_load(&ctx->threading.work_count);
+		while (work_count > 0) {
+			zpl_yield_thread();
+			work_count = zpl_atomic32_load(&ctx->threading.work_count);
+			zpl_mfence();
+		}
 
-            librg_client_t *client = librg_fetch_client(ctx, player);
-            librg_stream_t *stream = librg_fetch_stream(ctx, player);
-
-            // get old, and preapre new snapshot handlers
-            librg_table_t *last_snapshot = &client->last_snapshot;
-            librg_table_t next_snapshot = { 0 };
-            librg_table_init(&next_snapshot, ctx->allocator);
-
-            // fetch entities in the steram zone
-            librg_entity_query(ctx, player, &stream->last_query);
-
-            u32 created_entities = 0;
-            u32 updated_entities = (u32) zpl_array_count(stream->last_query);
-            u32 removed_entities = 0;
-
-            // write packet headers
-            librg_data_wmid(&ctx->stream_upd_reliable, LIBRG_ENTITY_CREATE);
-            librg_data_wu32(&ctx->stream_upd_reliable, created_entities);
-
-            librg_data_wmid(&ctx->stream_upd_unreliable, LIBRG_ENTITY_UPDATE);
-            librg_data_wu32(&ctx->stream_upd_unreliable, updated_entities);
-
-            // add entity creates and updates
-            for (isize i = 0; i < zpl_array_count(stream->last_query); ++i) {
-                librg_entity_t entity = (LIBRG_ENTITY_ID)stream->last_query[i];
-
-                // fetch value of entity in the last snapshot
-                u32 *existed_in_last = librg_table_get(last_snapshot, entity);
-
-                // write create
-                if (!existed_in_last) {
-                    updated_entities--;
-
-                    // skip entity create if this is player's entity
-                    if (entity == player) continue;
-
-                    // increase write amount for create counter
-                    created_entities++;
-
-                    // write all basic data
-                    librg_data_went(&ctx->stream_upd_reliable, entity);
-                    librg_data_wu32(&ctx->stream_upd_reliable, librg_fetch_meta(ctx, entity)->type);
-                    librg_data_wptr(&ctx->stream_upd_reliable, librg_fetch_transform(ctx, entity), sizeof(librg_transform_t));
-
-                    // request custom data from user
-                    librg_event_t event = {0};
-                    event.data = &ctx->stream_upd_reliable; event.entity = entity;
-                    librg_event_trigger(ctx, LIBRG_ENTITY_CREATE, &event);
-
-                    // TODO: add ability to reject
-                }
-                else {
-                    // mark entity as still alive, for the remove cycle
-                    librg_table_set(last_snapshot, entity, 0);
-
-                    // fetch client streamer
-                    librg_control_t *control = cast(librg_control_t *)librg_component_fetch(ctx, librg_control, entity);
-
-                    // if this entity is client streamable and this client is owner
-                    if (control && control->peer == client->peer) {
-                        updated_entities--;
-                    }
-                    // write update
-                    else {
-                        librg_data_went(&ctx->stream_upd_unreliable, entity);
-                        librg_data_wptr(&ctx->stream_upd_unreliable, librg_fetch_transform(ctx, entity), sizeof(librg_transform_t));
-
-                        // request custom data from user
-                        librg_event_t event = {0};
-                        event.data = &ctx->stream_upd_unreliable; event.entity = entity;
-                        librg_event_trigger(ctx, LIBRG_ENTITY_UPDATE, &event);
-
-                        // TODO: add ability to reject
-                    }
-                }
-
-                // mark entity as existed for the next update
-                librg_table_set(&next_snapshot, entity, 1);
-            }
-
-            // write our calcualted amounts right after packet id (from the beginning)
-            librg_data_wu32_at(&ctx->stream_upd_reliable, created_entities, sizeof(LIBRG_MESSAGE_ID));
-            librg_data_wu32_at(&ctx->stream_upd_unreliable, updated_entities, sizeof(LIBRG_MESSAGE_ID));
-
-            // save pos for remove data counter
-            usize write_pos = librg_data_get_wpos(&ctx->stream_upd_reliable);
-            librg_data_wu32(&ctx->stream_upd_reliable, 0);
-
-            // add entity removes
-            for (isize i = 0; i < zpl_array_count(last_snapshot->entries); ++i) {
-                librg_entity_t entity = (LIBRG_ENTITY_ID)last_snapshot->entries[i].key;
-                b32 not_existed = last_snapshot->entries[i].value;
-                if (not_existed == 0) continue;
-
-                // skip entity delete if this is player's entity
-                if (entity == player) continue;
-
-                // write id
-                librg_data_went(&ctx->stream_upd_reliable, entity);
-                removed_entities++;
-
-                // write the rest
-                librg_event_t event = {0};
-                event.data = &ctx->stream_upd_reliable; event.entity = entity;
-                librg_event_trigger(ctx, LIBRG_ENTITY_REMOVE, &event);
-
-                // TODO: add ability to reject
-            }
-
-            librg_data_wu32_at(&ctx->stream_upd_reliable, removed_entities, write_pos);
-
-            librg_table_destroy(&client->last_snapshot);
-            *last_snapshot = next_snapshot;
-
-            // send the data, via differnt channels and reliability setting
-            if (librg_data_get_wpos(&ctx->stream_upd_reliable) > (sizeof(LIBRG_MESSAGE_ID) + sizeof(u32) * 2)) {
-                enet_peer_send(client->peer, librg_option_get(LIBRG_NETWORK_PRIMARY_CHANNEL),
-                    enet_packet_create(ctx->stream_upd_reliable.rawptr, librg_data_get_wpos(&ctx->stream_upd_reliable), ENET_PACKET_FLAG_RELIABLE)
-                );
-            }
-
-            enet_peer_send(client->peer, librg_option_get(LIBRG_NETWORK_SECONDARY_CHANNEL),
-                enet_packet_create(ctx->stream_upd_unreliable.rawptr, librg_data_get_wpos(&ctx->stream_upd_unreliable), ENET_PACKET_FLAG_UNRELIABLE_FRAGMENT)
-            );
-
-            // and cleanup
-            librg_data_reset(&ctx->stream_upd_reliable);
-            librg_data_reset(&ctx->stream_upd_unreliable);
-        }
+		zpl_atomic32_store(&ctx->threading.signal, librg_thread_idle);
     }
 
     librg_inline void librg__execute_server_entity_insert(librg_ctx_t *ctx) {
@@ -2205,6 +2274,30 @@ extern "C" {
         zplc_init(&ctx->streamer, ctx->allocator, dimension, world, librg_option_get(LIBRG_MAX_ENTITIES_PER_BRANCH));
         librg_table_init(&ctx->entity.ignored, ctx->allocator);
 
+		// threading
+		usize thread_count = librg_option_get(LIBRG_MAX_THREADS_PER_UPDATE);
+		if (thread_count > 0) {
+			ctx->threading.update_workers = zpl_alloc(ctx->allocator, sizeof(zpl_thread_t)*thread_count);
+			usize step = ctx->max_entities / thread_count;
+
+			usize offset = 0;
+			for (usize i = 0; i < thread_count; ++i) {
+				zpl_thread_init(ctx->threading.update_workers + i);
+
+				librg_update_worker_si_t *si = zpl_alloc(ctx->allocator, sizeof(librg_update_worker_si_t));
+				librg_update_worker_si_t si_ = { 0 };
+				*si = si_;
+				si->count = step;
+				si->offset = offset;
+				si->ctx = ctx;
+				si->id = i;
+
+				offset += step;
+
+				zpl_thread_start(ctx->threading.update_workers + i, librg__execute_server_entity_update_worker, si);
+			}
+		}
+
         // events
         zplev_init(&ctx->events, ctx->allocator);
         zpl_buffer_init(ctx->messages, ctx->allocator, librg_option_get(LIBRG_NETWORK_CAPACITY));
@@ -2245,6 +2338,18 @@ extern "C" {
         // streamer
         zplc_free(&ctx->streamer);
         librg_table_destroy(&ctx->entity.ignored);
+
+		// threading
+		usize thread_count = librg_option_get(LIBRG_MAX_THREADS_PER_UPDATE);
+		if (thread_count > 0) {
+			zpl_atomic32_store(&ctx->threading.signal, librg_thread_exit);
+
+			for (usize i = 0; i < thread_count; ++i) {
+				zpl_thread_join(ctx->threading.update_workers + i);
+			}
+
+			zpl_free(ctx->allocator, ctx->threading.update_workers);
+		}
 
         for (usize i = 0; i < ctx->components.count; ++i) {
             librg_component_meta *header = &ctx->components.headers[i]; librg_assert(header);
