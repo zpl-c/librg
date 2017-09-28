@@ -1385,7 +1385,7 @@ extern "C" {
         ctx->components.size += size;
         ctx->components.count++;
 
-        zpl_buffer_init(cast(usize *)header->used, ctx->allocator, ctx->max_entities);
+        zpl_buffer_init(header->used, ctx->allocator, ctx->max_entities);
     }
 
     librg_void *librg_component_attach(librg_ctx_t *ctx, u32 index, librg_entity_t entity, librg_void *data) {
