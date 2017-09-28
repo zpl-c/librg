@@ -2145,7 +2145,6 @@ extern "C" {
 
 			if (signal == librg_thread_exit) break;
 			
-			zpl_atomic32_fetch_add(&ctx->threading.work_count, 1);
 			librg__execute_server_entity_update_proc(ctx, &reliable, &unreliable, si->offset, si->count);
 			zpl_atomic32_fetch_add(&ctx->threading.work_count, -1);
 		}
@@ -2166,10 +2165,11 @@ extern "C" {
 		}
         
 		zpl_atomic32_store(&ctx->threading.signal, librg_thread_work);
+		zpl_atomic32_store(&ctx->threading.work_count, 4);
 		
 		i32 work_count = zpl_atomic32_load(&ctx->threading.work_count);
 		while (work_count > 0) {
-			zpl_yield_thread();
+			zpl_sleep_ms(1);
 			work_count = zpl_atomic32_load(&ctx->threading.work_count);
 			zpl_mfence();
 		}

@@ -89,9 +89,9 @@ int main() {
     original.tick_delay      = 1000;
     original.mode            = LIBRG_MODE_CLIENT;
     original.world_size      = zplm_vec3(5000.0f, 5000.0f, 0.f);
-    original.max_entities    = 12000;
+    original.max_entities    = 64000;
 
-	#define size 8
+	#define size 1200
     librg_ctx_t ctxs[size];
 
     for (int i = 0; i < size; ++i) {
@@ -114,7 +114,7 @@ int main() {
             librg_tick(&ctxs[i]);
         }
 
-        zpl_sleep_ms(100);
+        zpl_sleep_ms(1);
     }
 
     return 0;

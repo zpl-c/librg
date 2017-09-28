@@ -99,6 +99,23 @@ void on_component_register(librg_ctx_t *ctx) {
     librg_component_register(ctx, component_hero, sizeof(hero_t));
 }
 
+void measure(void *userptr) {
+	librg_ctx_t *ctx = (librg_ctx_t *)userptr;
+
+	if (!ctx || !ctx->network.host) return;
+
+	static u32 lastdl = 0;
+	static u32 lastup = 0;
+
+	f32 dl = (ctx->network.host->totalReceivedData - lastdl) * 8.0f / (1000.0f * 1000); // mbps
+	f32 up = (ctx->network.host->totalSentData - lastup) * 8.0f / (1000.0f * 1000); // mbps
+
+	lastdl = ctx->network.host->totalReceivedData;
+	lastup = ctx->network.host->totalSentData;
+
+	librg_log("librg_update: took %f ms. Current used bandwidth D/U: (%f / %f) mbps. \r", ctx->last_update, dl, up);
+}
+
 int main() {
     char *test = "===============      SERVER      =================\n" \
                  "==                                              ==\n" \
@@ -107,12 +124,14 @@ int main() {
                  "==================================================\n";
     librg_log("%s\n\n", test);
 
+	librg_option_set(LIBRG_MAX_THREADS_PER_UPDATE, 8);
+
     librg_ctx_t ctx     = {0};
     ctx.mode            = LIBRG_MODE_SERVER;
     ctx.tick_delay      = 32;
     ctx.world_size      = zplm_vec3(5000.0f, 5000.0f, 0.f);
     ctx.max_connections = 128;
-    ctx.max_entities    = 16000,
+    ctx.max_entities    = 15000,
 
     librg_init(&ctx, on_component_register);
 
@@ -130,7 +149,7 @@ int main() {
 #endif
 
 #if 1
-    for (isize i = 0; i < 10000; i++) {
+    for (isize i = 0; i < 1000; i++) {
         librg_entity_t enemy = librg_entity_create(&ctx, DEMO_TYPE_NPC);
         librg_transform_t *transform = librg_fetch_transform(&ctx, enemy);
         transform->position.x = (float)(2000 - rand() % 4000);
@@ -146,6 +165,11 @@ int main() {
         hero_t *hero = librg_attach_hero(&ctx, enemy, &hero_);
     }
 #endif
+
+	zpl_timer_t *tick_timer = zpl_timer_add(ctx.timers);
+	tick_timer->userptr = (void *)&ctx; /* provide ctx as a argument to timer */
+	zpl_timer_set(tick_timer, 1000 * 1000, -1, measure);
+	zpl_timer_start(tick_timer, 1000);
 
     while (true) {
         librg_tick(&ctx);
