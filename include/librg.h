@@ -2120,8 +2120,8 @@ extern "C" {
 				if (librg_option_get(LIBRG_MAX_THREADS_PER_UPDATE) > 0) zpl_mutex_unlock(ctx->threading.send_lock);
 
 				// and cleanup
-				librg_data_reset(&reliable);
-				librg_data_reset(&unreliable);
+				librg_data_reset(reliable);
+				librg_data_reset(unreliable);
 			}
 		}
 	}
