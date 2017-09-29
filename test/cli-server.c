@@ -8,11 +8,6 @@ enum {
 
 typedef struct {
     zplm_vec3_t a;
-    zplm_vec3_t b;
-    zplm_vec3_t c;
-    zplm_vec3_t d;
-    zplm_vec3_t e;
-    zplm_vec3_t f;
 } foo_t;
 
 enum {
@@ -56,7 +51,7 @@ void on_entity_create(librg_event_t *event) {
 }
 
 void on_entity_update(librg_event_t *event) {
-    librg_data_wf32(event->data, librg_fetch_foo(event->ctx, event->entity)->a.x);
+	librg_data_wf32(event->data, 42);// librg_fetch_foo(event->ctx, event->entity)->a.x);
 }
 
 void on_components_register(librg_ctx_t *ctx) {
@@ -99,7 +94,7 @@ int main() {
     ctx.tick_delay      = 1000;
     ctx.mode            = LIBRG_MODE_SERVER;
     ctx.world_size      = zplm_vec3(5000.0f, 5000.0f, 0.f);
-    ctx.max_entities    = 64000;
+    ctx.max_entities    = 12000;
     ctx.max_connections = 1500;
 
     librg_init(&ctx, on_components_register);
@@ -115,7 +110,7 @@ int main() {
 
     librg_network_start(&ctx, (librg_address_t) { .host = "localhost", .port = 7777 });
 
-    for (isize i = 0; i < 60000; i++) {
+    for (isize i = 0; i < 10000; i++) {
         librg_entity_t enemy = librg_entity_create(&ctx, 0);
         librg_transform_t *transform = librg_fetch_transform(&ctx, enemy);
         librg_attach_foo(&ctx, enemy, NULL);

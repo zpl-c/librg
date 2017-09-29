@@ -1059,7 +1059,7 @@ extern "C" {
 
         void *newptr = zpl_alloc(data->allocator, new_capacity);
 
-        zpl_memmove(newptr, data->rawptr, data->capacity);
+        zpl_memcopy(newptr, data->rawptr, data->write_pos);
         zpl_free(data->allocator, data->rawptr);
 
         data->capacity = new_capacity;
