@@ -46,7 +46,6 @@ void on_connect_refused(librg_event_t *event) {
 
 void on_entity_create(librg_event_t *event) {
     foo_t *foo = librg_fetch_foo(event->ctx, event->entity);
-    if (foo)
     librg_data_wptr(event->data, foo, sizeof(foo_t));
 }
 
