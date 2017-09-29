@@ -2184,8 +2184,10 @@ extern "C" {
         zplc_clear(&ctx->streamer);
 
         // fill up
+		librg_component_meta *header = &ctx->components.headers[librg_client]; librg_assert(header);
         for (isize j = 0, valid_entities = 0; j < ctx->max_entities && valid_entities < ctx->entity.shared.count; j++) {
-            valid_entities++;
+			valid_entities++;
+			if (!header->used[j]) continue;
 
             librg_transform_t *transform = librg_fetch_transform(ctx, j);
             librg_assert(transform);
