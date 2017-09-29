@@ -2184,7 +2184,7 @@ extern "C" {
         zplc_clear(&ctx->streamer);
 
         // fill up
-		librg_component_meta *header = &ctx->components.headers[librg_client]; librg_assert(header);
+		librg_component_meta *header = &ctx->components.headers[librg_transform]; librg_assert(header);
         for (isize j = 0, valid_entities = 0; j < ctx->max_entities && valid_entities < ctx->entity.shared.count; j++) {
 			valid_entities++;
 			if (!header->used[j]) continue;

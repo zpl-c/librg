@@ -29,9 +29,9 @@ void on_connect_refused(librg_event_t *event) {
 }
 
 void on_entity_create(librg_event_t *event) {
-    foo_t foo;
-    librg_data_rptr(event->data, &foo, sizeof(foo_t));
-    librg_attach_foo(event->ctx, event->entity, &foo);
+    //foo_t foo;
+    //librg_data_rptr(event->data, &foo, sizeof(foo_t));
+    //librg_attach_foo(event->ctx, event->entity, &foo);
 }
 
 void on_entity_update(librg_event_t *event) {
@@ -71,7 +71,7 @@ void on_entity_update(librg_event_t *event) {
 
 
 void on_components_register(librg_ctx_t *ctx) {
-    librg_component_register(ctx, component_foo, sizeof(foo_t));
+    //librg_component_register(ctx, component_foo, sizeof(foo_t));
 }
 
 
@@ -87,7 +87,7 @@ int main() {
     original.tick_delay      = 1000;
     original.mode            = LIBRG_MODE_CLIENT;
     original.world_size      = zplm_vec3(5000.0f, 5000.0f, 0.f);
-    original.max_entities    = 12000;
+    original.max_entities    = 2500;
 
 	#define size 1200
     librg_ctx_t *ctxs = zpl_malloc(size*sizeof(librg_ctx_t));
