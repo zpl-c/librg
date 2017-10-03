@@ -205,7 +205,7 @@ extern "C" {
     /**
      * Table for various entity bool storages
      */
-    ZPL_TABLE_DECLARE(extern, librg_table_t, librg_table_, u32);
+    ZPL_TABLE_DECLARE(extern, librg_table_t, librg_table_, u64);
 
     /**
      *
@@ -279,7 +279,7 @@ extern "C" {
     typedef struct {
         usize offset;
         usize size;
-        zpl_buffer_t(u8) used;
+        zpl_buffer_t(b32) used;
     } librg_component_meta;
 
     typedef struct {
@@ -972,7 +972,7 @@ extern "C" {
 extern "C" {
 #endif
 
-    ZPL_TABLE_DEFINE(librg_table_t, librg_table_, u32);
+    ZPL_TABLE_DEFINE(librg_table_t, librg_table_, u64);
 
     librg_inline void librg_option_set(librg_option_e option, u32 value) {
         librg_options[option] = value;
@@ -1432,7 +1432,7 @@ extern "C" {
 
     librg_inline void librg__entity_attach_default(librg_ctx_t *ctx, librg_entity_t entity) {
         librg_transform_t t = {0};
-        librg_stream_t    s = {250};
+        librg_stream_t    s = {250, 0, 0};
         librg_meta_t      m = {0};
 
         librg_component_attach(ctx, librg_transform, entity, (librg_void *)&t);
@@ -1516,8 +1516,8 @@ extern "C" {
         pool->count--;
 
 		// remove entity from the streamer
-		if (librg_fetch_stream(ctx, entity)->branch)
-			zplc_remove(librg_fetch_stream(ctx, entity)->branch, entity);
+		//if (librg_fetch_stream(ctx, entity)->branch)
+		//	zplc_remove(librg_fetch_stream(ctx, entity)->branch, entity);
 
         // detach all components
         for (usize i = 0; i < ctx->components.count; i++) {
@@ -2186,7 +2186,7 @@ extern "C" {
         librg_assert(ctx);
 
         // clear
-        //zplc_clear(&ctx->streamer);
+        zplc_clear(&ctx->streamer);
 
         // fill up
 		librg_component_meta *header = &ctx->components.headers[librg_stream]; librg_assert(header);
@@ -2204,6 +2204,7 @@ extern "C" {
 
 			node.tag = j;
 			node.position = transform->position;
+			stream->branch = zplc_insert(&ctx->streamer, node); continue;
 			if (stream->branch == NULL) {
 				stream->branch = zplc_insert(&ctx->streamer, node);
 			}
