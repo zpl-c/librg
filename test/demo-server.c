@@ -124,7 +124,7 @@ int main() {
                  "==================================================\n";
     librg_log("%s\n\n", test);
 
-	librg_option_set(LIBRG_MAX_THREADS_PER_UPDATE, 8);
+	//librg_option_set(LIBRG_MAX_THREADS_PER_UPDATE, 8);
 
     librg_ctx_t ctx     = {0};
     ctx.mode            = LIBRG_MODE_SERVER;
@@ -149,7 +149,7 @@ int main() {
 #endif
 
 #if 1
-    for (isize i = 0; i < 1000; i++) {
+    for (isize i = 0; i < 10000; i++) {
         librg_entity_t enemy = librg_entity_create(&ctx, DEMO_TYPE_NPC);
         librg_transform_t *transform = librg_fetch_transform(&ctx, enemy);
         transform->position.x = (float)(2000 - rand() % 4000);

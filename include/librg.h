@@ -279,7 +279,7 @@ extern "C" {
     typedef struct {
         usize offset;
         usize size;
-        zpl_buffer_t(b32) used;
+        zpl_buffer_t(u8) used;
     } librg_component_meta;
 
     typedef struct {
@@ -2185,7 +2185,7 @@ extern "C" {
         //zplc_clear(&ctx->streamer);
 
         // fill up
-		librg_component_meta *header = &ctx->components.headers[librg_transform]; librg_assert(header);
+		librg_component_meta *header = &ctx->components.headers[librg_stream]; librg_assert(header);
         for (isize j = 0, valid_entities = 0; j < ctx->max_entities && valid_entities < ctx->entity.shared.count; j++) {
 			valid_entities++;
 			if (!header->used[j]) continue;
@@ -2210,7 +2210,7 @@ extern "C" {
 
 				if (!contains) {
 					zplc_remove(branch, j);
-					zplc_insert(&ctx->streamer, node);
+					stream->branch = zplc_insert(&ctx->streamer, node);
 				}
 			}
         }
