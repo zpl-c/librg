@@ -1481,6 +1481,7 @@ extern "C" {
 
     librg_entity_t librg_entity_create_shared(librg_ctx_t *ctx, librg_entity_t entity, u32 type) {
         librg_assert_msg(librg_is_client(ctx), "librg_entity_create_shared: can be executed only on client");
+        if (librg_entity_valid(ctx, entity)) return entity;
         librg_assert_msg(!librg_entity_valid(ctx, entity), "entity with such id already exsits");
 
         librg_entity_pool_t *pool = &ctx->entity.shared;
@@ -2186,7 +2187,6 @@ extern "C" {
         librg_assert(ctx);
 
         // clear
-        zplc_clear(&ctx->streamer);
 
         // fill up
 		librg_component_meta *header = &ctx->components.headers[librg_stream]; librg_assert(header);
@@ -2204,7 +2204,6 @@ extern "C" {
 
 			node.tag = j;
 			node.position = transform->position;
-			stream->branch = zplc_insert(&ctx->streamer, node); continue;
 			if (stream->branch == NULL) {
 				stream->branch = zplc_insert(&ctx->streamer, node);
 			}
