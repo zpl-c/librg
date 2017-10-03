@@ -346,7 +346,7 @@ extern "C" {
 
     typedef struct { u32 type; librg_table_t ignored; } librg_meta_t;
     typedef struct { zplm_vec3_t position; } librg_transform_t;
-    typedef struct { u32 range; zpl_array_t(librg_entity_t) last_query; } librg_stream_t;
+    typedef struct { u32 range; zpl_array_t(librg_entity_t) last_query; zplc_t *branch; } librg_stream_t;
     typedef struct { librg_peer_t *peer; } librg_control_t;
     typedef struct { librg_peer_t *peer; librg_table_t last_snapshot; } librg_client_t;
 
@@ -1563,6 +1563,7 @@ extern "C" {
 
         isize nodes_count = zpl_array_count(c->nodes);
         for (i32 i = 0; i < nodes_count; ++i) {
+			if (c->nodes[i].unused) continue;
             b32 inside = zplc__contains(c->dimensions, bounds, c->nodes[i].position.e);
 
             if (inside) {
@@ -2181,7 +2182,7 @@ extern "C" {
         librg_assert(ctx);
 
         // clear
-        zplc_clear(&ctx->streamer);
+        //zplc_clear(&ctx->streamer);
 
         // fill up
 		librg_component_meta *header = &ctx->components.headers[librg_transform]; librg_assert(header);
@@ -2192,12 +2193,26 @@ extern "C" {
             librg_transform_t *transform = librg_fetch_transform(ctx, j);
             librg_assert(transform);
 
-            zplc_node_t node = { 0 };
+			librg_stream_t *stream = librg_fetch_stream(ctx, j);
+			librg_assert(stream);
 
-            node.tag      = j;
-            node.position = transform->position;
+			zplc_node_t node = { 0 };
 
-            zplc_insert(&ctx->streamer, node);
+			node.tag = j;
+			node.position = transform->position;
+
+			if (stream->branch == NULL) {
+				stream->branch = zplc_insert(&ctx->streamer, node);
+			}
+			else {
+				zplc_t *branch = stream->branch;
+				b32 contains = zplc__contains(branch->dimensions, branch->boundary, transform->position.e);
+
+				if (!contains) {
+					zplc_remove(branch, j);
+					zplc_insert(&ctx->streamer, node);
+				}
+			}
         }
     }
 
