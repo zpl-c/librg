@@ -1515,6 +1515,10 @@ extern "C" {
         // decrease amount
         pool->count--;
 
+		// remove entity from the streamer
+		if (librg_fetch_stream(ctx, entity)->branch)
+			zplc_remove(librg_fetch_stream(ctx, entity)->branch, entity);
+
         // detach all components
         for (usize i = 0; i < ctx->components.count; i++) {
             ctx->components.headers[i].used[entity] = false;
@@ -2200,7 +2204,6 @@ extern "C" {
 
 			node.tag = j;
 			node.position = transform->position;
-
 			if (stream->branch == NULL) {
 				stream->branch = zplc_insert(&ctx->streamer, node);
 			}
