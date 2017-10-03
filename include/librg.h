@@ -1988,7 +1988,7 @@ extern "C" {
 	void librg__execute_server_entity_update_proc(librg_ctx_t *ctx, librg_data_t *reliable, librg_data_t *unreliable, usize offset, usize count) {
 		{
 			librg_component_meta *header = &ctx->components.headers[librg_client]; librg_assert(header);
-			for (isize j = offset, valid_entities = 0; j < offset+count && valid_entities < ctx->entity.shared.count; j++) {
+			for (isize j = offset, valid_entities = 0; j < offset+count; j++) {
 				valid_entities++;
 				if (!header->used[j]) continue;
 
@@ -2190,7 +2190,7 @@ extern "C" {
 
         // fill up
 		librg_component_meta *header = &ctx->components.headers[librg_stream]; librg_assert(header);
-        for (isize j = 0, valid_entities = 0; j < ctx->max_entities && valid_entities < ctx->entity.shared.count; j++) {
+        for (isize j = 0, valid_entities = 0; j < ctx->max_entities; j++) {
 			valid_entities++;
 			if (!header->used[j]) continue;
 
