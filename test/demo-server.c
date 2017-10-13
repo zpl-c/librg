@@ -148,7 +148,7 @@ int main() {
     librg_fetch_transform(librg_entity_create(0))->position.x = i * 20;
 #endif
 
-#if 1000
+#if 1
     for (isize i = 0; i < 10000; i++) {
         librg_entity_t enemy = librg_entity_create(&ctx, DEMO_TYPE_NPC);
         librg_transform_t *transform = librg_fetch_transform(&ctx, enemy);

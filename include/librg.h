@@ -388,6 +388,7 @@ extern "C" {
         u32 max_entities;
         u32 max_components;
         zplm_vec3_t world_size;
+		zplm_vec3_t min_branch_size;
 
         zpl_buffer_t(librg_message_cb *) messages;
 
@@ -2243,8 +2244,10 @@ extern "C" {
         librg_set_default(ctx->max_connections, 16);
         librg_set_default(ctx->max_entities, 8192);
         librg_set_default(ctx->max_components, 64);
-        librg_set_default(ctx->world_size.x, 4096.0f);
-        librg_set_default(ctx->world_size.y, 4096.0f);
+        librg_set_default(ctx->world_size.x, 5000.0f);
+        librg_set_default(ctx->world_size.y, 5000.0f);
+		librg_set_default(ctx->min_branch_size.x, 50.0f);
+		librg_set_default(ctx->min_branch_size.y, 50.0f);
         librg_set_default(ctx->mode, LIBRG_MODE_SERVER);
 
         if (!ctx->allocator.proc && !ctx->allocator.data) {
@@ -2281,7 +2284,15 @@ extern "C" {
         world.centre = zplm_vec3(0, 0, 0);
         world.half_size = zplm_vec3(ctx->world_size.x, ctx->world_size.y, ctx->world_size.z);
         zplc_dim_e dimension = ctx->world_size.z == 0.0f ? zplc_dim_2d_ev : zplc_dim_3d_ev;
-        zplc_init(&ctx->streamer, ctx->allocator, dimension, world, librg_option_get(LIBRG_MAX_ENTITIES_PER_BRANCH));
+
+		if (ctx->min_branch_size.x == -1.0f &&
+			ctx->min_branch_size.y == -1.0f &&
+			ctx->min_branch_size.z == -1.0f) {
+			zplm_vec3_t no_min_bounds = { 0 };
+			ctx->min_branch_size = no_min_bounds;
+		}
+
+        zplc_init(&ctx->streamer, ctx->allocator, dimension, world, ctx->min_branch_size, librg_option_get(LIBRG_MAX_ENTITIES_PER_BRANCH));
         librg_table_init(&ctx->entity.ignored, ctx->allocator);
 
 		// threading
