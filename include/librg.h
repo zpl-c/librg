@@ -1,4 +1,4 @@
-﻿/**
+/**
  * LIBRG - reguider library
  *
  * A library for building simple and elegant cross-platform mmo client-server solutions.
@@ -141,9 +141,9 @@ extern "C" {
     #define librg_bit_clear(A,k)   ( A[(k/32)] &= ~(1 << (k%32)) )
     #define librg_bit_test(A,k)    ( A[(k/32)] & (1 << (k%32)) )
 
-    #define LIBRG_DATA_STREAMS_AMOUNT 4
-    #define LIBRG_MESSAGE_ID u16
-    #define LIBRG_ENTITY_ID u32
+    #define LIBRG_ENTITY_ID             u32
+    #define LIBRG_MESSAGE_ID            u16
+    #define LIBRG_DATA_STREAMS_AMOUNT   4
 
     /**
      *
@@ -431,7 +431,7 @@ extern "C" {
         } entity;
 
         f32 last_update;
-        void *user_data;
+        void *userptr;
 
     } librg_ctx_t;
 
@@ -2114,7 +2114,7 @@ extern "C" {
     }
 
     void librg__execute_server_entity_update_worker(zpl_thread_t *thread) {
-        librg_update_worker_si_t *si = cast(librg_update_worker_si_t *)thread->user_data;
+        librg_update_worker_si_t *si = cast(librg_update_worker_si_t *)thread->userptr;
         librg_ctx_t *ctx = si->ctx;
 
         librg_data_t reliable, unreliable;
