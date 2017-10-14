@@ -35,7 +35,7 @@ void on_entity_create(librg_event_t *event) {
 }
 
 void on_entity_update(librg_event_t *event) {
-	//librg_log("on_entity_update\n");
+    //librg_log("on_entity_update\n");
     librg_data_rf32(event->data);
     //librg_log("sent: %f on upd", librg_data_rf32(event->data));
 }
@@ -89,7 +89,7 @@ int main() {
     original.world_size      = zplm_vec3(5000.0f, 5000.0f, 0.f);
     original.max_entities    = 60000;
 
-	#define size 1200
+    #define size 1200
     librg_ctx_t *ctxs = zpl_malloc(size*sizeof(librg_ctx_t));
 
     for (int i = 0; i < size; ++i) {

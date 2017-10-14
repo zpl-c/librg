@@ -50,7 +50,7 @@ void on_entity_create(librg_event_t *event) {
 }
 
 void on_entity_update(librg_event_t *event) {
-	librg_data_wf32(event->data, 42);// librg_fetch_foo(event->ctx, event->entity)->a.x);
+    librg_data_wf32(event->data, 42);// librg_fetch_foo(event->ctx, event->entity)->a.x);
 }
 
 void on_components_register(librg_ctx_t *ctx) {
@@ -87,13 +87,13 @@ int main() {
     librg_log("%s\n\n", test);
 
     librg_option_set(LIBRG_MAX_ENTITIES_PER_BRANCH, 4);
-	librg_option_set(LIBRG_MAX_THREADS_PER_UPDATE, 8);
+    librg_option_set(LIBRG_MAX_THREADS_PER_UPDATE, 8);
 
     librg_ctx_t ctx     = {0};
     ctx.tick_delay      = 1000;
     ctx.mode            = LIBRG_MODE_SERVER;
     ctx.world_size      = zplm_vec3(5000.0f, 5000.0f, 0.f);
-	ctx.min_branch_size = zplm_vec3(-1, -1, -1);
+    ctx.min_branch_size = zplm_vec3(-1, -1, -1);
     ctx.max_entities    = 60000;
     ctx.max_connections = 1200;
 
