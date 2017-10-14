@@ -2131,7 +2131,7 @@ extern "C" {
             };
 
             if (signal == librg_thread_exit) break;
-            
+
             librg__execute_server_entity_update_proc(ctx, &reliable, &unreliable, si->offset, si->count);
             zpl_atomic32_fetch_add(&ctx->threading.work_count, -1);
         }
@@ -2150,10 +2150,10 @@ extern "C" {
             librg__execute_server_entity_update_proc(ctx, &ctx->stream_upd_reliable, &ctx->stream_upd_unreliable, 0, ctx->max_entities);
             return;
         }
-        
+
         zpl_atomic32_store(&ctx->threading.signal, librg_thread_work);
         zpl_atomic32_store(&ctx->threading.work_count, 4);
-        
+
         i32 work_count = zpl_atomic32_load(&ctx->threading.work_count);
         while (work_count > 0) {
             zpl_sleep_ms(1);
