@@ -5,7 +5,6 @@
 
 typedef struct {
     zplm_vec3_t a;
-
 } foo_t;
 
 enum {

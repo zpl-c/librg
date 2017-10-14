@@ -205,7 +205,7 @@ extern "C" {
     /**
      * Table for various entity bool storages
      */
-    ZPL_TABLE_DECLARE(extern, librg_table_t, librg_table_, u64);
+    ZPL_TABLE_DECLARE(extern, librg_table_t, librg_table_, u32);
 
     /**
      *
@@ -965,7 +965,7 @@ extern "C" {
 extern "C" {
 #endif
 
-    ZPL_TABLE_DEFINE(librg_table_t, librg_table_, u64);
+    ZPL_TABLE_DEFINE(librg_table_t, librg_table_, u32);
 
     librg_inline void librg_option_set(librg_option_e option, u32 value) {
         librg_options[option] = value;
@@ -2317,7 +2317,7 @@ extern "C" {
 
                 offset += step;
 
-                zpl_thread_start(ctx->threading.update_workers + i, librg__execute_server_entity_update_worker, si);
+                zpl_thread_start(ctx->threading.update_workers + i, (zpl_thread_proc_t *)librg__execute_server_entity_update_worker, si);
             }
         }
 
