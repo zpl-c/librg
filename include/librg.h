@@ -2113,7 +2113,7 @@ extern "C" {
         }
     }
 
-    void librg__execute_server_entity_update_worker(zpl_thread_t *thread) {
+    isize librg__execute_server_entity_update_worker(zpl_thread_t *thread) {
         librg_update_worker_si_t *si = cast(librg_update_worker_si_t *)thread->user_data;
         librg_ctx_t *ctx = si->ctx;
 
@@ -2141,6 +2141,8 @@ extern "C" {
 
         zpl_free(ctx->allocator, si);
         thread->return_value = 0;
+
+        return 0;
     }
 
     librg_internal void librg__execute_server_entity_update(librg_ctx_t *ctx) {
@@ -2317,7 +2319,7 @@ extern "C" {
 
                 offset += step;
 
-                zpl_thread_start(ctx->threading.update_workers + i, (zpl_thread_proc_t *)librg__execute_server_entity_update_worker, si);
+                zpl_thread_start(ctx->threading.update_workers + i, librg__execute_server_entity_update_worker, si);
             }
         }
 
