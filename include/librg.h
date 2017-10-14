@@ -328,7 +328,7 @@ extern "C" {
         librg_peer_t    *peer; /* optional: peer is used for built-in events */
         librg_entity_t  entity; /* optional: peer is used for built-in events */
 
-        void *userptr; /* optional: user information */
+        void *user_data; /* optional: user information */
     } librg_event_t;
 
     /**
@@ -431,7 +431,7 @@ extern "C" {
         } entity;
 
         f32 last_update;
-        void *userptr;
+        void *user_data;
 
     } librg_ctx_t;
 
@@ -2114,7 +2114,7 @@ extern "C" {
     }
 
     void librg__execute_server_entity_update_worker(zpl_thread_t *thread) {
-        librg_update_worker_si_t *si = cast(librg_update_worker_si_t *)thread->userptr;
+        librg_update_worker_si_t *si = cast(librg_update_worker_si_t *)thread->user_data;
         librg_ctx_t *ctx = si->ctx;
 
         librg_data_t reliable, unreliable;
@@ -2328,7 +2328,7 @@ extern "C" {
         // init timers
         zpl_array_init(ctx->timers, ctx->allocator);
         zpl_timer_t *tick_timer = zpl_timer_add(ctx->timers);
-        tick_timer->userptr = (void *)ctx; /* provide ctx as a argument to timer */
+        tick_timer->user_data = (void *)ctx; /* provide ctx as a argument to timer */
         zpl_timer_set(tick_timer, 1000 * ctx->tick_delay, -1, librg__tick_cb);
         zpl_timer_start(tick_timer, 1000);
 
