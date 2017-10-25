@@ -1472,7 +1472,6 @@ extern "C" {
 
     librg_entity_t librg_entity_create_shared(librg_ctx_t *ctx, librg_entity_t entity, u32 type) {
         librg_assert_msg(librg_is_client(ctx), "librg_entity_create_shared: can be executed only on client");
-        if (librg_entity_valid(ctx, entity)) return entity;
         librg_assert_msg(!librg_entity_valid(ctx, entity), "entity with such id already exsits");
 
         librg_entity_pool_t *pool = &ctx->entity.shared;
@@ -2150,7 +2149,7 @@ extern "C" {
         }
 
         zpl_atomic32_store(&ctx->threading.signal, librg_thread_work);
-        zpl_atomic32_store(&ctx->threading.work_count, 4);
+        zpl_atomic32_store(&ctx->threading.work_count, librg_option_get(LIBRG_MAX_THREADS_PER_UPDATE));
 
         i32 work_count = zpl_atomic32_load(&ctx->threading.work_count);
         while (work_count > 0) {
@@ -2164,8 +2163,6 @@ extern "C" {
 
     librg_inline void librg__execute_server_entity_insert(librg_ctx_t *ctx) {
         librg_assert(ctx);
-
-        // clear
 
         // fill up
         librg_component_meta *header = &ctx->components.headers[librg_stream]; librg_assert(header);
@@ -2308,10 +2305,10 @@ extern "C" {
                 librg_update_worker_si_t *si = zpl_alloc(ctx->allocator, sizeof(librg_update_worker_si_t));
                 librg_update_worker_si_t si_ = { 0 };
                 *si = si_;
-                si->count = step;
-                si->offset = offset;
-                si->ctx = ctx;
-                si->id = i;
+                si->count   = step;
+                si->offset  = offset;
+                si->ctx     = ctx;
+                si->id      = i;
 
                 offset += step;
 
