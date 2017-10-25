@@ -123,7 +123,6 @@ int main() {
     zpl_timer_set(tick_timer, 1000 * 1000, -1, measure);
     zpl_timer_start(tick_timer, 1000);
 
-
     while (true) {
         librg_tick(&ctx);
         zpl_sleep_ms(1);

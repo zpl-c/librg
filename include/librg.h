@@ -384,6 +384,7 @@ extern "C" {
         u16 max_connections;
         u32 max_entities;
         u32 max_components;
+
         zplm_vec3_t world_size;
         zplm_vec3_t min_branch_size;
 

@@ -167,14 +167,14 @@ int main() {
 #endif
 
 	zpl_timer_t *tick_timer = zpl_timer_add(ctx.timers);
-	tick_timer->userptr = (void *)&ctx; /* provide ctx as a argument to timer */
+	tick_timer->user_data = (void *)&ctx; /* provide ctx as a argument to timer */
 	zpl_timer_set(tick_timer, 1000 * 1000, -1, measure);
 	zpl_timer_start(tick_timer, 1000);
 
     while (true) {
         librg_tick(&ctx);
         ai_think(&ctx);
-        zpl_sleep_ms(32);
+        zpl_sleep_ms(1);
     }
 
     librg_network_stop(&ctx);
