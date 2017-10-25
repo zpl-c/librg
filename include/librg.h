@@ -304,12 +304,11 @@ extern "C" {
      * and injected to each incoming message
      */
     typedef struct {
-        struct librg_ctx_t *ctx;
-
-        librg_peer_t *peer;
-        librg_data_t *data;
-
-        librg_packet_t *packet;
+        struct librg_ctx_t  *ctx;
+        librg_data_t        *data;
+        librg_peer_t        *peer;
+        librg_packet_t      *packet;
+        void *user_data; /* optional: user information */
     } librg_message_t;
 
     typedef enum {
@@ -321,13 +320,11 @@ extern "C" {
      * usually created in various
      */
     typedef struct {
-        struct librg_ctx_t *ctx; /* librg context where event has been called */
-        librg_event_flag_e flags; /* flags for that event */
-
-        librg_data_t    *data; /* optional: data is used for built-in events */
-        librg_peer_t    *peer; /* optional: peer is used for built-in events */
-        librg_entity_t  entity; /* optional: peer is used for built-in events */
-
+        struct librg_ctx_t  *ctx; /* librg context where event has been called */
+        librg_data_t        *data; /* optional: data is used for built-in events */
+        librg_peer_t        *peer; /* optional: peer is used for built-in events */
+        librg_entity_t      entity; /* optional: peer is used for built-in events */
+        librg_event_flag_e  flags; /* flags for that event */
         void *user_data; /* optional: user information */
     } librg_event_t;
 
