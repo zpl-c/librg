@@ -1507,8 +1507,9 @@ extern "C" {
         pool->count--;
 
         // remove entity from the streamer
-        //if (librg_fetch_stream(ctx, entity)->branch)
-        //  zplc_remove(librg_fetch_stream(ctx, entity)->branch, entity);
+        if (librg_fetch_stream(ctx, entity)->branch) {
+            zplc_remove(librg_fetch_stream(ctx, entity)->branch, entity);
+        }
 
         // detach all components
         for (usize i = 0; i < ctx->components.count; i++) {
@@ -1559,6 +1560,7 @@ extern "C" {
         isize nodes_count = zpl_array_count(c->nodes);
         for (i32 i = 0; i < nodes_count; ++i) {
             if (c->nodes[i].unused) continue;
+
             b32 inside = zplc__contains(c->dimensions, bounds, c->nodes[i].position.e);
 
             if (inside) {
@@ -2164,6 +2166,9 @@ extern "C" {
     librg_inline void librg__execute_server_entity_insert(librg_ctx_t *ctx) {
         librg_assert(ctx);
 
+        // clear
+        zplc_clear(&ctx->streamer);
+
         // fill up
         librg_component_meta *header = &ctx->components.headers[librg_stream]; librg_assert(header);
         for (isize j = 0, valid_entities = 0; j < ctx->max_entities; j++) {
@@ -2180,18 +2185,20 @@ extern "C" {
 
             node.tag = j;
             node.position = transform->position;
-            if (stream->branch == NULL) {
-                stream->branch = zplc_insert(&ctx->streamer, node);
-            }
-            else {
-                zplc_t *branch = stream->branch;
-                b32 contains = zplc__contains(branch->dimensions, branch->boundary, transform->position.e);
+            zplc_insert(&ctx->streamer, node);
 
-                if (!contains) {
-                    zplc_remove(branch, j);
-                    stream->branch = zplc_insert(&ctx->streamer, node);
-                }
-            }
+            // if (stream->branch == NULL) {
+            //     stream->branch = zplc_insert(&ctx->streamer, node);
+            // }
+            // else {
+            //     zplc_t *branch = stream->branch;
+            //     b32 contains = zplc__contains(branch->dimensions, branch->boundary, transform->position.e);
+
+            //     if (!contains) {
+            //         zplc_remove(branch, j);
+            //         stream->branch = zplc_insert(&ctx->streamer, node);
+            //     }
+            // }
         }
     }
 

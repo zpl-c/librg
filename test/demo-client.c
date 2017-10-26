@@ -31,6 +31,7 @@ int init_sdl() {
 
     // Set size of renderer to the same as window
     SDL_RenderSetLogicalSize(sdl_renderer, SIZE_X, SIZE_Y);
+    SDL_SetRenderDrawBlendMode(sdl_renderer, SDL_BLENDMODE_BLEND);
 
     // Set color of renderer to green
     SDL_SetRenderDrawColor(sdl_renderer, 39, 40, 34, 150);
@@ -140,6 +141,18 @@ void render_entity(librg_ctx_t *ctx, librg_entity_t entity) {
 
     // render
     SDL_RenderFillRect( sdl_renderer, &position );
+
+    if (entity == player) {
+        SDL_Rect scrptprpt = default_position();
+
+        scrptprpt.x = position.x - 250;
+        scrptprpt.y = position.y - 250;
+        scrptprpt.w = 500;
+        scrptprpt.h = 500;
+
+        SDL_SetRenderDrawColor( sdl_renderer, 133, 133, 133, 75 );
+        SDL_RenderFillRect( sdl_renderer, &scrptprpt );
+    }
 
     if (hero && hero->cur_hp > 0) {
         position.h = 5;
