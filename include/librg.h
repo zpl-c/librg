@@ -1968,8 +1968,7 @@ extern "C" {
 
     void librg__execute_server_entity_update_proc(librg_ctx_t *ctx, librg_data_t *reliable, librg_data_t *unreliable, usize offset, usize count) {
         librg_component_meta *header = &ctx->components.headers[librg_client]; librg_assert(header);
-        for (isize j = offset, valid_entities = 0; j < offset+count; j++) {
-            valid_entities++;
+        for (isize j = offset; j < offset+count; j++) {
             if (!header->used[j]) continue;
 
             // assume that entity is valid, having the client
@@ -2166,13 +2165,12 @@ extern "C" {
     librg_inline void librg__execute_server_entity_insert(librg_ctx_t *ctx) {
         librg_assert(ctx);
 
-        // clear
+        // clear (remove for )
         zplc_clear(&ctx->streamer);
 
         // fill up
         librg_component_meta *header = &ctx->components.headers[librg_stream]; librg_assert(header);
-        for (isize j = 0, valid_entities = 0; j < ctx->max_entities; j++) {
-            valid_entities++;
+        for (isize j = 0; j < ctx->max_entities; j++) {
             if (!header->used[j]) continue;
 
             librg_transform_t *transform = librg_fetch_transform(ctx, j);
@@ -2187,6 +2185,7 @@ extern "C" {
             node.position = transform->position;
             zplc_insert(&ctx->streamer, node);
 
+            // TODO: fix the partial updating bug
             // if (stream->branch == NULL) {
             //     stream->branch = zplc_insert(&ctx->streamer, node);
             // }
@@ -2300,6 +2299,8 @@ extern "C" {
         // threading
         usize thread_count = librg_option_get(LIBRG_MAX_THREADS_PER_UPDATE);
         if (thread_count > 0) {
+            librg_log("librg: warning, LIBRG_MAX_THREADS_PER_UPDATE is experimental, and highly unstable!\n");
+
             ctx->threading.update_workers = zpl_alloc(ctx->allocator, sizeof(zpl_thread_t)*thread_count);
             usize step = ctx->max_entities / thread_count;
             ctx->threading.send_lock = zpl_alloc(ctx->allocator, sizeof(zpl_mutex_t));
