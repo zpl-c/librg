@@ -1934,7 +1934,7 @@ extern "C" {
             librg_event_trigger(ctx, LIBRG_CLIENT_STREAMER_UPDATE, &event);
 
             // check if user rejected the event
-            if (event.flags & LIBRG_EVENT_REJECTED) {
+            if (!(event.flags & LIBRG_EVENT_REJECTED)) {
                 librg_data_wptr(&subdata, transform, sizeof(librg_transform_t));
                 librg_data_went(&data, entity);
                 librg_data_wu32(&data, librg_data_get_wpos(&subdata));
