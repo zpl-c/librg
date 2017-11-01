@@ -1933,17 +1933,18 @@ extern "C" {
             event.data = &subdata; event.entity = entity;
             librg_event_trigger(ctx, LIBRG_CLIENT_STREAMER_UPDATE, &event);
 
-            // TODO: add ability to reject
+            // check if user rejected the event
+            if (event.flags & LIBRG_EVENT_REJECTED) {
+                librg_data_wptr(&subdata, transform, sizeof(librg_transform_t));
+                librg_data_went(&data, entity);
+                librg_data_wu32(&data, librg_data_get_wpos(&subdata));
 
-            librg_data_wptr(&subdata, transform, sizeof(librg_transform_t));
-            librg_data_went(&data, entity);
-            librg_data_wu32(&data, librg_data_get_wpos(&subdata));
+                // write sub-bitstream to main bitstream
+                librg_data_wptr(&data, subdata.rawptr, librg_data_get_wpos(&subdata));
+                librg_data_free(&subdata);
 
-            // write sub-bitstream to main bitstream
-            librg_data_wptr(&data, subdata.rawptr, librg_data_get_wpos(&subdata));
-            librg_data_free(&subdata);
-
-            amount++;
+                amount++;
+            }
         });
 
         if (amount < 1) {
@@ -2013,6 +2014,10 @@ extern "C" {
                     // increase write amount for create counter
                     created_entities++;
 
+                    // save write size before writing stuff
+                    // (in case we will need reject the event)
+                    u32 curr_wsize = librg_data_get_wpos(reliable);
+
                     // write all basic data
                     librg_data_went(reliable, entity);
                     librg_data_wu32(reliable, librg_fetch_meta(ctx, entity)->type);
@@ -2023,7 +2028,11 @@ extern "C" {
                     event.data = reliable; event.entity = entity;
                     librg_event_trigger(ctx, LIBRG_ENTITY_CREATE, &event);
 
-                    // TODO: add ability to reject
+                    // check if event was rejected
+                    if (event.flags & LIBRG_EVENT_REJECTED) {
+                        created_entities--;
+                        librg_data_set_wpos(reliable, curr_wsize);
+                    }
                 }
                 else {
                     // mark entity as still alive, for the remove cycle
@@ -2038,6 +2047,10 @@ extern "C" {
                     }
                     // write update
                     else {
+                        // save write size before writing stuff
+                        // (in case we will need reject the event)
+                        u32 curr_wsize = librg_data_get_wpos(unreliable);
+
                         librg_data_went(unreliable, entity);
                         librg_data_wptr(unreliable, librg_fetch_transform(ctx, entity), sizeof(librg_transform_t));
 
@@ -2046,7 +2059,11 @@ extern "C" {
                         event.data = unreliable; event.entity = entity;
                         librg_event_trigger(ctx, LIBRG_ENTITY_UPDATE, &event);
 
-                        // TODO: add ability to reject
+                        // check if event was rejected
+                        if (event.flags & LIBRG_EVENT_REJECTED) {
+                            updated_entities--;
+                            librg_data_set_wpos(unreliable, curr_wsize);
+                        }
                     }
                 }
 
@@ -2065,11 +2082,17 @@ extern "C" {
             // add entity removes
             for (isize i = 0; i < zpl_array_count(last_snapshot->entries); ++i) {
                 librg_entity_t entity = (LIBRG_ENTITY_ID)last_snapshot->entries[i].key;
+
+                // check if entity existed before
                 b32 not_existed = last_snapshot->entries[i].value;
                 if (not_existed == 0) continue;
 
                 // skip entity delete if this is player's entity
                 if (entity == player) continue;
+
+                // save write size before writing stuff
+                // (in case we will need reject the event)
+                u32 curr_wsize = librg_data_get_wpos(reliable);
 
                 // write id
                 librg_data_went(reliable, entity);
@@ -2080,11 +2103,17 @@ extern "C" {
                 event.data = reliable; event.entity = entity;
                 librg_event_trigger(ctx, LIBRG_ENTITY_REMOVE, &event);
 
-                // TODO: add ability to reject
+                // check if even was rejected
+                if (event.flags & LIBRG_EVENT_REJECTED) {
+                    removed_entities--;
+                    librg_data_set_wpos(reliable, curr_wsize);
+                }
             }
 
+            // write remove amount
             librg_data_wu32_at(reliable, removed_entities, write_pos);
 
+            // swap snapshot tables
             librg_table_destroy(&client->last_snapshot);
             *last_snapshot = next_snapshot;
 
