@@ -1751,7 +1751,7 @@ extern "C" {
         librg_dbg("librg__connection_accept\n");
 
         librg_entity_t remote = librg_data_rent(msg->data);
-        librg_entity_t entity = librg_entity_create_shared(msg->ctx, remote, LIBRG_DEFAULT_CLIENT_TYPE);
+        librg_entity_t entity = librg_entity_create_shared(msg->ctx, remote, librg_option_get(LIBRG_DEFAULT_CLIENT_TYPE));
 
         // add server peer to storage
         librg_table_set(&msg->ctx->network.connected_peers, cast(u64)msg->peer, entity);
