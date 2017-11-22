@@ -10,7 +10,7 @@
  * #include <librg.h>
  *
  * Credits:
- * Vladislav Gritsenko (GitHub: inlife)
+ * Vladyslav Hrytsenko (GitHub: inlife)
  * Dominik Madarasz (GitHub: zaklaus)
  *
  * Dependencies:
@@ -35,7 +35,7 @@
  * 2.0.2 - C++ and MSVC related fixes
  * 2.0.0 - Initial C version rewrite
  *
- * Copyright 2017 Vladislav Gritsenko
+ * Copyright 2017 Vladyslav Hrytsenko
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
