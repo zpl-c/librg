@@ -521,7 +521,7 @@ extern "C" {
     /**
      * Get entity by peer
      */
-    LIBRG_API librg_entity_t librg_entity_get(librg_ctx_t *ctx, librg_peer_t *peer);
+    LIBRG_API librg_entity_t librg_entity_find(librg_ctx_t *ctx, librg_peer_t *peer);
 
     /**
      * Set particular entity visible or invisible
@@ -1324,6 +1324,7 @@ extern "C" {
     }
 
     void librg_entity_destroy(librg_ctx_t *ctx, librg_entity_t id) {
+        librg_assert(librg_is_server(ctx));
         zpl_array_append(ctx->entity.remove_queue, id);
     }
 
@@ -1419,46 +1420,45 @@ extern "C" {
     }
 
     librg_inline usize librg_entity_query(librg_ctx_t *ctx, librg_entity_t entity, librg_entity_t **out_entities) {
-        librg_assert(ctx && out_entities && *out_entities);
+        librg_assert(ctx && out_entities && *out_entities && librg_entity_valid(ctx, entity));
+        librg_assert(librg_is_server(ctx));
+        librg_entity_blob_t *blob = librg_entity_blob(ctx, entity);
 
-        librg_transform_t *transform = (librg_transform_t *)librg_component_fetch(ctx, librg_transform, entity);
-        librg_stream_t    *stream    = (librg_stream_t *)   librg_component_fetch(ctx, librg_stream, entity);
-
-        librg_assert(transform && stream);
         zpl_array_count(*out_entities) = 0; /* reset previous count */
 
         zplc_bounds_t search_bounds;
-        search_bounds.centre    = transform->position;
-        search_bounds.half_size = zplm_vec3((f32)stream->range, (f32)stream->range, (f32)stream->range);
+        search_bounds.centre    = blob->position;
+        search_bounds.half_size = zplm_vec3(blob->stream_range, blob->stream_range, blob->stream_range);
 
         librg__entity_query(ctx, entity, &ctx->streamer, search_bounds, out_entities);
         return zpl_array_count(*out_entities);
     }
 
-    librg_entity_t librg_entity_get(librg_ctx_t *ctx, librg_peer_t *peer) {
+    librg_entity_t librg_entity_find(librg_ctx_t *ctx, librg_peer_t *peer) {
+        librg_assert(librg_is_server(ctx));
         librg_assert(ctx && peer);
         librg_entity_t *entity = librg_table_get(&ctx->network.connected_peers, (u64)peer);
         librg_assert(entity);
-
         return *entity;
     }
 
     void librg_entity_control_set(librg_ctx_t *ctx, librg_entity_t entity, librg_peer_t *peer) {
-        librg_assert(ctx && peer);
-        librg_control_t *control = cast(librg_control_t *)librg_component_fetch(ctx, librg_control, entity);
+        librg_assert(ctx && peer && librg_entity_valid(ctx, entity));
+        librg_assert(librg_is_server(ctx));
+        librg_entity_blob_t *blob = librg_entity_blob(ctx, entity);
 
         // replace current entity owner
-        if (control) {
-            if (control->peer == peer) {
+        if (blob->flags & LIBRG_ENTITY_CONTROLLED) {
+            if (blob->control_peer == peer) {
                 return;
             }
 
-            control->peer = peer;
+            blob->control_peer = peer;
         }
         // attach new entity owner
         else {
-            librg_control_t cs = { peer };
-            librg_component_attach(ctx, librg_control, entity, (librg_void *)&cs);
+            blob->flags |= LIBRG_ENTITY_CONTROLLED;
+            blob->control_peer = peer;
         }
 
         librg_send_to(ctx, LIBRG_CLIENT_STREAMER_ADD, peer, librg_lambda(data), {
@@ -1467,16 +1467,18 @@ extern "C" {
     }
 
     librg_inline librg_peer_t *librg_entity_control_get(librg_ctx_t *ctx, librg_entity_t entity) {
-        librg_assert(ctx);
-        librg_control_t *control = cast(librg_control_t *)librg_component_fetch(ctx, librg_control, entity);
-        return (control && control->peer) ? control->peer : NULL;
+        librg_assert(ctx && librg_entity_valid(ctx, entity));
+        librg_assert(librg_is_server(ctx));
+        librg_entity_blob_t *blob = librg_entity_blob(ctx, entity);
+        return (blob->flags & LIBRG_ENTITY_CONTROLLED) ? blob->control_peer : NULL;
     }
 
     void librg_entity_control_remove(librg_ctx_t *ctx, librg_entity_t entity) {
-        librg_assert(ctx);
-        librg_control_t *control = cast(librg_control_t *)librg_component_fetch(ctx, librg_control, entity);
+        librg_assert(ctx && librg_entity_valid(ctx, entity));
+        librg_assert(librg_is_server(ctx));
+        librg_entity_blob_t *blob = librg_entity_blob(ctx, entity);
 
-        if (!control) {
+        if (!(blob->flags & LIBRG_ENTITY_CONTROLLED)) {
             return;
         }
 
@@ -1484,7 +1486,8 @@ extern "C" {
             librg_data_went(&data, entity);
         });
 
-        librg_component_detach(ctx, librg_control, entity);
+        blob->flags &= ~LIBRG_ENTITY_CONTROLLED;
+        blob->control_peer = NULL;
     }
 
     /**
