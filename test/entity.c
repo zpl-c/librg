@@ -32,6 +32,11 @@ int main() {
         librg_log("created entity %d\n", librg_entity_create(&ctx, 0));
     }
 
+    librg_entity_destroy(&ctx, 1);
+    librg_entity_destroy(&ctx, 2);
+    librg_entity_destroy(&ctx, 3);
+    librg_entity_destroy(&ctx, 5);
+
     librg_log("created entity %d\n", librg_entity_create(&ctx, 0));
     librg_log("created entity %d\n", librg_entity_create(&ctx, 0));
     librg_log("created entity %d\n", librg_entity_create(&ctx, 0));
