@@ -441,7 +441,7 @@ extern "C" {
      * Main initialization method
      * MUST BE called in the begging of your application
      */
-    LIBRG_API void librg_init(librg_ctx_t *ctx, void *);
+    LIBRG_API void librg_init(librg_ctx_t *ctx);
 
     /**
      * Main tick method
@@ -576,7 +576,7 @@ extern "C" {
 
     #define librg_entity_iteratex(ctx, cflags, cname, code) do { \
         for (int _ent = 0, _valid = 0; _ent < ctx->max_entities && _valid < ctx->entity.count; ++_ent) { \
-            if (ctx->entity.list[_ent].flags & (LIBRG_ENTITY_ALIVE | cflags)) { \
+            if ((ctx->entity.list[_ent].flags & (LIBRG_ENTITY_ALIVE | cflags)) == (LIBRG_ENTITY_ALIVE | cflags)) { \
                 _valid++; librg_entity_t cname = _ent; code; \
             } \
         } \
@@ -1174,7 +1174,7 @@ extern "C" {
 
     void librg_message_send_instream_except(librg_ctx_t *ctx, librg_entity_t entity, librg_peer_t * ignored, void *data, usize size) {
         zpl_array_t(librg_entity_t) queue; // TODO: remove
-        zpl_array_init(queue, zpl_heap_allocator());
+        zpl_array_init(queue, ctx->allocator);
         librg_entity_query(ctx, entity, &queue);
 
         for (isize i = 0; i < zpl_array_count(queue); i++) {
@@ -1420,7 +1420,7 @@ extern "C" {
     }
 
     librg_inline usize librg_entity_query(librg_ctx_t *ctx, librg_entity_t entity, librg_entity_t **out_entities) {
-        librg_assert(ctx && out_entities && *out_entities && librg_entity_valid(ctx, entity));
+        librg_assert(ctx && out_entities && *out_entities);
         librg_assert(librg_is_server(ctx));
         librg_entity_blob_t *blob = librg_entity_blob(ctx, entity);
 
@@ -1555,6 +1555,7 @@ extern "C" {
             blob->flags |= LIBRG_ENTITY_CLIENT;
             blob->client_peer = msg->peer;
             librg_table_init(&blob->last_snapshot, msg->ctx->allocator);
+            zpl_array_init(blob->last_query, msg->ctx->allocator);
 
             // add client peer to storage
             librg_table_set(&msg->ctx->network.connected_peers, cast(u64)msg->peer, entity);
@@ -1826,7 +1827,9 @@ extern "C" {
         for (isize j = offset; j < offset+count; j++) {
             librg_entity_blob_t *blob = &ctx->entity.list[j];
 
-            if (!(blob->flags & (LIBRG_ENTITY_ALIVE | LIBRG_ENTITY_CLIENT))) continue;
+            if (!(blob->flags & LIBRG_ENTITY_CLIENT)) continue;
+
+librg_log("aaaaaaaa %d\n", blob->id);
 
             // assume that entity is valid, having the client
             librg_entity_t player = j;
@@ -2110,7 +2113,7 @@ extern "C" {
      *
      */
 
-    void librg_init(librg_ctx_t *ctx, void *unused) {
+    void librg_init(librg_ctx_t *ctx) {
         librg_dbg("librg_init\n");
 
         #define librg_set_default(expr, value) if (!expr) expr = value

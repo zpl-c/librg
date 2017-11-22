@@ -26,7 +26,7 @@ int main() {
     librg_ctx_t ctx = {0};
     ctx.max_entities = 100;
 
-    librg_init(&ctx, NULL);
+    librg_init(&ctx);
 
     for (int i = 0; i < 100; ++i) {
         librg_log("created entity %d\n", librg_entity_create(&ctx, 0));

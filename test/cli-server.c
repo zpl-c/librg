@@ -10,11 +10,6 @@ typedef struct {
     zplm_vec3_t a;
 } foo_t;
 
-enum {
-    component_foo = librg_component_last,
-};
-
-librg_component(foo, component_foo, foo_t);
 
 void on_connect_request(librg_event_t *event) {
     u32 secret = librg_data_ru32(event->data);
@@ -26,16 +21,16 @@ void on_connect_request(librg_event_t *event) {
 
 void on_connect_accepted(librg_event_t *event) {
     librg_log("on_connect_accepted\n");
+    librg_entity_blob_t *blob = librg_entity_blob(event->ctx, event->entity);
     //librg_attach_foo(event->ctx, event->entity, NULL);
 
-    librg_transform_t *transform = librg_fetch_transform(event->ctx, event->entity);
-    transform->position.x = (float)(2000 - rand() % 4000);
-    transform->position.y = (float)(2000 - rand() % 4000);
+    blob->position.x = (float)(2000 - rand() % 4000);
+    blob->position.y = (float)(2000 - rand() % 4000);
 
     librg_log("spawning player at: %f %f %f\n",
-        transform->position.x,
-        transform->position.y,
-        transform->position.z
+        blob->position.x,
+        blob->position.y,
+        blob->position.z
     );
 
 }
@@ -51,10 +46,6 @@ void on_entity_create(librg_event_t *event) {
 
 void on_entity_update(librg_event_t *event) {
     librg_data_wf32(event->data, 42);// librg_fetch_foo(event->ctx, event->entity)->a.x);
-}
-
-void on_components_register(librg_ctx_t *ctx) {
-    //librg_component_register(ctx, component_foo, sizeof(foo_t));
 }
 
 void custom_handler(librg_message_t *msg) {
@@ -87,7 +78,7 @@ int main() {
     librg_log("%s\n\n", test);
 
     librg_option_set(LIBRG_MAX_ENTITIES_PER_BRANCH, 4);
-    librg_option_set(LIBRG_MAX_THREADS_PER_UPDATE, 8);
+    // librg_option_set(LIBRG_MAX_THREADS_PER_UPDATE, 8);
 
     librg_ctx_t ctx     = {0};
     ctx.tick_delay      = 1000;
@@ -97,7 +88,7 @@ int main() {
     ctx.max_entities    = 60000;
     ctx.max_connections = 1200;
 
-    librg_init(&ctx, on_components_register);
+    librg_init(&ctx);
 
     librg_event_add(&ctx, LIBRG_CONNECTION_REQUEST, on_connect_request);
     librg_event_add(&ctx, LIBRG_CONNECTION_ACCEPT, on_connect_accepted);
@@ -112,10 +103,11 @@ int main() {
 
     for (isize i = 0; i < 10000; i++) {
         librg_entity_t enemy = librg_entity_create(&ctx, 0);
-        librg_transform_t *transform = librg_fetch_transform(&ctx, enemy);
+        librg_entity_blob_t *blob = librg_entity_blob(&ctx, enemy);
+
         //librg_attach_foo(&ctx, enemy, NULL);
-        transform->position.x = (float)(2000 - rand() % 4000);
-        transform->position.y = (float)(2000 - rand() % 4000);
+        blob->position.x = (float)(2000 - rand() % 4000);
+        blob->position.y = (float)(2000 - rand() % 4000);
     }
 
     zpl_timer_t *tick_timer = zpl_timer_add(ctx.timers);
