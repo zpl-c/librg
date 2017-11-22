@@ -24,8 +24,7 @@
  * sdl2.h
  *
  * Version History:
- * 3.0.0 - context switching and component refactor
- *     and other stuff
+ * 3.0.0 - contexts, major api changes, fried potato, other stuff
  *
  * 2.2.3 - fixed mem leak on net event
  * 2.2.2 - Fixed client issue with librg_message_send_instream_except
@@ -1591,6 +1590,8 @@ extern "C" {
 
         librg_entity_t entity = librg_data_rent(msg->data);
         librg_entity_blob_t *blob = &msg->ctx->entity.list[entity];
+
+        msg->ctx->entity.count++;
 
         blob->type     = librg_option_get(LIBRG_DEFAULT_CLIENT_TYPE);
         blob->flags    = (LIBRG_ENTITY_ALIVE | LIBRG_ENTITY_CLIENT);

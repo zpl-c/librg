@@ -7,9 +7,9 @@ enum {
 	DEMO_TYPE_NPC,
 };
 
-enum {
-    component_hero = librg_component_last,
-};
+// enum {
+//     component_hero = librg_component_last,
+// };
 
 typedef struct {
 	zplm_vec3_t accel;
@@ -20,4 +20,4 @@ typedef struct {
 } hero_t;
 
 // generate methods for components
-librg_component(hero, component_hero, hero_t);
+// librg_component(hero, component_hero, hero_t);

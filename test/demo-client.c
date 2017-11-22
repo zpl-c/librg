@@ -72,9 +72,9 @@ void on_entity_create(librg_event_t *event) {
     switch (librg_entity_type(event->ctx, event->entity)) {
         case DEMO_TYPE_PLAYER:
         case DEMO_TYPE_NPC: {
-            hero_t hero_;
-            librg_data_rptr(event->data, &hero_, sizeof(hero_));
-            librg_attach_hero(event->ctx, event->entity, &hero_);
+            // hero_t hero_;
+            // librg_data_rptr(event->data, &hero_, sizeof(hero_));
+            // librg_attach_hero(event->ctx, event->entity, &hero_);
         } break;
     }
 }
@@ -130,11 +130,13 @@ void render_entity(librg_ctx_t *ctx, librg_entity_t entity) {
     }
 
     SDL_Rect position = default_position();
-    librg_transform_t *transform = librg_fetch_transform(ctx, entity);
-    hero_t *hero = librg_fetch_hero(ctx, entity);
+    librg_entity_blob_t *blob = librg_entity_blob(ctx, entity);
 
-    position.x += transform->position.x - 10;
-    position.y += transform->position.y - 10;
+    // librg_transform_t *transform = librg_fetch_transform(ctx, entity);
+    // hero_t *hero = librg_fetch_hero(ctx, entity);
+
+    position.x += blob->position.x - 10;
+    position.y += blob->position.y - 10;
 
     position.w = 20;
     position.h = 20;
@@ -143,27 +145,27 @@ void render_entity(librg_ctx_t *ctx, librg_entity_t entity) {
     SDL_RenderFillRect( sdl_renderer, &position );
 
     if (entity == player) {
-        SDL_Rect scrptprpt = default_position();
+        SDL_Rect zone = default_position();
 
-        scrptprpt.x = position.x - 250;
-        scrptprpt.y = position.y - 250;
-        scrptprpt.w = 500;
-        scrptprpt.h = 500;
+        zone.x = position.x - 250;
+        zone.y = position.y - 250;
+        zone.w = 500;
+        zone.h = 500;
 
         SDL_SetRenderDrawColor( sdl_renderer, 133, 133, 133, 75 );
-        SDL_RenderFillRect( sdl_renderer, &scrptprpt );
+        SDL_RenderFillRect( sdl_renderer, &zone );
     }
 
-    if (hero && hero->cur_hp > 0) {
+    // if (hero && hero->cur_hp > 0) {
         position.h = 5;
         SDL_SetRenderDrawColor(sdl_renderer, 255, 0, 0, 150);
         SDL_RenderFillRect(sdl_renderer, &position);
 
-        position.w = 20 * (hero->cur_hp / (float)hero->max_hp);
+    //     position.w = 20 * (hero->cur_hp / (float)hero->max_hp);
 
-        SDL_SetRenderDrawColor(sdl_renderer, 0, 255, 0, 150);
-        SDL_RenderFillRect(sdl_renderer, &position);
-    }
+    //     SDL_SetRenderDrawColor(sdl_renderer, 0, 255, 0, 150);
+    //     SDL_RenderFillRect(sdl_renderer, &position);
+    // }
 }
 
 void render(librg_ctx_t *ctx)
@@ -186,15 +188,11 @@ void render(librg_ctx_t *ctx)
     }
 
     // render entities
-    librg_entity_each(ctx, (librg_filter_t) { librg_transform }, render_entity);
+    librg_entity_iterate(ctx, LIBRG_ENTITY_ALIVE, render_entity);
 
     // render the changes above
     SDL_SetRenderDrawColor( sdl_renderer, 75, 75, 76, 10 );
     SDL_RenderPresent( sdl_renderer );
-}
-
-void on_components_register(librg_ctx_t *ctx) {
-    librg_component_register(ctx, component_hero, sizeof(hero_t));
 }
 
 
@@ -229,7 +227,7 @@ int main(int argc, char *argv[]) {
     ctx.world_size      = zplm_vec3(5000.0f, 5000.0f, 0.f);
     ctx.max_entities    = 15000;
 
-    librg_init(&ctx, on_components_register);
+    librg_init(&ctx);
 
     librg_event_add(&ctx, LIBRG_CONNECTION_REQUEST, on_connect_request);
     librg_event_add(&ctx, LIBRG_CONNECTION_ACCEPT, on_connect_accepted);
@@ -278,22 +276,23 @@ int main(int argc, char *argv[]) {
             camera.y += speed;
         }
 
-        librg_transform_t *transform = librg_fetch_transform(&ctx, player);
+        if (librg_entity_valid(&ctx, player)) {
+            librg_entity_blob_t *blob = librg_entity_blob(&ctx, player);
 
-        if (keys_held[SDLK_t] && transform) {
-            zpl_printf("triggering 1 entity spawn server-side.\n");
-
-            librg_send_all(&ctx, 42, librg_lambda(data), {
-               librg_data_wptr(&data, transform, sizeof(librg_transform_t));
-            });
-
-            // keys_held[SDLK_t] = false;
+            blob->position.x = (f32)camera.x;
+            blob->position.y = (f32)camera.y;
         }
 
-        if (transform) {
-            transform->position.x = (f32)camera.x;
-            transform->position.y = (f32)camera.y;
-        }
+        // if (keys_held[SDLK_t] && blob) {
+        //     zpl_printf("triggering 1 entity spawn server-side.\n");
+
+        //     librg_send_all(&ctx, 42, librg_lambda(data), {
+        //        librg_data_wptr(&data, &blob->position, sizeof(blob->position));
+        //     });
+
+        //     // keys_held[SDLK_t] = false;
+        // }
+
 
         librg_tick(&ctx);
         render(&ctx);

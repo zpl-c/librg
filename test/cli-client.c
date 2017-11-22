@@ -17,47 +17,12 @@ void on_connect_refused(librg_event_t *event) {
 }
 
 void on_entity_create(librg_event_t *event) {
-    //foo_t foo;
-    //librg_data_rptr(event->data, &foo, sizeof(foo_t));
-    //librg_attach_foo(event->ctx, event->entity, &foo);
+    // ...
 }
 
 void on_entity_update(librg_event_t *event) {
-    //librg_log("on_entity_update\n");
     librg_data_rf32(event->data);
-    //librg_log("sent: %f on upd", librg_data_rf32(event->data));
 }
-
-
-// // client
-// void damage_car(librg_entity_t entity) {
-//     librg_log("client: damanging the car\n");
-//     librg_send(21, librg_lambda(data), { librg_data_wentity(&data, entity); });
-// }
-
-// void onvehcielcreate(librg_message_t *msg) {
-//     u32 guid = librg_data_ru32(&msg->data);
-
-//     librg_entity_t entity = librg_entity_create_shared(guid, 0);
-//     librg_attach_foo(entity, (foo_t) { 123 });
-
-//     librg_log("server created vehicle %lu\n", entity.id);
-
-//     damage_car(entity);
-// }
-
-// void on_damage_finished(librg_message_t *msg) {
-//     u32 guid = librg_data_ru32(&msg->data);
-//     librg_entity_t entity = librg_entity_get(guid);
-
-//     foo_t *foo = librg_fetch_foo(entity);
-
-//     ZPL_ASSERT(foo && foo->a == 123);
-
-//     librg_log("damaged car finished\n");
-// }
-
-
 
 int main() {
     char *test = "===============      CLIENT      =================\n" \

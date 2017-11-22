@@ -12,92 +12,91 @@ void on_connect_request(librg_event_t *event) {
 void on_connect_accepted(librg_event_t *event) {
     librg_log("on_connect_accepted\n");
 
-    librg_transform_t *transform = librg_fetch_transform(event->ctx, event->entity);
-    librg_client_t    *client    = librg_fetch_client(event->ctx, event->entity);
+    librg_entity_blob_t *blob = librg_entity_blob(event->ctx, event->entity);
 
-    hero_t *hero = librg_attach_hero(event->ctx, event->entity, NULL);
-    hero->cur_hp = 100;
+    // hero_t *hero = librg_attach_hero(event->ctx, event->entity, NULL);
+    // hero->cur_hp = 100;
 
     librg_log("spawning player %u at: %f %f %f\n",
         event->entity,
-        transform->position.x,
-        transform->position.y,
-        transform->position.z
+        blob->position.x,
+        blob->position.y,
+        blob->position.z
     );
 
-    librg_entity_control_set(event->ctx, event->entity, client->peer);
+    librg_entity_control_set(event->ctx, event->entity, blob->client_peer);
 }
 
-void on_spawn_npc(librg_message_t *msg) {
-    librg_transform_t tr;
-    librg_data_rptr(msg->data, &tr, sizeof(librg_transform_t));
+// void on_spawn_npc(librg_message_t *msg) {
+//     librg_transform_t tr;
+//     librg_data_rptr(msg->data, &tr, sizeof(librg_transform_t));
 
-    librg_entity_t npc = librg_entity_create(msg->ctx, 1);
-    *librg_fetch_transform(msg->ctx, npc) = tr;
+//     librg_entity_t npc = librg_entity_create(msg->ctx, 1);
+//     *librg_fetch_transform(msg->ctx, npc) = tr;
 
-    // librg_entity_control_remove(event->ctx, librg_entity_get(msg->peer));
-}
+//     // librg_entity_control_remove(event->ctx, librg_entity_get(msg->peer));
+// }
 
 void on_entity_create_forplayer(librg_event_t *event) {
     switch (librg_entity_type(event->ctx, event->entity)) {
         case DEMO_TYPE_PLAYER:
         case DEMO_TYPE_NPC: {
-            hero_t* hero = librg_fetch_hero(event->ctx, event->entity);
-            librg_data_wptr(event->data, hero, sizeof(*hero));
+            // hero_t* hero = librg_fetch_hero(event->ctx, event->entity);
+            // librg_data_wptr(event->data, hero, sizeof(*hero));
         } break;
     }
 }
 
-void entity_think_cb(librg_ctx_t *ctx, librg_entity_t node) {
-    if (librg_entity_type(ctx, node) == DEMO_TYPE_NPC) {
-        hero_t *hero = librg_fetch_hero(ctx, node);
-        librg_transform_t *tran = librg_fetch_transform(ctx, node);
+// void entity_think_cb(librg_ctx_t *ctx, librg_entity_t node) {
+//     if (librg_entity_type(ctx, node) == DEMO_TYPE_NPC) {
+//         hero_t *hero = librg_fetch_hero(ctx, node);
+//         librg_transform_t *tran = librg_fetch_transform(ctx, node);
 
-        if (hero->walk_time == 0) {
-            hero->walk_time = 1000;
-            hero->accel.x += (rand() % 3 - 1.0) / 10.0;
-            hero->accel.y += (rand() % 3 - 1.0) / 10.0;
+//         if (hero->walk_time == 0) {
+//             hero->walk_time = 1000;
+//             hero->accel.x += (rand() % 3 - 1.0) / 10.0;
+//             hero->accel.y += (rand() % 3 - 1.0) / 10.0;
 
-            hero->accel.x = (hero->accel.x > -1.0) ? ((hero->accel.x < 1.0) ? hero->accel.x : 1.0) : -1.0;
-            hero->accel.y = (hero->accel.y > -1.0) ? ((hero->accel.y < 1.0) ? hero->accel.y : 1.0) : -1.0;
-        }
-        else {
-            zplm_vec3_t curpos = tran->position;
+//             hero->accel.x = (hero->accel.x > -1.0) ? ((hero->accel.x < 1.0) ? hero->accel.x : 1.0) : -1.0;
+//             hero->accel.y = (hero->accel.y > -1.0) ? ((hero->accel.y < 1.0) ? hero->accel.y : 1.0) : -1.0;
+//         }
+//         else {
+//             zplm_vec3_t curpos = tran->position;
 
-            curpos.x += hero->accel.x;
-            curpos.y += hero->accel.y;
+//             curpos.x += hero->accel.x;
+//             curpos.y += hero->accel.y;
 
-            if (curpos.x < 0 || curpos.x >= 5000) {
-                curpos.x += hero->accel.x * -2;
-                hero->accel.x *= -1;
-            }
+//             if (curpos.x < 0 || curpos.x >= 5000) {
+//                 curpos.x += hero->accel.x * -2;
+//                 hero->accel.x *= -1;
+//             }
 
-            if (curpos.y < 0 || curpos.y >= 5000) {
-                curpos.y += hero->accel.y * -2;
-                hero->accel.y *= -1;
-            }
-#define PP(x) x*x
-            if (zplm_vec3_mag2(hero->accel) > PP(0.3)) {
-               tran->position = curpos;
-            }
-#undef PP
-            hero->walk_time -= 32.0f;
+//             if (curpos.y < 0 || curpos.y >= 5000) {
+//                 curpos.y += hero->accel.y * -2;
+//                 hero->accel.y *= -1;
+//             }
+// #define PP(x) x*x
+//             if (zplm_vec3_mag2(hero->accel) > PP(0.3)) {
+//                tran->position = curpos;
+//             }
+// #undef PP
+//             hero->walk_time -= 32.0f;
 
-            if (hero->walk_time < 0) {
-                hero->walk_time = 0;
-            }
-        }
-    }
-}
+//             if (hero->walk_time < 0) {
+//                 hero->walk_time = 0;
+//             }
+//         }
+//     }
+// }
 
-void ai_think(librg_ctx_t *ctx) {
-    librg_filter_t filter = { component_hero };
-    librg_entity_each(ctx, filter, entity_think_cb);
-}
+// void ai_think(librg_ctx_t *ctx) {
+//     librg_filter_t filter = { component_hero };
+//     librg_entity_each(ctx, filter, entity_think_cb);
+// }
 
-void on_component_register(librg_ctx_t *ctx) {
-    librg_component_register(ctx, component_hero, sizeof(hero_t));
-}
+// void on_component_register(librg_ctx_t *ctx) {
+//     librg_component_register(ctx, component_hero, sizeof(hero_t));
+// }
 
 void measure(void *userptr) {
 	librg_ctx_t *ctx = (librg_ctx_t *)userptr;
@@ -133,7 +132,7 @@ int main() {
     ctx.max_connections = 128;
     ctx.max_entities    = 15000,
 
-    librg_init(&ctx, on_component_register);
+    librg_init(&ctx);
 
     librg_event_add(&ctx, LIBRG_CONNECTION_REQUEST, on_connect_request);
     librg_event_add(&ctx, LIBRG_CONNECTION_ACCEPT, on_connect_accepted);
@@ -151,18 +150,19 @@ int main() {
 #if 1
     for (isize i = 0; i < 10000; i++) {
         librg_entity_t enemy = librg_entity_create(&ctx, DEMO_TYPE_NPC);
-        librg_transform_t *transform = librg_fetch_transform(&ctx, enemy);
-        transform->position.x = (float)(2000 - rand() % 4000);
-        transform->position.y = (float)(2000 - rand() % 4000);
+        librg_entity_blob_t *blob = librg_entity_blob(&ctx, enemy);
 
-        hero_t hero_ = {0};
-        hero_.max_hp = 100;
-        hero_.cur_hp = 40;
+        blob->position.x = (float)(2000 - rand() % 4000);
+        blob->position.y = (float)(2000 - rand() % 4000);
 
-        hero_.accel.x = (rand() % 3 - 1.0);
-        hero_.accel.y = (rand() % 3 - 1.0);
+        // hero_t hero_ = {0};
+        // hero_.max_hp = 100;
+        // hero_.cur_hp = 40;
 
-        hero_t *hero = librg_attach_hero(&ctx, enemy, &hero_);
+        // hero_.accel.x = (rand() % 3 - 1.0);
+        // hero_.accel.y = (rand() % 3 - 1.0);
+
+        // hero_t *hero = librg_attach_hero(&ctx, enemy, &hero_);
     }
 #endif
 
@@ -173,7 +173,7 @@ int main() {
 
     while (true) {
         librg_tick(&ctx);
-        ai_think(&ctx);
+        // ai_think(&ctx);
         zpl_sleep_ms(1);
     }
 
