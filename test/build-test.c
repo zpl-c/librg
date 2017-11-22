@@ -13,7 +13,7 @@ int main() {
     ctx.mode         = LIBRG_MODE_SERVER;
     ctx.world_size   = zplm_vec3(5000.0f, 5000.0f, 0.0f);
 
-    librg_init(&ctx, NULL);
+    librg_init(&ctx);
 
     // adding event handlers
     librg_event_add(&ctx, LIBRG_CONNECTION_ACCEPT, on_connect_accepted);

@@ -2,17 +2,6 @@
 #define LIBRG_DEBUG
 #include <librg.h>
 
-
-typedef struct {
-    zplm_vec3_t a;
-} foo_t;
-
-enum {
-    component_foo = librg_component_last,
-};
-
-librg_component(foo, component_foo, foo_t);
-
 void on_connect_request(librg_event_t *event) {
     librg_data_wu32(event->data, 42);
     librg_log("on_connect_request\n");
@@ -69,10 +58,6 @@ void on_entity_update(librg_event_t *event) {
 // }
 
 
-void on_components_register(librg_ctx_t *ctx) {
-    //librg_component_register(ctx, component_foo, sizeof(foo_t));
-}
-
 
 int main() {
     char *test = "===============      CLIENT      =================\n" \
@@ -94,7 +79,7 @@ int main() {
     for (int i = 0; i < size; ++i) {
         ctxs[i] = original;
 
-        librg_init(&ctxs[i], on_components_register);
+        librg_init(&ctxs[i]);
 
         librg_event_add(&ctxs[i], LIBRG_CONNECTION_REQUEST, on_connect_request);
         librg_event_add(&ctxs[i], LIBRG_CONNECTION_ACCEPT, on_connect_accepted);

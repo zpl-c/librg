@@ -1829,8 +1829,6 @@ extern "C" {
 
             if (!(blob->flags & LIBRG_ENTITY_CLIENT)) continue;
 
-librg_log("aaaaaaaa %d\n", blob->id);
-
             // assume that entity is valid, having the client
             librg_entity_t player = j;
 
