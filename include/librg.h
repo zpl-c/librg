@@ -1263,7 +1263,7 @@ extern "C" {
 
         ++ctx->entity.count;
 
-        if (ctx->entity.cursor == ctx->max_entities || ctx->max_entities == 0) {
+        if (ctx->entity.cursor >= (ctx->max_entities - 1) || ctx->max_entities == 0) {
             ctx->entity.cursor = 0;
         }
 
@@ -1294,8 +1294,8 @@ extern "C" {
         librg_assert(librg_is_server(ctx));
         librg_assert(librg_entity_valid(ctx, id));
         librg_assert(ctx->entity.count > 0);
-        --ctx->entity.count;
 
+        ctx->entity.count--;
         librg_entity_blob_t *entity = &ctx->entity.list[id];
 
         if (entity->flags & LIBRG_ENTITY_CLIENT) {
@@ -2223,6 +2223,17 @@ extern "C" {
         zpl_array_free(ctx->timers);
         zpl_buffer_free(ctx->messages, ctx->allocator);
         zplev_destroy(&ctx->events);
+
+        // TODO: make a client-side entity destruction
+        if (librg_is_server(ctx)) {
+            for (usize i = 0; i < ctx->max_entities; ++i) {
+                if (librg_entity_valid(ctx, i)) {
+                    librg__entity_destroy(ctx, i);
+                }
+            }
+        }
+
+        zpl_free(ctx->allocator, ctx->entity.list);
         zpl_array_free(ctx->entity.remove_queue);
 
         // streamer
@@ -2242,17 +2253,6 @@ extern "C" {
             zpl_mutex_destroy(ctx->threading.send_lock);
             zpl_free(ctx->allocator, ctx->threading.send_lock);
         }
-
-        // TODO: make a client-side entity destruction
-        if (librg_is_server(ctx)) {
-            for (usize i = 0; i < ctx->max_entities; ++i) {
-                if (librg_entity_valid(ctx, i)) {
-                    librg_entity_destroy(ctx, i);
-                }
-            }
-        }
-
-        zpl_free(ctx->allocator, ctx->entity.list);
 
         for (isize i = 0; i < LIBRG_DATA_STREAMS_AMOUNT; ++i) {
             librg_data_free(&ctx->streams[i]);
