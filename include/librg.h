@@ -948,7 +948,7 @@ extern "C" {
     }
 
     #define librg_component(NAME, INDEX, COMP) \
-        static librg_inline COMP *ZPL_JOIN2(librg_attach_,NAME) (librg_ctx_t *ctx, librg_entity_t entity, COMP *component) { return (COMP *)librg_component_attach(ctx, INDEX, entity, (void *)component); } \
+        static librg_inline COMP *ZPL_JOIN2(librg_attach_,NAME) (librg_ctx_t *ctx, librg_entity_t entity, COMP *component) { return (COMP *)librg_component_attach(ctx, INDEX, entity, (char *)component); } \
         static librg_inline COMP *ZPL_JOIN2(librg_fetch_ ,NAME) (librg_ctx_t *ctx, librg_entity_t entity) { return (COMP *)librg_component_fetch(ctx, INDEX, entity); } \
         static librg_inline void  ZPL_JOIN2(librg_detach_,NAME) (librg_ctx_t *ctx, librg_entity_t entity) { librg_component_detach(ctx, INDEX, entity); }
 
@@ -1000,7 +1000,7 @@ extern "C" {
 
     librg_inline void librg_event_reject(librg_event_t *event) {
         librg_assert(event);
-        event->flags = (event->flags | LIBRG_EVENT_REJECTED);
+        event->flags = (librg_event_flag_e)(event->flags | LIBRG_EVENT_REJECTED);
     }
 
     librg_inline b32 librg_event_succeeded(librg_event_t *event) {
@@ -1751,7 +1751,7 @@ extern "C" {
         librg_dbg("librg__connection_accept\n");
 
         librg_entity_t remote = librg_data_rent(msg->data);
-        librg_entity_t entity = librg_entity_create_shared(msg->ctx, remote, LIBRG_DEFAULT_CLIENT_TYPE);
+        librg_entity_t entity = librg_entity_create_shared(msg->ctx, remote, librg_option_get(LIBRG_DEFAULT_CLIENT_TYPE));
 
         // add server peer to storage
         librg_table_set(&msg->ctx->network.connected_peers, cast(u64)msg->peer, entity);
@@ -2330,16 +2330,16 @@ extern "C" {
         if (thread_count > 0) {
             librg_log("librg: warning, LIBRG_MAX_THREADS_PER_UPDATE is experimental, and highly unstable!\n");
 
-            ctx->threading.update_workers = zpl_alloc(ctx->allocator, sizeof(zpl_thread_t)*thread_count);
+            ctx->threading.update_workers = (zpl_thread_t *)zpl_alloc(ctx->allocator, sizeof(zpl_thread_t)*thread_count);
             usize step = ctx->max_entities / thread_count;
-            ctx->threading.send_lock = zpl_alloc(ctx->allocator, sizeof(zpl_mutex_t));
+            ctx->threading.send_lock = (zpl_mutex_t *)zpl_alloc(ctx->allocator, sizeof(zpl_mutex_t));
             zpl_mutex_init(ctx->threading.send_lock);
 
             usize offset = 0;
             for (usize i = 0; i < thread_count; ++i) {
                 zpl_thread_init(ctx->threading.update_workers + i);
 
-                librg_update_worker_si_t *si = zpl_alloc(ctx->allocator, sizeof(librg_update_worker_si_t));
+                librg_update_worker_si_t *si = (librg_update_worker_si_t *)zpl_alloc(ctx->allocator, sizeof(librg_update_worker_si_t));
                 librg_update_worker_si_t si_ = { 0 };
                 *si = si_;
                 si->count   = step;
