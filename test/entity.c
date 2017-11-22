@@ -29,13 +29,13 @@ int main() {
     librg_init(&ctx, NULL);
 
     for (int i = 0; i < 100; ++i) {
-        librg_log("created entity %d\n", librg_ex_entity_create(&ctx, 0));
+        librg_log("created entity %d\n", librg_entity_create(&ctx, 0));
     }
 
-    librg_log("created entity %d\n", librg_ex_entity_create(&ctx, 0));
-    librg_log("created entity %d\n", librg_ex_entity_create(&ctx, 0));
-    librg_log("created entity %d\n", librg_ex_entity_create(&ctx, 0));
-    librg_log("created entity %d\n", librg_ex_entity_create(&ctx, 0));
+    librg_log("created entity %d\n", librg_entity_create(&ctx, 0));
+    librg_log("created entity %d\n", librg_entity_create(&ctx, 0));
+    librg_log("created entity %d\n", librg_entity_create(&ctx, 0));
+    librg_log("created entity %d\n", librg_entity_create(&ctx, 0));
 
     librg_free(&ctx);
     return 0;
