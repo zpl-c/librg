@@ -1,5 +1,5 @@
 <div align="center">
-    <a href="https://lass.js.org"><img src="https://user-images.githubusercontent.com/2182108/29322933-0be3cb06-81e8-11e7-9cef-aa6be82c9faa.png" alt="Lass" /></a>
+    <a href="https://github.com/librg/librg"><img src="https://user-images.githubusercontent.com/2182108/29322933-0be3cb06-81e8-11e7-9cef-aa6be82c9faa.png" alt="librg" /></a>
 </div>
 
 <div align="center">
