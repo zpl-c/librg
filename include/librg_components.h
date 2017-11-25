@@ -1,3 +1,8 @@
+/**
+ * WANRNING: its just a prototype
+ * DON'T USE IT IN YOUR PROJECTS
+ */
+
 #ifndef LIBRG_COMPONENTS_INCLUDE_H
 #define LIBRG_COMPONENTS_INCLUDE_H
 

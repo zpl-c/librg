@@ -27,12 +27,14 @@ void on_connect_accepted(librg_event_t *event) {
     blob->position.x = (float)(2000 - rand() % 4000);
     blob->position.y = (float)(2000 - rand() % 4000);
 
-    librg_log("spawning player at: %f %f %f\n",
+    librg_log("spawning player %u at: %f %f %f\n",
+        event->entity,
         blob->position.x,
         blob->position.y,
         blob->position.z
     );
 
+    librg_message_send_all(event->ctx, 42, NULL, 0);
 }
 
 void on_connect_refused(librg_event_t *event) {
@@ -45,11 +47,11 @@ void on_entity_create(librg_event_t *event) {
 }
 
 void on_entity_update(librg_event_t *event) {
-    librg_data_wf32(event->data, 42);// librg_fetch_foo(event->ctx, event->entity)->a.x);
+    //librg_data_wf32(event->data, 42);// librg_fetch_foo(event->ctx, event->entity)->a.x);
 }
 
 void custom_handler(librg_message_t *msg) {
-
+    librg_log("meesage from tha: %d\n", librg_data_ru32(msg->data));
 }
 
 void measure(void *userptr) {
@@ -81,6 +83,7 @@ int main() {
     // librg_option_set(LIBRG_MAX_THREADS_PER_UPDATE, 8);
 
     librg_ctx_t ctx     = {0};
+
     ctx.tick_delay      = 1000;
     ctx.mode            = LIBRG_MODE_SERVER;
     ctx.world_size      = zplm_vec3(5000.0f, 5000.0f, 0.f);
@@ -90,7 +93,7 @@ int main() {
 
     librg_init(&ctx);
 
-    librg_event_add(&ctx, LIBRG_CONNECTION_REQUEST, on_connect_request);
+    //librg_event_add(&ctx, LIBRG_CONNECTION_REQUEST, on_connect_request);
     librg_event_add(&ctx, LIBRG_CONNECTION_ACCEPT, on_connect_accepted);
     librg_event_add(&ctx, LIBRG_CONNECTION_REFUSE, on_connect_refused);
 
@@ -114,6 +117,10 @@ int main() {
     tick_timer->user_data = (void *)&ctx; /* provide ctx as a argument to timer */
     zpl_timer_set(tick_timer, 1000 * 1000, -1, measure);
     zpl_timer_start(tick_timer, 1000);
+
+    zpl_printf("librg_ctx_t: %d\n", sizeof(librg_data_t));
+    zpl_printf("librg_message_t: %d\n", sizeof(librg_peer_t));
+    zpl_printf("librg_event_t: %d\n", sizeof(librg_packet_t));
 
     while (true) {
         librg_tick(&ctx);

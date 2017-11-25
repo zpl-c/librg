@@ -13,10 +13,6 @@ else()
     set(LIBRG_VENDOR_FOLDER ${CMAKE_SOURCE_DIR}/${LIBRG_VENDOR_FOLDER})
 endif()
 
-add_subdirectory(
-    ${LIBRG_VENDOR_FOLDER}/enet${LIBRG_POSTFIX}
-    ${CMAKE_CURRENT_BINARY_DIR}/enet)
-
 # define librg as a library (not really)
 add_library(librg INTERFACE)
 
@@ -37,8 +33,7 @@ target_include_directories(librg INTERFACE include
     ${LIBRG_VENDOR_FOLDER}/enet${LIBRG_POSTFIX}/include)
 
 # link all the deps
-target_link_libraries(librg INTERFACE
-    enet ${CMAKE_DL_LIBS} ${CMAKE_THREAD_LIBS_INIT})
+target_link_libraries(librg INTERFACE ${CMAKE_DL_LIBS} ${CMAKE_THREAD_LIBS_INIT})
 
 if (WIN32)
     # windows libraries for enet
@@ -98,26 +93,31 @@ if (LIBRG_STATIC)
     add_definitions(-DLIBRG_STATIC)
 
     # Once again, one has to hack in cmake to achieve what he needs...
-    add_library(librg_static STATIC test/library.c
-        ${LIBRG_VENDOR_FOLDER}/enet${LIBRG_POSTFIX}/callbacks.c
-        ${LIBRG_VENDOR_FOLDER}/enet${LIBRG_POSTFIX}/compress.c
-        ${LIBRG_VENDOR_FOLDER}/enet${LIBRG_POSTFIX}/host.c
-        ${LIBRG_VENDOR_FOLDER}/enet${LIBRG_POSTFIX}/list.c
-        ${LIBRG_VENDOR_FOLDER}/enet${LIBRG_POSTFIX}/packet.c
-        ${LIBRG_VENDOR_FOLDER}/enet${LIBRG_POSTFIX}/peer.c
-        ${LIBRG_VENDOR_FOLDER}/enet${LIBRG_POSTFIX}/protocol.c
-        ${LIBRG_VENDOR_FOLDER}/enet${LIBRG_POSTFIX}/unix.c
-        ${LIBRG_VENDOR_FOLDER}/enet${LIBRG_POSTFIX}/win32.c
-    )
+    add_library(librg_static STATIC test/library.c)
 
     # This doesn't actually make any significant difference, only
     # makes sure the includes are further propagated.
-    target_link_libraries(librg_static librg enet)
+    target_link_libraries(librg_static librg)
 endif()
 
 # shared library
 if (LIBRG_SHARED)
-    add_definitions(-DLIBRG_SHARED)
+    add_definitions(-DLIBRG_SHARED -DENET_DLL)
     add_library(librg_shared SHARED test/library.c)
+
+    # if (WIN32)
+    #     set_target_properties(librg_shared PROPERTIES
+    #         LINK_FLAGS "/WHOLEARCHIVE"
+    #     )
+    # elseif (APPLE)
+    #     set_target_properties(librg_shared PROPERTIES
+    #         LINK_FLAGS "-Wl,-all_load"
+    #     )
+    # else ()
+    #     set_target_properties(librg_shared PROPERTIES
+    #         LINK_FLAGS "-Wl,--whole-archive"
+    #     )
+    # endif ()
+
     target_link_libraries(librg_shared librg)
 endif()

@@ -20,7 +20,7 @@
   },
   "homepage": "https://github.com/reguider/librg#readme",
   "dependencies": {
-    "enet.c": "^1.3.15",
+    "enet.c": "^1.4.4",
     "zpl.c": "^3.1.5",
     "zpl_cull.c": "^3.1.2",
     "zpl_event.c": "^1.0.8",
