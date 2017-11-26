@@ -1317,9 +1317,7 @@ extern "C" {
         NAME.data = MSG->data;
 
 
-    /**
-     * SHARED
-     */
+    // SHARED
     librg_internal void librg__callback_connection_init(librg_message_t *msg) {
         librg_dbg("librg__connection_init\n");
 
@@ -1351,9 +1349,7 @@ extern "C" {
         }
     }
 
-    /**
-     * SERVER SIDE
-     */
+    // SERVER
     librg_internal void librg__callback_connection_request(librg_message_t *msg) {
         librg_dbg("librg__connection_request\n");
 
@@ -1399,23 +1395,19 @@ extern "C" {
             librg_event_trigger(msg->ctx, LIBRG_CONNECTION_ACCEPT, &event);
         }
         else {
-            librg_send_to(msg->ctx, LIBRG_CONNECTION_REFUSE, msg->peer, librg_lambda(data), {});
+            librg_message_send_to(msg->ctx, LIBRG_CONNECTION_REFUSE, msg->peer, NULL, 0);
             librg_event_t refused; refused.peer = msg->peer;
             librg_event_trigger(msg->ctx, LIBRG_CONNECTION_REFUSE, &refused);
         }
     }
 
-    /**
-     * CLIENT SIDE
-     */
+    // CLIENT
     librg_internal void librg__callback_connection_refuse(librg_message_t *msg) {
         librg__event_create(event, msg);
         librg_event_trigger(msg->ctx, LIBRG_CONNECTION_REFUSE, &event);
     }
 
-    /**
-     * CLIENT SIDE
-     */
+    // CLIENT
     librg_internal void librg__callback_connection_accept(librg_message_t *msg) {
         librg_dbg("librg__connection_accept\n");
 
@@ -1435,9 +1427,7 @@ extern "C" {
         librg_event_trigger(msg->ctx, LIBRG_CONNECTION_ACCEPT, &event);
     }
 
-    /**
-     * SHARED
-     */
+    // SHARED
     librg_internal void librg__callback_connection_disconnect(librg_message_t *msg) {
         librg_dbg("librg__connection_disconnect\n");
 
@@ -1464,6 +1454,7 @@ extern "C" {
         }
     }
 
+    // CLIENT
     librg_internal void librg__callback_entity_create(librg_message_t *msg) {
         u32 query_size = librg_data_ru32(msg->data);
 
@@ -1504,6 +1495,7 @@ extern "C" {
         }
     }
 
+    // CLIENT
     librg_internal void librg__callback_entity_update(librg_message_t *msg) {
         u32 query_size = librg_data_ru32(msg->data);
 
@@ -1523,6 +1515,7 @@ extern "C" {
         }
     }
 
+    // CLIENT
     librg_internal void librg__callback_entity_client_streamer_add(librg_message_t *msg) {
         librg_entity_id entity = librg_data_rent(msg->data);
 
@@ -1541,6 +1534,7 @@ extern "C" {
         }
     }
 
+    // CLIENT
     librg_internal void librg__callback_entity_client_streamer_remove(librg_message_t *msg) {
         librg_entity_id entity = librg_data_rent(msg->data);
 
@@ -1559,6 +1553,8 @@ extern "C" {
         }
     }
 
+
+    // SERVER
     librg_internal void librg__callback_entity_client_streamer_update(librg_message_t *msg) {
         u32 amount = librg_data_ru32(msg->data);
 
@@ -1646,7 +1642,6 @@ extern "C" {
      *
      * Responsive for updating the server-side streamer
      */
-
     void librg__execute_server_entity_update_proc(librg_ctx_t *ctx, librg_data_t *reliable, librg_data_t *unreliable, usize offset, usize count) {
         for (isize j = offset; j < offset+count; j++) {
             librg_entity_t *blob = &ctx->entity.list[j];
