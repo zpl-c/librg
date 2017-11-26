@@ -105,7 +105,7 @@ int main() {
     librg_network_start(&ctx, (librg_address_t) { .host = "localhost", .port = 7777 });
 
     for (isize i = 0; i < 10000; i++) {
-        librg_entity_t enemy = librg_entity_create(&ctx, 0);
+        librg_entity_id enemy = librg_entity_create(&ctx, 0);
         librg_entity_blob_t *blob = librg_entity_blob(&ctx, enemy);
 
         //librg_attach_foo(&ctx, enemy, NULL);

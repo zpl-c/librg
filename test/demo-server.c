@@ -149,7 +149,7 @@ int main() {
 
 #if 1
     for (isize i = 0; i < 10000; i++) {
-        librg_entity_t enemy = librg_entity_create(&ctx, DEMO_TYPE_NPC);
+        librg_entity_id enemy = librg_entity_create(&ctx, DEMO_TYPE_NPC);
         librg_entity_blob_t *blob = librg_entity_blob(&ctx, enemy);
 
         blob->position.x = (float)(2000 - rand() % 4000);
