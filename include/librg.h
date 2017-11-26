@@ -633,16 +633,17 @@ extern "C" {
     /**
      * Used to reject some event from triggering from
      * inside of executing callback
-     *
-     * @param pointer on the event
      */
     LIBRG_API void librg_event_reject(librg_event_t *event);
 
     /**
+     * Used to check if some event can be rejected
+     */
+    LIBRG_API b32 librg_event_rejectable(librg_event_t *event);
+
+    /**
      * Checks if current event was not rejected
      * inside any of the callbacks
-     *
-     * @param pointer on the event
      */
     LIBRG_API b32 librg_event_succeeded(librg_event_t *event);
 
@@ -907,6 +908,11 @@ extern "C" {
     librg_inline void librg_event_reject(librg_event_t *event) {
         librg_assert(event);
         event->flags = (librg_event_flag_e)(event->flags | LIBRG_EVENT_REJECTED);
+    }
+
+    librg_inline b32 librg_event_rejectable(librg_event_t *event) {
+        librg_assert(event);
+        return (event->flags & LIBRG_EVENT_REJECTABLE);
     }
 
     librg_inline b32 librg_event_succeeded(librg_event_t *event) {
