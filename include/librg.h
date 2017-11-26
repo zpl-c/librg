@@ -262,7 +262,9 @@ extern "C" {
     } librg_message_t;
 
     typedef enum {
-        LIBRG_EVENT_REJECTED = (1 << 0),
+        LIBRG_EVENT_NONE        = 0,
+        LIBRG_EVENT_REJECTED    = (1 << 0),
+        LIBRG_EVENT_REJECTABLE  = (1 << 1),
     } librg_event_flag_e;
 
 
@@ -1336,7 +1338,12 @@ extern "C" {
             librg_data_wu16(&data, librg_option_get(LIBRG_PLATFORM_BUILD));
             librg_data_wu16(&data, librg_option_get(LIBRG_PLATFORM_PROTOCOL));
 
-            librg_event_t event = {0}; event.data = &data; event.peer = msg->peer;
+            librg_event_t event = {0}; {
+                event.peer  = msg->peer;
+                event.data  = &data;
+                event.flags = LIBRG_EVENT_REJECTABLE;
+            }
+
             librg_event_trigger(msg->ctx, LIBRG_CONNECTION_REQUEST, &event);
 
             if (librg_event_succeeded(&event)) {
@@ -1371,7 +1378,12 @@ extern "C" {
             );
         }
 
-        librg__event_create(event, msg);
+        librg_event_t event = {0}; {
+            event.peer  = msg->peer;
+            event.data  = msg->data;
+            event.flags = LIBRG_EVENT_REJECTABLE;
+        }
+
         librg_event_trigger(msg->ctx, LIBRG_CONNECTION_REQUEST, &event);
 
         if (librg_event_succeeded(&event) && !blocked) {
@@ -1579,7 +1591,6 @@ extern "C" {
 
             librg__event_create(event, msg); event.entity = entity;
             librg_event_trigger(msg->ctx, LIBRG_CLIENT_STREAMER_UPDATE, &event);
-
             librg_data_rptr(msg->data, &blob->position, sizeof(blob->position));
         }
     }
@@ -1605,8 +1616,12 @@ extern "C" {
             librg_data_t subdata;
             librg_data_init(&subdata);
 
-            librg_event_t event = {0};
-            event.data = &subdata; event.entity = entity;
+            librg_event_t event = {0}; {
+                event.entity = entity;
+                event.data  = &subdata;
+                event.flags = LIBRG_EVENT_REJECTABLE;
+            }
+
             librg_event_trigger(ctx, LIBRG_CLIENT_STREAMER_UPDATE, &event);
 
             // check if user rejected the event
@@ -1705,8 +1720,12 @@ extern "C" {
                     librg_data_wptr(reliable, &eblob->position, sizeof(eblob->position));
 
                     // request custom data from user
-                    librg_event_t event = { 0 };
-                    event.data = reliable; event.entity = entity;
+                    librg_event_t event = {0}; {
+                        event.data = reliable;
+                        event.entity = entity;
+                        event.flags = LIBRG_EVENT_REJECTABLE;
+                    }
+
                     librg_event_trigger(ctx, LIBRG_ENTITY_CREATE, &event);
 
                     // check if event was rejected
@@ -1733,8 +1752,12 @@ extern "C" {
                         librg_data_wptr(unreliable, &eblob->position, sizeof(eblob->position));
 
                         // request custom data from user
-                        librg_event_t event = { 0 };
-                        event.data = unreliable; event.entity = entity;
+                        librg_event_t event = {0}; {
+                            event.data = unreliable;
+                            event.entity = entity;
+                            event.flags = LIBRG_EVENT_REJECTABLE;
+                        }
+
                         librg_event_trigger(ctx, LIBRG_ENTITY_UPDATE, &event);
 
                         // check if event was rejected
@@ -1777,8 +1800,12 @@ extern "C" {
                 removed_entities++;
 
                 // write the rest
-                librg_event_t event = { 0 };
-                event.data = reliable; event.entity = entity;
+                librg_event_t event = {0}; {
+                    event.data = reliable;
+                    event.entity = entity;
+                    event.flags = LIBRG_EVENT_REJECTABLE;
+                }
+
                 librg_event_trigger(ctx, LIBRG_ENTITY_REMOVE, &event);
 
                 // check if even was rejected
