@@ -195,6 +195,10 @@ void render(librg_ctx_t *ctx)
     SDL_RenderPresent( sdl_renderer );
 }
 
+void on_entity_remove(librg_event_t *event) {
+    librg_log("calling destroy %d\n", event->entity);
+}
+
 
 bool shooting = false;
 bool keys_held[323] = { false };
@@ -234,6 +238,7 @@ int main(int argc, char *argv[]) {
     librg_event_add(&ctx, LIBRG_CONNECTION_REFUSE, on_connect_refused);
     librg_event_add(&ctx, LIBRG_ENTITY_CREATE, on_entity_create);
     librg_event_add(&ctx, LIBRG_ENTITY_UPDATE, on_entity_update);
+    librg_event_add(&ctx, LIBRG_ENTITY_REMOVE, on_entity_remove);
     librg_event_add(&ctx, LIBRG_CLIENT_STREAMER_UPDATE, on_client_entity_update);
 
     librg_network_start(&ctx, (librg_address_t) { .host = "localhost", .port = 27010 });
@@ -275,6 +280,9 @@ int main(int argc, char *argv[]) {
         if (keys_held[SDLK_s]) {
             camera.y += speed;
         }
+        if (keys_held[SDLK_f]) {
+            loop = false;
+        }
 
         if (librg_entity_valid(&ctx, player)) {
             librg_entity_t *blob = librg_entity_fetch(&ctx, player);
@@ -296,6 +304,7 @@ int main(int argc, char *argv[]) {
 
         librg_tick(&ctx);
         render(&ctx);
+
     }
 
     librg_network_stop(&ctx);

@@ -261,10 +261,15 @@ extern "C" {
         void *user_data; /* optional: user information */
     } librg_message_t;
 
+
     typedef enum {
-        LIBRG_EVENT_NONE        = 0,
-        LIBRG_EVENT_REJECTED    = (1 << 0),
-        LIBRG_EVENT_REJECTABLE  = (1 << 1),
+        LIBRG_EVENT_NONE        = 0,        /* default empty user-created event */
+
+        LIBRG_EVENT_REJECTED    = (1 << 0), /* whether or not this event was rejected */
+        LIBRG_EVENT_REJECTABLE  = (1 << 1), /* can this event be rejected by user */
+
+        LIBRG_EVENT_REMOTE      = (1 << 4), /* event was based on network message */
+        LIBRG_EVENT_LOCAL       = (1 << 5), /* event was created locally */
     } librg_event_flag_e;
 
 
@@ -1321,8 +1326,9 @@ extern "C" {
     // short helper macro
     #define librg__event_create(NAME, MSG) \
         librg_event_t NAME = {0}; \
-        NAME.peer = MSG->peer; \
-        NAME.data = MSG->data;
+        NAME.peer   = MSG->peer; \
+        NAME.data   = MSG->data; \
+        NAME.flags  = LIBRG_EVENT_REMOTE;
 
 
     // SHARED
@@ -1347,7 +1353,7 @@ extern "C" {
             librg_event_t event = {0}; {
                 event.peer  = msg->peer;
                 event.data  = &data;
-                event.flags = LIBRG_EVENT_REJECTABLE;
+                event.flags = (LIBRG_EVENT_REJECTABLE | LIBRG_EVENT_REMOTE);
             }
 
             librg_event_trigger(msg->ctx, LIBRG_CONNECTION_REQUEST, &event);
@@ -1387,7 +1393,7 @@ extern "C" {
         librg_event_t event = {0}; {
             event.peer  = msg->peer;
             event.data  = msg->data;
-            event.flags = LIBRG_EVENT_REJECTABLE;
+            event.flags = (LIBRG_EVENT_REJECTABLE | LIBRG_EVENT_REMOTE);
         }
 
         librg_event_trigger(msg->ctx, LIBRG_CONNECTION_REQUEST, &event);
@@ -1409,13 +1415,19 @@ extern "C" {
                 librg_data_went(&data, entity);
             });
 
-            event.entity = entity; event.data = NULL;
+            event.data   = NULL;
+            event.entity = entity;
+            event.flags  = LIBRG_EVENT_LOCAL;
+
             librg_event_trigger(msg->ctx, LIBRG_CONNECTION_ACCEPT, &event);
         }
         else {
             librg_message_send_to(msg->ctx, LIBRG_CONNECTION_REFUSE, msg->peer, NULL, 0);
-            librg_event_t refused; refused.peer = msg->peer;
-            librg_event_trigger(msg->ctx, LIBRG_CONNECTION_REFUSE, &refused);
+
+            event.data   = NULL;
+            event.flags  = LIBRG_EVENT_LOCAL;
+
+            librg_event_trigger(msg->ctx, LIBRG_CONNECTION_REFUSE, &event);
         }
     }
 
@@ -1625,7 +1637,7 @@ extern "C" {
             librg_event_t event = {0}; {
                 event.entity = entity;
                 event.data  = &subdata;
-                event.flags = LIBRG_EVENT_REJECTABLE;
+                event.flags = (LIBRG_EVENT_REJECTABLE | LIBRG_EVENT_LOCAL);
             }
 
             librg_event_trigger(ctx, LIBRG_CLIENT_STREAMER_UPDATE, &event);
@@ -1729,7 +1741,7 @@ extern "C" {
                     librg_event_t event = {0}; {
                         event.data = reliable;
                         event.entity = entity;
-                        event.flags = LIBRG_EVENT_REJECTABLE;
+                        event.flags = (LIBRG_EVENT_REJECTABLE | LIBRG_EVENT_LOCAL);
                     }
 
                     librg_event_trigger(ctx, LIBRG_ENTITY_CREATE, &event);
@@ -1761,7 +1773,7 @@ extern "C" {
                         librg_event_t event = {0}; {
                             event.data = unreliable;
                             event.entity = entity;
-                            event.flags = LIBRG_EVENT_REJECTABLE;
+                            event.flags = (LIBRG_EVENT_REJECTABLE | LIBRG_EVENT_LOCAL);
                         }
 
                         librg_event_trigger(ctx, LIBRG_ENTITY_UPDATE, &event);
@@ -1809,7 +1821,7 @@ extern "C" {
                 librg_event_t event = {0}; {
                     event.data = reliable;
                     event.entity = entity;
-                    event.flags = LIBRG_EVENT_REJECTABLE;
+                    event.flags = (LIBRG_EVENT_REJECTABLE | LIBRG_EVENT_LOCAL);
                 }
 
                 librg_event_trigger(ctx, LIBRG_ENTITY_REMOVE, &event);
@@ -2022,7 +2034,11 @@ extern "C" {
         // destroy all the entities that are currently created
         for (usize i = 0; i < ctx->max_entities; ++i) {
             if (librg_entity_valid(ctx, i)) {
-                librg_event_t event = {0}; event.entity = i;
+                librg_event_t event = {0}; {
+                    event.entity = i;
+                    event.flags  = LIBRG_EVENT_LOCAL;
+                }
+
                 librg_event_trigger(ctx, LIBRG_ENTITY_REMOVE, &event);
                 librg__entity_destroy(ctx, i);
             }

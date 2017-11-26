@@ -21,7 +21,7 @@ void on_connect_request(librg_event_t *event) {
 
 void on_connect_accepted(librg_event_t *event) {
     librg_log("on_connect_accepted\n");
-    librg_entity_blob_t *blob = librg_entity_blob(event->ctx, event->entity);
+    librg_entity_t *blob = librg_entity_fetch(event->ctx, event->entity);
     //librg_attach_foo(event->ctx, event->entity, NULL);
 
     blob->position.x = (float)(2000 - rand() % 4000);
@@ -106,7 +106,7 @@ int main() {
 
     for (isize i = 0; i < 10000; i++) {
         librg_entity_id enemy = librg_entity_create(&ctx, 0);
-        librg_entity_blob_t *blob = librg_entity_blob(&ctx, enemy);
+        librg_entity_t *blob = librg_entity_fetch(&ctx, enemy);
 
         //librg_attach_foo(&ctx, enemy, NULL);
         blob->position.x = (float)(2000 - rand() % 4000);
