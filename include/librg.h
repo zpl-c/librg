@@ -159,6 +159,7 @@ extern "C" {
         LIBRG_PLATFORM_BUILD,
 
         LIBRG_DEFAULT_CLIENT_TYPE,
+        LIBRG_DEFAULT_STREAM_RANGE,
         LIBRG_DEFAULT_DATA_SIZE,
 
         LIBRG_NETWORK_CAPACITY,
@@ -419,6 +420,7 @@ extern "C" {
         /*LIBRG_PLATFORM_BUILD*/            1,
         /*LIBRG_DEFAULT_CLIENT_TYPE*/       0,
         /*LIBRG_DEFAULT_DATA_SIZE*/         1024,
+        /*LIBRG_DEFAULT_STREAM_RANGE*/      250,
         /*LIBRG_NETWORK_CAPACITY*/          2048,
         /*LIBRG_NETWORK_CHANNELS*/          4,
         /*LIBRG_NETWORK_PRIMARY_CHANNEL*/   1,
@@ -1290,7 +1292,7 @@ extern "C" {
             entity->type            = type;
             entity->flags           = LIBRG_ENTITY_ALIVE;
             entity->position        = zplm_vec3_zero();
-            entity->stream_range    = 250.0f; // TODO: move to an default option
+            entity->stream_range    = (f32)librg_option_get(LIBRG_DEFAULT_STREAM_RANGE);
 
             return entity->id;
         }
@@ -1315,13 +1317,12 @@ extern "C" {
 
         if (entity->flags & LIBRG_ENTITY_CLIENT) {
             entity->client_peer     = NULL;
-            // entity->last_snapshot   = NULL; // TODO: free dat badboi
             librg_table_destroy(&entity->last_snapshot);
 
-        // remove entity from the streamer
-        // if (librg_fetch_stream(ctx, entity)->branch) {
-        //     zplc_remove(librg_fetch_stream(ctx, entity)->branch, entity);
-        // }
+            // remove entity from the streamer
+            // if (entity->branch) {
+            //     zplc_remove(librg_fetch_stream(ctx, entity)->branch, entity);
+            // }
         }
 
         if (entity->flags & LIBRG_ENTITY_QUERIED) {
@@ -2308,6 +2309,8 @@ extern "C" {
         librg_assert(ptr);
         zpl_array_free(ptr);
     }
+
+    #undef librg__event_create
 
 #ifdef __cplusplus
 }
