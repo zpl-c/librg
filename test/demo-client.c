@@ -50,7 +50,7 @@ void free_sdl() {
  * LIBRG PART
  */
 SDL_Rect camera;
-librg_entity_t player;
+librg_entity_id player;
 
 void on_connect_request(librg_event_t *event) {
     librg_log("on_connect_request\n");
@@ -114,7 +114,7 @@ SDL_Rect default_position() {
     return position;
 }
 
-void render_entity(librg_ctx_t *ctx, librg_entity_t entity) {
+void render_entity(librg_ctx_t *ctx, librg_entity_id entity) {
     // set render color
     if (entity == player) {
         SDL_SetRenderDrawColor( sdl_renderer, 150, 250, 150, 255 );
@@ -130,7 +130,7 @@ void render_entity(librg_ctx_t *ctx, librg_entity_t entity) {
     }
 
     SDL_Rect position = default_position();
-    librg_entity_blob_t *blob = librg_entity_blob(ctx, entity);
+    librg_entity_t *blob = librg_entity_fetch(ctx, entity);
 
     // librg_transform_t *transform = librg_fetch_transform(ctx, entity);
     // hero_t *hero = librg_fetch_hero(ctx, entity);
@@ -277,7 +277,7 @@ int main(int argc, char *argv[]) {
         }
 
         if (librg_entity_valid(&ctx, player)) {
-            librg_entity_blob_t *blob = librg_entity_blob(&ctx, player);
+            librg_entity_t *blob = librg_entity_fetch(&ctx, player);
 
             blob->position.x = (f32)camera.x;
             blob->position.y = (f32)camera.y;

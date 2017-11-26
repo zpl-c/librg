@@ -328,7 +328,7 @@ extern "C" {
      * Entity blob
      */
 
-    typedef struct librg_entity_blob_t {
+    typedef struct librg_entity_t {
         u32 id;
         u32 type;
         u64 flags;
@@ -346,7 +346,7 @@ extern "C" {
         librg_peer_t *control_peer;
 
         zpl_array_t(librg_entity_id) last_query;
-    } librg_entity_blob_t;
+    } librg_entity_t;
 
 
     /**
@@ -378,7 +378,7 @@ extern "C" {
             u32 count;
             u32 cursor;
             librg_table_t ignored;
-            struct librg_entity_blob_t *list;
+            struct librg_entity_t *list;
             zpl_array_t(librg_entity_id) remove_queue;
         } entity;
 
@@ -507,7 +507,7 @@ extern "C" {
     /**
      * Return entity blob pointer
      */
-    LIBRG_API librg_entity_blob_t *librg_entity_blob(librg_ctx_t *ctx, librg_entity_id entity);
+    LIBRG_API librg_entity_t *librg_entity_fetch(librg_ctx_t *ctx, librg_entity_id entity);
 
     /**
      * Destroy entity
@@ -1168,7 +1168,7 @@ extern "C" {
 
     void librg_message_send_except(librg_ctx_t *ctx, LIBRG_MESSAGE_ID id, librg_peer_t *peer, void *data, usize size) {
         librg_entity_iteratex(ctx, LIBRG_ENTITY_CLIENT, librg_lambda(entity), {
-            librg_entity_blob_t *blob = librg_entity_blob(ctx, entity);
+            librg_entity_t *blob = librg_entity_fetch(ctx, entity);
 
             if (blob->client_peer != peer) {
                 librg_packet_t *packet = enet_packet_create_offset(
@@ -1193,7 +1193,7 @@ extern "C" {
         for (isize i = 0; i < count; i++) {
             librg_entity_id target = queue[i];
 
-            librg_entity_blob_t *blob = librg_entity_blob(ctx, target);
+            librg_entity_t *blob = librg_entity_fetch(ctx, target);
             if (!(blob->flags & LIBRG_ENTITY_CLIENT)) continue;
 
             librg_peer_t *peer = blob->client_peer;
@@ -1283,7 +1283,7 @@ extern "C" {
         }
 
         for (; ctx->entity.cursor < ctx->max_entities; ++ctx->entity.cursor) {
-            librg_entity_blob_t *entity = &ctx->entity.list[ctx->entity.cursor]; librg_assert(entity);
+            librg_entity_t *entity = &ctx->entity.list[ctx->entity.cursor]; librg_assert(entity);
 
             if (entity->flags & LIBRG_ENTITY_ALIVE) continue;
 
@@ -1311,7 +1311,7 @@ extern "C" {
         librg_assert(ctx->entity.count > 0);
 
         ctx->entity.count--;
-        librg_entity_blob_t *entity = &ctx->entity.list[id];
+        librg_entity_t *entity = &ctx->entity.list[id];
 
         if (entity->flags & LIBRG_ENTITY_CLIENT) {
             entity->client_peer     = NULL;
@@ -1353,7 +1353,7 @@ extern "C" {
         return ctx->entity.list[id].type;
     }
 
-    librg_inline librg_entity_blob_t *librg_entity_blob(librg_ctx_t *ctx, librg_entity_id id) {
+    librg_inline librg_entity_t *librg_entity_fetch(librg_ctx_t *ctx, librg_entity_id id) {
         librg_assert(librg_entity_valid(ctx, id));
         return &ctx->entity.list[id];
     }
@@ -1371,7 +1371,7 @@ extern "C" {
 
     librg_inline void librg_entity_visibility_set_for(librg_ctx_t *ctx, librg_entity_id entity, librg_entity_id target, b32 state) {
         librg_assert(librg_is_server(ctx) && librg_entity_valid(ctx, entity));
-        librg_entity_blob_t *blob = librg_entity_blob(ctx, entity);
+        librg_entity_t *blob = librg_entity_fetch(ctx, entity);
 
         if (!(blob->flags & LIBRG_ENTITY_IGNORING)) {
             blob->flags |= LIBRG_ENTITY_IGNORING;
@@ -1383,7 +1383,7 @@ extern "C" {
 
     librg_inline b32 librg_entity_visibility_get_for(librg_ctx_t *ctx, librg_entity_id entity, librg_entity_id target) {
         librg_assert(librg_is_server(ctx));
-        librg_entity_blob_t *blob = librg_entity_blob(ctx, entity);
+        librg_entity_t *blob = librg_entity_fetch(ctx, entity);
 
         if (!(blob->flags & LIBRG_ENTITY_IGNORING)) {
             return true;
@@ -1437,7 +1437,7 @@ extern "C" {
     usize librg_entity_query(librg_ctx_t *ctx, librg_entity_id entity, librg_entity_id **out_entities) {
         librg_assert(ctx && out_entities);
         librg_assert(librg_is_server(ctx));
-        librg_entity_blob_t *blob = librg_entity_blob(ctx, entity);
+        librg_entity_t *blob = librg_entity_fetch(ctx, entity);
 
         if (!(blob->flags & LIBRG_ENTITY_QUERIED)) {
             blob->flags |= LIBRG_ENTITY_QUERIED;
@@ -1468,7 +1468,7 @@ extern "C" {
     void librg_entity_control_set(librg_ctx_t *ctx, librg_entity_id entity, librg_peer_t *peer) {
         librg_assert(ctx && peer && librg_entity_valid(ctx, entity));
         librg_assert(librg_is_server(ctx));
-        librg_entity_blob_t *blob = librg_entity_blob(ctx, entity);
+        librg_entity_t *blob = librg_entity_fetch(ctx, entity);
 
         // replace current entity owner
         if (blob->flags & LIBRG_ENTITY_CONTROLLED) {
@@ -1492,14 +1492,14 @@ extern "C" {
     librg_inline librg_peer_t *librg_entity_control_get(librg_ctx_t *ctx, librg_entity_id entity) {
         librg_assert(ctx && librg_entity_valid(ctx, entity));
         librg_assert(librg_is_server(ctx));
-        librg_entity_blob_t *blob = librg_entity_blob(ctx, entity);
+        librg_entity_t *blob = librg_entity_fetch(ctx, entity);
         return (blob->flags & LIBRG_ENTITY_CONTROLLED) ? blob->control_peer : NULL;
     }
 
     void librg_entity_control_remove(librg_ctx_t *ctx, librg_entity_id entity) {
         librg_assert(ctx && librg_entity_valid(ctx, entity));
         librg_assert(librg_is_server(ctx));
-        librg_entity_blob_t *blob = librg_entity_blob(ctx, entity);
+        librg_entity_t *blob = librg_entity_fetch(ctx, entity);
 
         if (!(blob->flags & LIBRG_ENTITY_CONTROLLED)) {
             return;
@@ -1580,7 +1580,7 @@ extern "C" {
 
         if (librg_event_succeeded(&event) && !blocked) {
             librg_entity_id entity = librg_entity_create(msg->ctx, librg_option_get(LIBRG_DEFAULT_CLIENT_TYPE));
-            librg_entity_blob_t *blob = librg_entity_blob(msg->ctx, entity);
+            librg_entity_t *blob = librg_entity_fetch(msg->ctx, entity);
 
             // assign default
             blob->flags |= LIBRG_ENTITY_CLIENT;
@@ -1620,7 +1620,7 @@ extern "C" {
         librg_dbg("librg__connection_accept\n");
 
         librg_entity_id entity = librg_data_rent(msg->data);
-        librg_entity_blob_t *blob = &msg->ctx->entity.list[entity];
+        librg_entity_t *blob = &msg->ctx->entity.list[entity];
 
         msg->ctx->entity.count++;
 
@@ -1645,7 +1645,7 @@ extern "C" {
             librg_entity_id *entity = librg_table_get(&msg->ctx->network.connected_peers, cast(u64)msg->peer);
             if (!entity || !librg_entity_valid(msg->ctx, *entity)) return;
 
-            librg_entity_blob_t *blob = librg_entity_blob(msg->ctx, *entity);
+            librg_entity_t *blob = librg_entity_fetch(msg->ctx, *entity);
 
             librg__event_create(event, msg);
             librg_event_trigger(msg->ctx, LIBRG_CONNECTION_DISCONNECT, &event);
@@ -1675,7 +1675,7 @@ extern "C" {
             librg_data_rptr(msg->data, &position, sizeof(zplm_vec3_t));
 
             // Create new entity on client side
-            librg_entity_blob_t *blob = &msg->ctx->entity.list[entity];
+            librg_entity_t *blob = &msg->ctx->entity.list[entity];
             librg_assert(blob);
 
             blob->type     = type;
@@ -1698,7 +1698,7 @@ extern "C" {
                 librg_event_trigger(msg->ctx, LIBRG_ENTITY_REMOVE, &event);
 
                 // Destroy an entity on client side
-                librg_entity_blob_t *blob = librg_entity_blob(msg->ctx, entity);
+                librg_entity_t *blob = librg_entity_fetch(msg->ctx, entity);
 
                 blob->flags     = LIBRG_ENTITY_NONE;
                 blob->position  = zplm_vec3_zero();
@@ -1725,7 +1725,7 @@ extern "C" {
                 continue;
             }
 
-            librg_entity_blob(msg->ctx, entity)->position = position;
+            librg_entity_fetch(msg->ctx, entity)->position = position;
             librg__event_create(event, msg); event.entity = entity;
             librg_event_trigger(msg->ctx, LIBRG_ENTITY_UPDATE, &event);
         }
@@ -1739,7 +1739,7 @@ extern "C" {
             return;
         }
 
-        librg_entity_blob_t *blob = librg_entity_blob(msg->ctx, entity);
+        librg_entity_t *blob = librg_entity_fetch(msg->ctx, entity);
 
         if (!(blob->flags & LIBRG_ENTITY_CONTROLLED)) {
             blob->flags |= LIBRG_ENTITY_CONTROLLED;
@@ -1757,7 +1757,7 @@ extern "C" {
             return;
         }
 
-        librg_entity_blob_t *blob = librg_entity_blob(msg->ctx, entity);
+        librg_entity_t *blob = librg_entity_fetch(msg->ctx, entity);
 
         if (blob->flags & LIBRG_ENTITY_CONTROLLED) {
             blob->flags &= ~LIBRG_ENTITY_CONTROLLED;
@@ -1781,7 +1781,7 @@ extern "C" {
                 continue;
             }
 
-            librg_entity_blob_t *blob = librg_entity_blob(msg->ctx, entity);
+            librg_entity_t *blob = librg_entity_fetch(msg->ctx, entity);
 
             if (!(blob->flags & LIBRG_ENTITY_CONTROLLED) || blob->control_peer != msg->peer) {
                 librg_dbg("no component, or peer is different\n");
@@ -1812,7 +1812,7 @@ extern "C" {
         librg_data_wu32(&data, 0); // amount of entities to be sent (updates)
 
         librg_entity_iteratex(ctx, LIBRG_ENTITY_CONTROLLED, librg_lambda(entity), {
-            librg_entity_blob_t *blob = librg_entity_blob(ctx, entity);
+            librg_entity_t *blob = librg_entity_fetch(ctx, entity);
 
             librg_data_t subdata;
             librg_data_init(&subdata);
@@ -1857,7 +1857,7 @@ extern "C" {
 
     void librg__execute_server_entity_update_proc(librg_ctx_t *ctx, librg_data_t *reliable, librg_data_t *unreliable, usize offset, usize count) {
         for (isize j = offset; j < offset+count; j++) {
-            librg_entity_blob_t *blob = &ctx->entity.list[j];
+            librg_entity_t *blob = &ctx->entity.list[j];
 
             if (!(blob->flags & LIBRG_ENTITY_CLIENT)) continue;
 
@@ -1896,7 +1896,7 @@ extern "C" {
                 // fetch value of entity in the last snapshot
                 u32 *existed_in_last = librg_table_get(last_snapshot, entity);
 
-                librg_entity_blob_t *eblob = librg_entity_blob(ctx, entity);
+                librg_entity_t *eblob = librg_entity_fetch(ctx, entity);
 
                 // write create
                 if (!existed_in_last) {
@@ -2090,7 +2090,7 @@ extern "C" {
 
         // fill up
         librg_entity_iteratex(ctx, LIBRG_ENTITY_ALIVE, entity, {
-            librg_entity_blob_t *blob = &ctx->entity.list[entity];
+            librg_entity_t *blob = &ctx->entity.list[entity];
 
             zplc_node_t node = { 0 };
 
@@ -2171,9 +2171,9 @@ extern "C" {
         #undef librg_set_default
 
         // init entities system
-        ctx->entity.list = (librg_entity_blob_t*)zpl_alloc(ctx->allocator, sizeof(librg_entity_blob_t) * ctx->max_entities);
+        ctx->entity.list = (librg_entity_t*)zpl_alloc(ctx->allocator, sizeof(librg_entity_t) * ctx->max_entities);
         for (usize i = 0; i < ctx->max_entities; i++) {
-            librg_entity_blob_t blob = { i, 0 };
+            librg_entity_t blob = { i, 0 };
             ctx->entity.list[i] = blob;
         }
 
