@@ -2167,7 +2167,7 @@ extern "C" {
         #undef librg_set_default
 
         // init entities system
-        ctx->entity.list = zpl_alloc(ctx->allocator, sizeof(librg_entity_blob_t) * ctx->max_entities);
+        ctx->entity.list = (librg_entity_blob_t*)zpl_alloc(ctx->allocator, sizeof(librg_entity_blob_t) * ctx->max_entities);
         for (usize i = 0; i < ctx->max_entities; i++) {
             librg_entity_blob_t blob = { i, 0 };
             ctx->entity.list[i] = blob;
