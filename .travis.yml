@@ -13,7 +13,7 @@ after_failure:
 script:
     - npm install
     - mkdir -p build
-    - export FLAGS="-I include -I node_modules/zpl.c/include -I node_modules/zpl_math.c/include -I node_modules/zpl_cull.c/include -I node_modules/zpl_event.c/include -I node_modules/enet.c/include -DHAS_SOCKLEN_T=1 -pthread -lm"
+    - export FLAGS="-I include -I node_modules/zpl.c/include -I node_modules/zpl_math.c/include -I node_modules/zpl_cull.c/include -I node_modules/zpl_event.c/include -I node_modules/enet.c/include -DHAS_SOCKLEN_T=1 -pthread -lm -ldl"
     - clang   -g -std=c99 $FLAGS  test/build-test.c -o build/test-clang-c.o
     - clang++ -g -std=c++11 $FLAGS test/build-test.cpp -o build/test-clang-cpp.o
     - gcc -g -std=c99 $FLAGS test/build-test.c -o build/test-gcc-c.o

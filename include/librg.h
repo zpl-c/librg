@@ -2229,7 +2229,7 @@ extern "C" {
 
         // init entities system
         ctx->entity.list = (librg_entity_t*)zpl_alloc(ctx->allocator, sizeof(librg_entity_t) * ctx->max_entities);
-        for (usize i = 0; i < ctx->max_entities; i++) {
+        for (librg_entity_id i = 0; i < ctx->max_entities; i++) {
             librg_entity_t blob = { i, 0 };
             ctx->entity.list[i] = blob;
         }
