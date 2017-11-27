@@ -9,6 +9,6 @@ before_install:
 
 script:
   - npm install
-  - cmake -DLIBRG_TEST=1
+  - cmake -DLIBRG_TEST=1 -DHAS_SOCKLEN_T=1
   - make
   - ./librg_test
