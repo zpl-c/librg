@@ -12,6 +12,6 @@ after_failure:
 
 script:
   - npm install
-  - cmake -DLIBRG_TEST=1 -DHAS_SOCKLEN_T=1
-  - make
+  - cmake -DLIBRG_TEST=1
+  - make -DHAS_SOCKLEN_T=1
   - ./librg_test
