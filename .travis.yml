@@ -1,7 +1,4 @@
 language: c
-# compiler:
-#     - clang
-#     - gcc
 
 before_install:
     - curl -sL https://deb.nodesource.com/setup_8.x | sudo -E bash -

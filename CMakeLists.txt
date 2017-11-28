@@ -13,12 +13,6 @@ else()
     set(LIBRG_VENDOR_FOLDER ${CMAKE_SOURCE_DIR}/${LIBRG_VENDOR_FOLDER})
 endif()
 
-# set(ENET_ONLY_CONFIG true)
-
-# add_subdirectory(
-#     ${LIBRG_VENDOR_FOLDER}/enet${LIBRG_POSTFIX}
-#     ${CMAKE_CURRENT_BINARY_DIR}/enet)
-
 # define librg as a library (not really)
 add_library(librg INTERFACE)
 
