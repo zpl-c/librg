@@ -196,7 +196,7 @@ void render(librg_ctx_t *ctx)
 }
 
 void on_entity_remove(librg_event_t *event) {
-    librg_log("calling destroy %d\n", event->entity);
+    // librg_log("calling destroy %d\n", event->entity);
 }
 
 
