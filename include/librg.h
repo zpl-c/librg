@@ -247,76 +247,6 @@ extern "C" {
 
 
     /**
-     * Message structure
-     * created inside network handler
-     * and injected to each incoming message
-     */
-    typedef struct {
-        struct librg_ctx_t  *ctx;
-
-        librg_data_t        *data;
-        librg_peer_t        *peer;
-        librg_packet_t      *packet;
-
-        void *user_data; /* optional: user information */
-    } librg_message_t;
-
-
-    typedef enum {
-        LIBRG_EVENT_NONE        = 0,        /* default empty user-created event */
-
-        LIBRG_EVENT_REJECTED    = (1 << 0), /* whether or not this event was rejected */
-        LIBRG_EVENT_REJECTABLE  = (1 << 1), /* can this event be rejected by user */
-
-        LIBRG_EVENT_REMOTE      = (1 << 4), /* event was based on network message */
-        LIBRG_EVENT_LOCAL       = (1 << 5), /* event was created locally */
-    } librg_event_flag_e;
-
-
-    /**
-     * Event structure
-     * usually created in various
-     */
-    typedef struct {
-        struct librg_ctx_t  *ctx;   /* librg context where event has been called */
-
-        librg_data_t        *data;  /* optional: data is used for built-in events */
-        librg_peer_t        *peer;  /* optional: peer is used for built-in events */
-        librg_entity_id      entity; /* optional: peer is used for built-in events */
-
-        u64 flags;  /* flags for that event */
-        void *user_data; /* optional: user information */
-    } librg_event_t;
-
-
-    /**
-     * Callbacks
-     */
-
-    typedef void (librg_entity_cb)(struct librg_ctx_t *ctx, librg_entity_id entity);
-    typedef void (librg_message_cb)(librg_message_t *msg);
-    typedef void (librg_event_cb)(librg_event_t *event);
-
-
-    /**
-     * Multithreading stuff
-     */
-
-    enum {
-        librg_thread_idle,
-        librg_thread_work,
-        librg_thread_exit,
-    };
-
-    typedef struct {
-        usize id;
-        usize offset;
-        usize count;
-        struct librg_ctx_t *ctx;
-    } librg_update_worker_si_t;
-
-
-    /**
      * Entity flags
      */
 
@@ -355,6 +285,76 @@ extern "C" {
 
         zpl_array_t(librg_entity_id) last_query;
     } librg_entity_t;
+
+
+    /**
+     * Message structure
+     * created inside network handler
+     * and injected to each incoming message
+     */
+    typedef struct {
+        struct librg_ctx_t  *ctx;
+
+        librg_data_t        *data;
+        librg_peer_t        *peer;
+        librg_packet_t      *packet;
+
+        void *user_data; /* optional: user information */
+    } librg_message_t;
+
+
+    typedef enum {
+        LIBRG_EVENT_NONE        = 0,        /* default empty user-created event */
+
+        LIBRG_EVENT_REJECTED    = (1 << 0), /* whether or not this event was rejected */
+        LIBRG_EVENT_REJECTABLE  = (1 << 1), /* can this event be rejected by user */
+
+        LIBRG_EVENT_REMOTE      = (1 << 4), /* event was based on network message */
+        LIBRG_EVENT_LOCAL       = (1 << 5), /* event was created locally */
+    } librg_event_flag_e;
+
+
+    /**
+     * Event structure
+     * usually created in various
+     */
+    typedef struct {
+        struct librg_ctx_t  *ctx;   /* librg context where event has been called */
+
+        librg_data_t        *data;  /* optional: data is used for built-in events */
+        librg_peer_t        *peer;  /* optional: peer is used for built-in events */
+        librg_entity_t      *entity; /* optional: entity is used for built-in events */
+
+        u64 flags;  /* flags for that event */
+        void *user_data; /* optional: user information */
+    } librg_event_t;
+
+
+    /**
+     * Callbacks
+     */
+
+    typedef void (librg_entity_cb)(struct librg_ctx_t *ctx, librg_entity_id entity);
+    typedef void (librg_message_cb)(librg_message_t *msg);
+    typedef void (librg_event_cb)(librg_event_t *event);
+
+
+    /**
+     * Multithreading stuff
+     */
+
+    enum {
+        librg_thread_idle,
+        librg_thread_work,
+        librg_thread_exit,
+    };
+
+    typedef struct {
+        usize id;
+        usize offset;
+        usize count;
+        struct librg_ctx_t *ctx;
+    } librg_update_worker_si_t;
 
 
     /**
@@ -1416,7 +1416,7 @@ extern "C" {
             });
 
             event.data   = NULL;
-            event.entity = entity;
+            event.entity = blob;
             event.flags  = LIBRG_EVENT_LOCAL;
 
             librg_event_trigger(msg->ctx, LIBRG_CONNECTION_ACCEPT, &event);
@@ -1453,7 +1453,7 @@ extern "C" {
         // add server peer to storage
         librg_table_set(&msg->ctx->network.connected_peers, cast(u64)msg->peer, entity);
 
-        librg__event_create(event, msg); event.entity = entity;
+        librg__event_create(event, msg); event.entity = blob;
         librg_event_trigger(msg->ctx, LIBRG_CONNECTION_ACCEPT, &event);
     }
 
@@ -1505,7 +1505,7 @@ extern "C" {
 
             msg->ctx->entity.count++;
 
-            librg__event_create(event, msg); event.entity = entity;
+            librg__event_create(event, msg); event.entity = blob;
             librg_event_trigger(msg->ctx, LIBRG_ENTITY_CREATE, &event);
         }
 
@@ -1514,8 +1514,9 @@ extern "C" {
         for (usize i = 0; i < remove_size; ++i) {
             librg_entity_id entity = librg_data_rent(msg->data);
 
-            if (librg_entity_valid(msg->ctx,entity)) {
-                librg__event_create(event, msg); event.entity = entity;
+            if (librg_entity_valid(msg->ctx, entity)) {
+                librg__event_create(event, msg);
+                event.entity = librg_entity_fetch(msg->ctx, entity);
                 librg_event_trigger(msg->ctx, LIBRG_ENTITY_REMOVE, &event);
                 librg__entity_destroy(msg->ctx, entity);
             }
@@ -1539,8 +1540,10 @@ extern "C" {
                 continue;
             }
 
-            librg_entity_fetch(msg->ctx, entity)->position = position;
-            librg__event_create(event, msg); event.entity = entity;
+            librg_entity_t *blob = librg_entity_fetch(msg->ctx, entity);
+            blob->position = position;
+
+            librg__event_create(event, msg); event.entity = blob;
             librg_event_trigger(msg->ctx, LIBRG_ENTITY_UPDATE, &event);
         }
     }
@@ -1559,7 +1562,9 @@ extern "C" {
         if (!(blob->flags & LIBRG_ENTITY_CONTROLLED)) {
             blob->flags |= LIBRG_ENTITY_CONTROLLED;
 
-            librg__event_create(event, msg); event.entity = entity;
+            librg_entity_t *blob = librg_entity_fetch(msg->ctx, entity);
+
+            librg__event_create(event, msg); event.entity = blob;
             librg_event_trigger(msg->ctx, LIBRG_CLIENT_STREAMER_ADD, &event);
         }
     }
@@ -1578,7 +1583,7 @@ extern "C" {
         if (blob->flags & LIBRG_ENTITY_CONTROLLED) {
             blob->flags &= ~LIBRG_ENTITY_CONTROLLED;
 
-            librg__event_create(event, msg); event.entity = entity;
+            librg__event_create(event, msg); event.entity = blob;
             librg_event_trigger(msg->ctx, LIBRG_CLIENT_STREAMER_REMOVE, &event);
         }
     }
@@ -1607,7 +1612,7 @@ extern "C" {
                 continue;
             }
 
-            librg__event_create(event, msg); event.entity = entity;
+            librg__event_create(event, msg); event.entity = blob;
             librg_event_trigger(msg->ctx, LIBRG_CLIENT_STREAMER_UPDATE, &event);
             librg_data_rptr(msg->data, &blob->position, sizeof(blob->position));
         }
@@ -1635,7 +1640,7 @@ extern "C" {
             librg_data_init(&subdata);
 
             librg_event_t event = {0}; {
-                event.entity = entity;
+                event.entity = blob;
                 event.data  = &subdata;
                 event.flags = (LIBRG_EVENT_REJECTABLE | LIBRG_EVENT_LOCAL);
             }
@@ -1740,7 +1745,7 @@ extern "C" {
                     // request custom data from user
                     librg_event_t event = {0}; {
                         event.data = reliable;
-                        event.entity = entity;
+                        event.entity = eblob;
                         event.flags = (LIBRG_EVENT_REJECTABLE | LIBRG_EVENT_LOCAL);
                     }
 
@@ -1772,7 +1777,7 @@ extern "C" {
                         // request custom data from user
                         librg_event_t event = {0}; {
                             event.data = unreliable;
-                            event.entity = entity;
+                            event.entity = eblob;
                             event.flags = (LIBRG_EVENT_REJECTABLE | LIBRG_EVENT_LOCAL);
                         }
 
@@ -1809,6 +1814,8 @@ extern "C" {
                 // skip entity delete if this is player's entity
                 if (entity == player) continue;
 
+                librg_entity_t *eblob = librg_entity_fetch(ctx, entity);
+
                 // save write size before writing stuff
                 // (in case we will need reject the event)
                 u32 curr_wsize = librg_data_get_wpos(reliable);
@@ -1820,7 +1827,7 @@ extern "C" {
                 // write the rest
                 librg_event_t event = {0}; {
                     event.data = reliable;
-                    event.entity = entity;
+                    event.entity = blob;
                     event.flags = (LIBRG_EVENT_REJECTABLE | LIBRG_EVENT_LOCAL);
                 }
 
@@ -2035,7 +2042,7 @@ extern "C" {
         for (usize i = 0; i < ctx->max_entities; ++i) {
             if (librg_entity_valid(ctx, i)) {
                 librg_event_t event = {0}; {
-                    event.entity = i;
+                    event.entity = librg_entity_fetch(ctx, i);
                     event.flags  = LIBRG_EVENT_LOCAL;
                 }
 

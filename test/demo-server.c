@@ -12,19 +12,14 @@ void on_connect_request(librg_event_t *event) {
 void on_connect_accepted(librg_event_t *event) {
     librg_log("on_connect_accepted\n");
 
-    librg_entity_t *blob = librg_entity_fetch(event->ctx, event->entity);
-
-    // hero_t *hero = librg_attach_hero(event->ctx, event->entity, NULL);
-    // hero->cur_hp = 100;
-
     librg_log("spawning player %u at: %f %f %f\n",
-        event->entity,
-        blob->position.x,
-        blob->position.y,
-        blob->position.z
+        event->entity->id,
+        event->entity->position.x,
+        event->entity->position.y,
+        event->entity->position.z
     );
 
-    librg_entity_control_set(event->ctx, event->entity, blob->client_peer);
+    librg_entity_control_set(event->ctx, event->entity->id, event->entity->client_peer);
 }
 
 // void on_spawn_npc(librg_message_t *msg) {
@@ -38,7 +33,7 @@ void on_connect_accepted(librg_event_t *event) {
 // }
 
 void on_entity_create_forplayer(librg_event_t *event) {
-    switch (librg_entity_type(event->ctx, event->entity)) {
+    switch (event->entity->type) {
         case DEMO_TYPE_PLAYER:
         case DEMO_TYPE_NPC: {
             // hero_t* hero = librg_fetch_hero(event->ctx, event->entity);
