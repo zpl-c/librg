@@ -144,8 +144,8 @@ extern "C" {
     #define librg_bit_clear(A,k)   ( A[(k/32)] &= ~(1 << (k%32)) )
     #define librg_bit_test(A,k)    ( A[(k/32)] & (1 << (k%32)) )
 
-    #define LIBRG_MESSAGE_ID            u16
-    #define LIBRG_DATA_STREAMS_AMOUNT   4
+    #define LIBRG_MESSAGE_ID                         u16
+    #define LIBRG_DATA_STREAMS_AMOUNT                4
 
     /**
      *
@@ -260,7 +260,6 @@ extern "C" {
 
         LIBRG_ENTITY_CONTROLLED = (1 << 10),
     };
-
 
     /**
      * Entity blob
@@ -1092,6 +1091,7 @@ extern "C" {
             entity->flags           = LIBRG_ENTITY_ALIVE;
             entity->position        = zplm_vec3_zero();
             entity->stream_range    = librg_option_get(LIBRG_DEFAULT_STREAM_RANGE) * 1.0f;
+            entity->stream_branch   = NULL;
 
             return entity->id;
         }
@@ -1118,9 +1118,9 @@ extern "C" {
             librg_table_destroy(&entity->last_snapshot);
 
             // remove entity from the streamer
-            // if (entity->branch) {
-            //     zplc_remove(librg_fetch_stream(ctx, entity)->branch, entity);
-            // }
+             if (entity->stream_branch) {
+                 zplc_remove(entity->stream_branch, entity->id);
+             }
         }
 
         if (entity->flags & LIBRG_ENTITY_QUERIED) {
@@ -1135,9 +1135,10 @@ extern "C" {
             librg_entity_visibility_set(ctx, entity->id, true);
         }
 
-        entity->flags     = LIBRG_ENTITY_NONE;
-        entity->position  = zplm_vec3_zero();
-        entity->type      = 0;
+        entity->flags         = LIBRG_ENTITY_NONE;
+        entity->position      = zplm_vec3_zero();
+        entity->type          = 0;
+        entity->stream_branch = NULL;
 
         return true;
     }
@@ -1158,8 +1159,10 @@ extern "C" {
     }
 
     librg_inline librg_entity_t *librg_entity_fetch(librg_ctx_t *ctx, librg_entity_id id) {
-        librg_assert(librg_entity_valid(ctx, id));
-        return &ctx->entity.list[id];
+        if (librg_entity_valid(ctx, id))
+            return &ctx->entity.list[id];
+
+        return NULL;
     }
 
     librg_inline void librg_entity_visibility_set(librg_ctx_t *ctx, librg_entity_id entity, b32 state) {
@@ -1215,16 +1218,18 @@ extern "C" {
         for (i32 i = 0; i < nodes_count; ++i) {
             if (c->nodes[i].unused) continue;
 
-            b32 inside = zplc__contains(c->dimensions, bounds, c->nodes[i].position.e);
+            librg_entity_id target = (librg_entity_id)c->nodes[i].tag;
 
-            if (inside) {
-                librg_entity_id target = (librg_entity_id)c->nodes[i].tag;
+            if (librg_entity_valid(ctx, target)) {
+                librg_entity_t *blob = librg_entity_fetch(ctx, target);
+                b32 inside = zplc__contains(c->dimensions, bounds, blob->position.e);
 
-                if (!librg_entity_valid(ctx, target)) continue;
-                if (!librg_entity_visibility_get(ctx, target)) continue;
-                if (!librg_entity_visibility_get_for(ctx, target, entity)) continue;
+                if (inside) {
+                    if (!librg_entity_visibility_get(ctx, target)) continue;
+                    if (!librg_entity_visibility_get_for(ctx, target, entity)) continue;
 
-                zpl_array_append(*out_entities, target);
+                    zpl_array_append(*out_entities, target);
+                }
             }
         }
 
@@ -1767,6 +1772,7 @@ extern "C" {
                     }
                     // write update
                     else {
+
                         // save write size before writing stuff
                         // (in case we will need reject the event)
                         u32 curr_wsize = librg_data_get_wpos(unreliable);
@@ -1775,7 +1781,7 @@ extern "C" {
                         librg_data_wptr(unreliable, &eblob->position, sizeof(eblob->position));
 
                         // request custom data from user
-                        librg_event_t event = {0}; {
+                        librg_event_t event = { 0 }; {
                             event.data = unreliable;
                             event.entity = eblob;
                             event.flags = (LIBRG_EVENT_REJECTABLE | LIBRG_EVENT_LOCAL);
@@ -1814,8 +1820,6 @@ extern "C" {
                 // skip entity delete if this is player's entity
                 if (entity == player) continue;
 
-                librg_entity_t *eblob = librg_entity_fetch(ctx, entity);
-
                 // save write size before writing stuff
                 // (in case we will need reject the event)
                 u32 curr_wsize = librg_data_get_wpos(reliable);
@@ -1824,8 +1828,9 @@ extern "C" {
                 librg_data_went(reliable, entity);
                 removed_entities++;
 
+                
                 // write the rest
-                librg_event_t event = {0}; {
+                librg_event_t event = { 0 }; {
                     event.data = reliable;
                     event.entity = blob;
                     event.flags = (LIBRG_EVENT_REJECTABLE | LIBRG_EVENT_LOCAL);
@@ -1925,7 +1930,7 @@ extern "C" {
         librg_assert(ctx);
 
         // clear (remove for )
-        zplc_clear(&ctx->streamer);
+        //zplc_clear(&ctx->streamer);
 
         // fill up
         librg_entity_iteratex(ctx, LIBRG_ENTITY_ALIVE, entity, {
@@ -1936,21 +1941,18 @@ extern "C" {
             node.tag        = entity;
             node.position   = blob->position;
 
-            zplc_insert(&ctx->streamer, node);
+             if (blob->stream_branch == NULL) {
+                 blob->stream_branch = zplc_insert(&ctx->streamer, node);
+             }
+             else {
+                 zplc_t *branch = blob->stream_branch;
+                 b32 contains = zplc__contains(branch->dimensions, branch->boundary, blob->position.e);
 
-            // TODO: fix the partial updating bug
-            // if (stream->branch == NULL) {
-            //     stream->branch = zplc_insert(&ctx->streamer, node);
-            // }
-            // else {
-            //     zplc_t *branch = stream->branch;
-            //     b32 contains = zplc__contains(branch->dimensions, branch->boundary, transform->position.e);
-
-            //     if (!contains) {
-            //         zplc_remove(branch, j);
-            //         stream->branch = zplc_insert(&ctx->streamer, node);
-            //     }
-            // }
+                 if (!contains) {
+                     zplc_remove(branch, entity);
+                     blob->stream_branch = zplc_insert(&ctx->streamer, node);
+                 }
+             }
         });
     }
 

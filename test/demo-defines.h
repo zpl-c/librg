@@ -17,6 +17,7 @@ typedef struct {
 	f32 cooldown;
 	i32 max_hp;
 	i32 cur_hp;
+    librg_limiter_t limiter;
 } hero_t;
 
 // generate methods for components

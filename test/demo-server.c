@@ -1,6 +1,8 @@
 #define LIBRG_DEBUG
 #define LIBRG_IMPLEMENTATION
+#define LIBRG_LIMITER_IMPLEMENTATION
 #include <librg.h>
+#include <librg_limiter.h>
 #include "demo-defines.h"
 
 void on_connect_request(librg_event_t *event) {
@@ -19,6 +21,19 @@ void on_connect_accepted(librg_event_t *event) {
         event->entity->position.z
     );
 
+    hero_t hero_ = {0};
+    hero_.max_hp = 100;
+    hero_.cur_hp = 40;
+
+    event->entity->user_data = zpl_malloc(sizeof(hero_));
+    *(hero_t *)event->entity->user_data = hero_;
+    hero_t *hero = (hero_t *)event->entity->user_data;
+    librg_limiter_init(&hero->limiter);
+
+    // event->entity->update_policy = LIBRG_ENTITY_UPDATE_DYNAMIC;
+    // event->entity->update_initial_rate = event->entity->update_rate = 32.f;
+    // event->entity->update_max_rate = event->entity->update_initial_rate * 100.f;
+
     librg_entity_control_set(event->ctx, event->entity->id, event->entity->client_peer);
 }
 
@@ -35,59 +50,70 @@ void on_connect_accepted(librg_event_t *event) {
 void on_entity_create_forplayer(librg_event_t *event) {
     switch (event->entity->type) {
         case DEMO_TYPE_PLAYER:
+            break;
         case DEMO_TYPE_NPC: {
             // hero_t* hero = librg_fetch_hero(event->ctx, event->entity);
             // librg_data_wptr(event->data, hero, sizeof(*hero));
+
+            librg_data_wptr(event->data, event->entity->user_data, sizeof(hero_t));
         } break;
     }
 }
 
-// void entity_think_cb(librg_ctx_t *ctx, librg_entity_t node) {
-//     if (librg_entity_type(ctx, node) == DEMO_TYPE_NPC) {
-//         hero_t *hero = librg_fetch_hero(ctx, node);
-//         librg_transform_t *tran = librg_fetch_transform(ctx, node);
+void on_entity_update_forplayer(librg_event_t *event) {
+    librg_limiter_fire(event, &((hero_t *)event->entity->user_data)->limiter);
 
-//         if (hero->walk_time == 0) {
-//             hero->walk_time = 1000;
-//             hero->accel.x += (rand() % 3 - 1.0) / 10.0;
-//             hero->accel.y += (rand() % 3 - 1.0) / 10.0;
+    //librg_log("entity %u update rate: %f\n", event->entity->id, event->entity->update_rate);
+}
 
-//             hero->accel.x = (hero->accel.x > -1.0) ? ((hero->accel.x < 1.0) ? hero->accel.x : 1.0) : -1.0;
-//             hero->accel.y = (hero->accel.y > -1.0) ? ((hero->accel.y < 1.0) ? hero->accel.y : 1.0) : -1.0;
-//         }
-//         else {
-//             zplm_vec3_t curpos = tran->position;
 
-//             curpos.x += hero->accel.x;
-//             curpos.y += hero->accel.y;
+void ai_think(librg_ctx_t *ctx) {
+    
+    for (int i = 0; i < ctx->max_entities; i++)
+    {
+        if (!librg_entity_valid(ctx, i)) continue;
+        librg_entity_t *entity = librg_entity_fetch(ctx, i);
+        if (entity->type == DEMO_TYPE_NPC) {
 
-//             if (curpos.x < 0 || curpos.x >= 5000) {
-//                 curpos.x += hero->accel.x * -2;
-//                 hero->accel.x *= -1;
-//             }
+            hero_t *hero = entity->user_data;
 
-//             if (curpos.y < 0 || curpos.y >= 5000) {
-//                 curpos.y += hero->accel.y * -2;
-//                 hero->accel.y *= -1;
-//             }
-// #define PP(x) x*x
-//             if (zplm_vec3_mag2(hero->accel) > PP(0.3)) {
-//                tran->position = curpos;
-//             }
-// #undef PP
-//             hero->walk_time -= 32.0f;
+            if (hero->walk_time == 0) {
+                hero->walk_time = 1000;
+                hero->accel.x += (rand() % 3 - 1.0) / 10.0;
+                hero->accel.y += (rand() % 3 - 1.0) / 10.0;
 
-//             if (hero->walk_time < 0) {
-//                 hero->walk_time = 0;
-//             }
-//         }
-//     }
-// }
+                hero->accel.x = (hero->accel.x > -1.0) ? ((hero->accel.x < 1.0) ? hero->accel.x : 1.0) : -1.0;
+                hero->accel.y = (hero->accel.y > -1.0) ? ((hero->accel.y < 1.0) ? hero->accel.y : 1.0) : -1.0;
+            }
+            else {
+                zplm_vec3_t curpos = entity->position;
 
-// void ai_think(librg_ctx_t *ctx) {
-//     librg_filter_t filter = { component_hero };
-//     librg_entity_each(ctx, filter, entity_think_cb);
-// }
+                curpos.x += hero->accel.x;
+                curpos.y += hero->accel.y;
+
+                if (curpos.x < 0 || curpos.x >= 5000) {
+                    curpos.x += hero->accel.x * -2;
+                    hero->accel.x *= -1;
+                }
+
+                if (curpos.y < 0 || curpos.y >= 5000) {
+                    curpos.y += hero->accel.y * -2;
+                    hero->accel.y *= -1;
+                }
+#define PP(x) x*x
+                if (zplm_vec3_mag2(hero->accel) > PP(0.3)) {
+                    entity->position = curpos;
+                }
+#undef PP
+                hero->walk_time -= 32.0f;
+
+                if (hero->walk_time < 0) {
+                    hero->walk_time = 0;
+                }
+            }
+        }
+    }
+}
 
 // void on_component_register(librg_ctx_t *ctx) {
 //     librg_component_register(ctx, component_hero, sizeof(hero_t));
@@ -132,6 +158,7 @@ int main() {
     librg_event_add(&ctx, LIBRG_CONNECTION_REQUEST, on_connect_request);
     librg_event_add(&ctx, LIBRG_CONNECTION_ACCEPT, on_connect_accepted);
     librg_event_add(&ctx, LIBRG_ENTITY_CREATE, on_entity_create_forplayer);
+    librg_event_add(&ctx, LIBRG_ENTITY_UPDATE, on_entity_update_forplayer);
 
     //librg_network_add(42, on_spawn_npc);
 
@@ -150,12 +177,16 @@ int main() {
         blob->position.x = (float)(2000 - rand() % 4000);
         blob->position.y = (float)(2000 - rand() % 4000);
 
-        // hero_t hero_ = {0};
-        // hero_.max_hp = 100;
-        // hero_.cur_hp = 40;
+        hero_t hero_ = {0};
+        hero_.max_hp = 100;
+        hero_.cur_hp = 40;
 
-        // hero_.accel.x = (rand() % 3 - 1.0);
-        // hero_.accel.y = (rand() % 3 - 1.0);
+        hero_.accel.x = (rand() % 3 - 1.0);
+        hero_.accel.y = (rand() % 3 - 1.0);
+
+        blob->user_data = zpl_malloc(sizeof(hero_));
+        *(hero_t *)blob->user_data = hero_;
+        librg_limiter_init(&((hero_t *)blob->user_data)->limiter);
 
         // hero_t *hero = librg_attach_hero(&ctx, enemy, &hero_);
     }
@@ -168,7 +199,7 @@ int main() {
 
     while (true) {
         librg_tick(&ctx);
-        // ai_think(&ctx);
+        ai_think(&ctx);
         zpl_sleep_ms(1);
     }
 

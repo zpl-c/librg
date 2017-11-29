@@ -1,6 +1,7 @@
 #define LIBRG_DEBUG
 #define LIBRG_IMPLEMENTATION
 #include <librg.h>
+#include <librg_limiter.h>
 #include <SDL.h>
 #include "demo-defines.h"
 
@@ -71,10 +72,14 @@ void on_connect_refused(librg_event_t *event) {
 void on_entity_create(librg_event_t *event) {
     switch (librg_entity_type(event->ctx, event->entity->id)) {
         case DEMO_TYPE_PLAYER:
+            break;
         case DEMO_TYPE_NPC: {
             // hero_t hero_;
             // librg_data_rptr(event->data, &hero_, sizeof(hero_));
             // librg_attach_hero(event->ctx, event->entity, &hero_);
+
+            event->entity->user_data = zpl_malloc(sizeof(hero_t));
+            librg_data_rptr(event->data, event->entity->user_data, sizeof(hero_t));
         } break;
     }
 }
@@ -197,6 +202,10 @@ void render(librg_ctx_t *ctx)
 
 void on_entity_remove(librg_event_t *event) {
     // librg_log("calling destroy %d\n", event->entity);
+
+    if (event->entity->type == DEMO_TYPE_NPC) {
+        zpl_mfree(event->entity->user_data);
+    }
 }
 
 
