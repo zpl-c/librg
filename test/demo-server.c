@@ -50,8 +50,9 @@ void on_entity_create_forplayer(librg_event_t *event) {
 }
 
 void on_entity_update_forplayer(librg_event_t *event) {
-    //librg_log("entity %u update rate: %f\n", event->entity->id, event->entity->update_rate);
+    
 
+    //librg_log("entity %u update rate: %f\n", event->entity->id, event->entity->update_rate);
 }
 
 
