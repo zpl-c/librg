@@ -1,6 +1,8 @@
 #define LIBRG_DEBUG
 #define LIBRG_IMPLEMENTATION
+#define LIBRG_LIMITER_IMPLEMENTATION
 #include <librg.h>
+#include <librg_limiter.h>
 #include "demo-defines.h"
 
 void on_connect_request(librg_event_t *event) {
@@ -19,9 +21,18 @@ void on_connect_accepted(librg_event_t *event) {
         event->entity->position.z
     );
 
-    event->entity->update_policy = LIBRG_ENTITY_UPDATE_DYNAMIC;
-    event->entity->update_initial_rate = event->entity->update_rate = 32.f;
-    event->entity->update_max_rate = event->entity->update_initial_rate * 100.f;
+    hero_t hero_ = {0};
+    hero_.max_hp = 100;
+    hero_.cur_hp = 40;
+
+    event->entity->user_data = zpl_malloc(sizeof(hero_));
+    *(hero_t *)event->entity->user_data = hero_;
+    hero_t *hero = (hero_t *)event->entity->user_data;
+    librg_limiter_init(&hero->limiter);
+
+    // event->entity->update_policy = LIBRG_ENTITY_UPDATE_DYNAMIC;
+    // event->entity->update_initial_rate = event->entity->update_rate = 32.f;
+    // event->entity->update_max_rate = event->entity->update_initial_rate * 100.f;
 
     librg_entity_control_set(event->ctx, event->entity->id, event->entity->client_peer);
 }
@@ -50,7 +61,7 @@ void on_entity_create_forplayer(librg_event_t *event) {
 }
 
 void on_entity_update_forplayer(librg_event_t *event) {
-    
+    librg_limiter_fire(event, &((hero_t *)event->entity->user_data)->limiter);
 
     //librg_log("entity %u update rate: %f\n", event->entity->id, event->entity->update_rate);
 }
@@ -163,12 +174,6 @@ int main() {
         librg_entity_id enemy = librg_entity_create(&ctx, DEMO_TYPE_NPC);
         librg_entity_t *blob = librg_entity_fetch(&ctx, enemy);
 
-        blob->update_policy = LIBRG_ENTITY_UPDATE_DYNAMIC;
-
-        // NOTE: I believe 32 ms is good enough for updating these NPCes, 
-        //       combine that with client-side movement interpolation and you get nice results.
-        blob->update_initial_rate = blob->update_rate = 32.f;
-
         blob->position.x = (float)(2000 - rand() % 4000);
         blob->position.y = (float)(2000 - rand() % 4000);
 
@@ -181,6 +186,7 @@ int main() {
 
         blob->user_data = zpl_malloc(sizeof(hero_));
         *(hero_t *)blob->user_data = hero_;
+        librg_limiter_init(&((hero_t *)blob->user_data)->limiter);
 
         // hero_t *hero = librg_attach_hero(&ctx, enemy, &hero_);
     }

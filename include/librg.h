@@ -1908,8 +1908,6 @@ extern "C" {
     librg_internal void librg__execute_server_entity_update(librg_ctx_t *ctx) {
         librg_assert(ctx);
 
-        librg__perform_entity_cooling(ctx);
-
         if (librg_option_get(LIBRG_MAX_THREADS_PER_UPDATE) == 0) {
             librg__execute_server_entity_update_proc(ctx, &ctx->stream_upd_reliable, &ctx->stream_upd_unreliable, 0, ctx->max_entities);
             return;

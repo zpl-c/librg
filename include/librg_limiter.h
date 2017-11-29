@@ -19,24 +19,27 @@ extern "C" {
         f32 update_moving_treshold;
 
         zplm_vec3_t last_position;
-    } librg_entity_limit_t;
+    } librg_limiter_t;
+
+    LIBRG_API void librg_limiter_init(librg_limiter_t *entity_limit);
+    LIBRG_API void librg_limiter_fire(librg_event_t *event, librg_limiter_t *entity_limit);
 
 
 #if defined(LIBRG_LIMITER_IMPLEMENTATION) && !defined(LIBRG_LIMITER_IMPLEMENTATION_DONE)
 #define LIBRG_LIMITER_IMPLEMENTATION_DONE
 
 
-    void librg_entity_limit_init(librg_entity_limit_t *entity_limit) {
+    void librg_limiter_init(librg_limiter_t *entity_limit) {
         entity_limit->update_deteoriation    = LIBRG_LIMITER_DETEORIATION;
-        entity_limit->update_initial_delay   = entity->update_delay = 0;
+        entity_limit->update_initial_delay   = entity_limit->update_delay = 0.0f;
         entity_limit->update_moving_treshold = 0.03f;
     }
 
-    void librg_entity_limit_fire(librg_event_t *event, librg_entity_limit_t *entity_limit) {
+    void librg_limiter_fire(librg_event_t *event, librg_limiter_t *entity_limit) {
         librg_assert(event && event->ctx);
 
         librg_ctx_t *ctx = event->ctx;
-        librg_event_t *entity = event->entity;
+        librg_entity_t *entity = event->entity;
 
         if (entity_limit->update_time < entity_limit->update_delay) {
             entity_limit->update_time += ctx->tick_delay;
@@ -64,6 +67,8 @@ extern "C" {
             }
         }
     }
+
+#endif
 
 #ifdef __cplusplus
 }
