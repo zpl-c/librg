@@ -1473,6 +1473,9 @@ extern "C" {
             librg_entity_t *blob = librg_entity_fetch(msg->ctx, *entity);
 
             librg__event_create(event, msg);
+
+            event.entity = blob;
+
             librg_event_trigger(msg->ctx, LIBRG_CONNECTION_DISCONNECT, &event);
 
             // destroy last snapshot stuff on disconnect
