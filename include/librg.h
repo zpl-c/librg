@@ -1800,20 +1800,21 @@ extern "C" {
                         librg_data_went(unreliable, entity);
                         librg_data_wptr(unreliable, &eblob->position, sizeof(eblob->position));
 
-                        // request custom data from user
-                        librg_event_t event = { 0 }; {
-                            event.data = unreliable;
-                            event.entity = eblob;
-                            event.flags = (LIBRG_EVENT_REJECTABLE | LIBRG_EVENT_LOCAL);
-                        }
-                        
-                        librg_event_trigger(ctx, LIBRG_ENTITY_UPDATE, &event);
+                        if (eblob->can_update) {
+                            // request custom data from user
+                            librg_event_t event = { 0 }; {
+                                event.data = unreliable;
+                                event.entity = eblob;
+                                event.flags = (LIBRG_EVENT_REJECTABLE | LIBRG_EVENT_LOCAL);
+                            }
 
-                        // check if event was rejected
-                        if (event.flags & LIBRG_EVENT_REJECTED) {
-                        skip_entity:
-                            updated_entities--;
-                            librg_data_set_wpos(unreliable, curr_wsize);
+                            librg_event_trigger(ctx, LIBRG_ENTITY_UPDATE, &event);
+
+                            // check if event was rejected
+                            if (event.flags & LIBRG_EVENT_REJECTED) {
+                                updated_entities--;
+                                librg_data_set_wpos(unreliable, curr_wsize);
+                            }
                         }
                     }
                 }
@@ -1851,21 +1852,20 @@ extern "C" {
                 librg_data_went(reliable, entity);
                 removed_entities++;
 
-                if (eblob->can_update) {
-                    // write the rest
-                    librg_event_t event = { 0 }; {
-                        event.data = reliable;
-                        event.entity = blob;
-                        event.flags = (LIBRG_EVENT_REJECTABLE | LIBRG_EVENT_LOCAL);
-                    }
+                
+                // write the rest
+                librg_event_t event = { 0 }; {
+                    event.data = reliable;
+                    event.entity = blob;
+                    event.flags = (LIBRG_EVENT_REJECTABLE | LIBRG_EVENT_LOCAL);
+                }
 
-                    librg_event_trigger(ctx, LIBRG_ENTITY_REMOVE, &event);
+                librg_event_trigger(ctx, LIBRG_ENTITY_REMOVE, &event);
 
-                    // check if even was rejected
-                    if (event.flags & LIBRG_EVENT_REJECTED) {
-                        removed_entities--;
-                        librg_data_set_wpos(reliable, curr_wsize);
-                    }
+                // check if even was rejected
+                if (event.flags & LIBRG_EVENT_REJECTED) {
+                    removed_entities--;
+                    librg_data_set_wpos(reliable, curr_wsize);
                 }
             }
 
