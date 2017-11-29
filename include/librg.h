@@ -284,6 +284,7 @@ extern "C" {
 
         u8 update_policy;
         b32 update_now;
+        b32 can_update;
         f32 update_initial_rate;
         f32 update_rate;
         f32 update_max_rate;
@@ -1792,55 +1793,20 @@ extern "C" {
                     // write update
                     else {
 
-                        // request custom data from user
-                        librg_event_t event = { 0 }; {
-                            event.data = unreliable;
-                            event.entity = eblob;
-                            event.flags = (LIBRG_EVENT_REJECTABLE | LIBRG_EVENT_LOCAL);
-                        }
-
                         // save write size before writing stuff
                         // (in case we will need reject the event)
                         u32 curr_wsize = librg_data_get_wpos(unreliable);
 
                         librg_data_went(unreliable, entity);
                         librg_data_wptr(unreliable, &eblob->position, sizeof(eblob->position));
+
+                        // request custom data from user
+                        librg_event_t event = { 0 }; {
+                            event.data = unreliable;
+                            event.entity = eblob;
+                            event.flags = (LIBRG_EVENT_REJECTABLE | LIBRG_EVENT_LOCAL);
+                        }
                         
-                        if (eblob->update_policy != LIBRG_ENTITY_UPDATE_MANUAL) {
-                            if (eblob->update_time < eblob->update_rate) {
-                                eblob->update_time += ctx->tick_delay;
-                                {
-                                    zplm_vec3_t dir;
-                                    zplm_vec3_sub(&dir, eblob->last_position, eblob->position);
-
-                                    b32 is_moving = (zplm_vec3_dot(dir, dir) != 0.0f);
-
-                                    if (is_moving || eblob->update_now) {
-                                        eblob->update_rate = eblob->update_initial_rate;
-                                        eblob->last_position = eblob->position;
-                                        eblob->update_now = false;
-                                    }
-                                }
-                                
-                                goto skip_entity;
-                            }
-                            else {
-                                eblob->update_time = 0.0f;
-
-                                if (eblob->update_policy == LIBRG_ENTITY_UPDATE_DYNAMIC && (eblob->update_rate < eblob->update_max_rate)) {
-                                    eblob->update_rate += eblob->update_rate * eblob->update_deteoriation;
-                                }
-                            }
-                        }
-                        else {
-                            if (eblob->update_now) {
-                                eblob->update_now = false;
-                            }
-                            else {
-                                goto skip_entity;
-                            }
-                        }
-
                         librg_event_trigger(ctx, LIBRG_ENTITY_UPDATE, &event);
 
                         // check if event was rejected
@@ -1885,19 +1851,21 @@ extern "C" {
                 librg_data_went(reliable, entity);
                 removed_entities++;
 
-                // write the rest
-                librg_event_t event = {0}; {
-                    event.data = reliable;
-                    event.entity = blob;
-                    event.flags = (LIBRG_EVENT_REJECTABLE | LIBRG_EVENT_LOCAL);
-                }
+                if (eblob->can_update) {
+                    // write the rest
+                    librg_event_t event = { 0 }; {
+                        event.data = reliable;
+                        event.entity = blob;
+                        event.flags = (LIBRG_EVENT_REJECTABLE | LIBRG_EVENT_LOCAL);
+                    }
 
-                librg_event_trigger(ctx, LIBRG_ENTITY_REMOVE, &event);
+                    librg_event_trigger(ctx, LIBRG_ENTITY_REMOVE, &event);
 
-                // check if even was rejected
-                if (event.flags & LIBRG_EVENT_REJECTED) {
-                    removed_entities--;
-                    librg_data_set_wpos(reliable, curr_wsize);
+                    // check if even was rejected
+                    if (event.flags & LIBRG_EVENT_REJECTED) {
+                        removed_entities--;
+                        librg_data_set_wpos(reliable, curr_wsize);
+                    }
                 }
             }
 
@@ -1926,6 +1894,51 @@ extern "C" {
             // and cleanup
             librg_data_reset(reliable);
             librg_data_reset(unreliable);
+        }
+    }
+
+    void librg__perform_entity_cooling(librg_ctx_t *ctx) {
+        for (isize i = 0; i < ctx->max_entities; i++) {
+            librg_entity_t *eblob = &ctx->entity.list[i];
+
+            if (!(eblob->flags & LIBRG_ENTITY_CLIENT)) continue;
+
+            eblob->can_update = true;
+
+            if (eblob->update_policy != LIBRG_ENTITY_UPDATE_MANUAL) {
+                if (eblob->update_time < eblob->update_rate) {
+                    eblob->update_time += ctx->tick_delay;
+                    {
+                        zplm_vec3_t dir;
+                        zplm_vec3_sub(&dir, eblob->last_position, eblob->position);
+
+                        b32 is_moving = (zplm_vec3_dot(dir, dir) != 0.0f);
+
+                        if (is_moving || eblob->update_now) {
+                            eblob->update_rate = eblob->update_initial_rate;
+                            eblob->last_position = eblob->position;
+                            eblob->update_now = false;
+                        }
+                    }
+
+                    eblob->can_update = false;
+                }
+                else {
+                    eblob->update_time = 0.0f;
+
+                    if (eblob->update_policy == LIBRG_ENTITY_UPDATE_DYNAMIC && (eblob->update_rate < eblob->update_max_rate)) {
+                        eblob->update_rate += eblob->update_rate * eblob->update_deteoriation;
+                    }
+                }
+            }
+            else {
+                if (eblob->update_now) {
+                    eblob->update_now = false;
+                }
+                else {
+                    eblob->can_update = false;
+                }
+            }
         }
     }
 
@@ -1963,6 +1976,8 @@ extern "C" {
 
     librg_internal void librg__execute_server_entity_update(librg_ctx_t *ctx) {
         librg_assert(ctx);
+
+        librg__perform_entity_cooling(ctx);
 
         if (librg_option_get(LIBRG_MAX_THREADS_PER_UPDATE) == 0) {
             librg__execute_server_entity_update_proc(ctx, &ctx->stream_upd_reliable, &ctx->stream_upd_unreliable, 0, ctx->max_entities);

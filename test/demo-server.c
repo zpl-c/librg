@@ -51,52 +51,56 @@ void on_entity_create_forplayer(librg_event_t *event) {
 void on_entity_update_forplayer(librg_event_t *event) {
     //librg_log("entity %u update rate: %f\n", event->entity->id, event->entity->update_rate);
 
-    if (event->entity->type = DEMO_TYPE_NPC) {
+}
 
-        hero_t *hero = event->entity->user_data;
 
-        if (hero->walk_time == 0) {
-            hero->walk_time = 1000;
-            hero->accel.x += (rand() % 3 - 1.0) / 10.0;
-            hero->accel.y += (rand() % 3 - 1.0) / 10.0;
+void ai_think(librg_ctx_t *ctx) {
+    
+    for (int i = 0; i < ctx->max_entities; i++)
+    {
+        if (!librg_entity_valid(ctx, i)) continue;
+        librg_entity_t *entity = librg_entity_fetch(ctx, i);
+        if (entity->type == DEMO_TYPE_NPC) {
 
-            hero->accel.x = (hero->accel.x > -1.0) ? ((hero->accel.x < 1.0) ? hero->accel.x : 1.0) : -1.0;
-            hero->accel.y = (hero->accel.y > -1.0) ? ((hero->accel.y < 1.0) ? hero->accel.y : 1.0) : -1.0;
-        }
-        else {
-            zplm_vec3_t curpos = event->entity->position;
+            hero_t *hero = entity->user_data;
 
-            curpos.x += hero->accel.x;
-            curpos.y += hero->accel.y;
+            if (hero->walk_time == 0) {
+                hero->walk_time = 1000;
+                hero->accel.x += (rand() % 3 - 1.0) / 10.0;
+                hero->accel.y += (rand() % 3 - 1.0) / 10.0;
 
-            if (curpos.x < 0 || curpos.x >= 5000) {
-                curpos.x += hero->accel.x * -2;
-                hero->accel.x *= -1;
+                hero->accel.x = (hero->accel.x > -1.0) ? ((hero->accel.x < 1.0) ? hero->accel.x : 1.0) : -1.0;
+                hero->accel.y = (hero->accel.y > -1.0) ? ((hero->accel.y < 1.0) ? hero->accel.y : 1.0) : -1.0;
             }
+            else {
+                zplm_vec3_t curpos = entity->position;
 
-            if (curpos.y < 0 || curpos.y >= 5000) {
-                curpos.y += hero->accel.y * -2;
-                hero->accel.y *= -1;
-            }
+                curpos.x += hero->accel.x;
+                curpos.y += hero->accel.y;
+
+                if (curpos.x < 0 || curpos.x >= 5000) {
+                    curpos.x += hero->accel.x * -2;
+                    hero->accel.x *= -1;
+                }
+
+                if (curpos.y < 0 || curpos.y >= 5000) {
+                    curpos.y += hero->accel.y * -2;
+                    hero->accel.y *= -1;
+                }
 #define PP(x) x*x
-            if (zplm_vec3_mag2(hero->accel) > PP(0.3)) {
-                event->entity->position = curpos;
-            }
+                if (zplm_vec3_mag2(hero->accel) > PP(0.3)) {
+                    entity->position = curpos;
+                }
 #undef PP
-            hero->walk_time -= 32.0f;
+                hero->walk_time -= 32.0f;
 
-            if (hero->walk_time < 0) {
-                hero->walk_time = 0;
+                if (hero->walk_time < 0) {
+                    hero->walk_time = 0;
+                }
             }
         }
     }
 }
-
-
-// void ai_think(librg_ctx_t *ctx) {
-//     librg_filter_t filter = { component_hero };
-//     librg_entity_each(ctx, filter, entity_think_cb);
-// }
 
 // void on_component_register(librg_ctx_t *ctx) {
 //     librg_component_register(ctx, component_hero, sizeof(hero_t));
@@ -184,7 +188,7 @@ int main() {
 
     while (true) {
         librg_tick(&ctx);
-        // ai_think(&ctx);
+        ai_think(&ctx);
         zpl_sleep_ms(1);
     }
 
