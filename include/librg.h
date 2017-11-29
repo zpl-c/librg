@@ -1791,6 +1791,14 @@ extern "C" {
                     }
                     // write update
                     else {
+
+                        // request custom data from user
+                        librg_event_t event = { 0 }; {
+                            event.data = unreliable;
+                            event.entity = eblob;
+                            event.flags = (LIBRG_EVENT_REJECTABLE | LIBRG_EVENT_LOCAL);
+                        }
+
                         // save write size before writing stuff
                         // (in case we will need reject the event)
                         u32 curr_wsize = librg_data_get_wpos(unreliable);
@@ -1814,9 +1822,7 @@ extern "C" {
                                     }
                                 }
                                 
-                                updated_entities--;
-                                librg_data_set_wpos(unreliable, curr_wsize);
-                                continue;
+                                goto skip_entity;
                             }
                             else {
                                 eblob->update_time = 0.0f;
@@ -1831,23 +1837,15 @@ extern "C" {
                                 eblob->update_now = false;
                             }
                             else {
-                                updated_entities--;
-                                librg_data_set_wpos(unreliable, curr_wsize);
-                                continue;
+                                goto skip_entity;
                             }
-                        }
-
-                        // request custom data from user
-                        librg_event_t event = {0}; {
-                            event.data = unreliable;
-                            event.entity = eblob;
-                            event.flags = (LIBRG_EVENT_REJECTABLE | LIBRG_EVENT_LOCAL);
                         }
 
                         librg_event_trigger(ctx, LIBRG_ENTITY_UPDATE, &event);
 
                         // check if event was rejected
                         if (event.flags & LIBRG_EVENT_REJECTED) {
+                        skip_entity:
                             updated_entities--;
                             librg_data_set_wpos(unreliable, curr_wsize);
                         }
