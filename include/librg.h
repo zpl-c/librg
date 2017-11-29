@@ -298,7 +298,6 @@ extern "C" {
 
         void *user_data;
         zplc_t *stream_branch;
-        zplc_node_t *stream_node;
 
         librg_table_t ignored;
         librg_table_t last_snapshot;
@@ -2023,7 +2022,6 @@ extern "C" {
 
              if (blob->stream_branch == NULL) {
                  blob->stream_branch = zplc_insert(&ctx->streamer, node);
-                 blob->stream_node   = zplc_find_node(blob->stream_branch, entity);
              }
              else {
                  zplc_t *branch = blob->stream_branch;
@@ -2032,7 +2030,6 @@ extern "C" {
                  if (!contains) {
                      zplc_remove(branch, entity);
                      blob->stream_branch = zplc_insert(&ctx->streamer, node);
-                     blob->stream_node   = zplc_find_node(branch, entity);
                  }
              }
         });
