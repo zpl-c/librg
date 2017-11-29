@@ -290,6 +290,7 @@ extern "C" {
         f32 update_max_rate;
         f32 update_time;
         f32 update_deteoriation;
+        f32 update_moving_treshold;
 
         zplm_vec3_t position;
         zplm_vec3_t last_position;
@@ -1114,9 +1115,10 @@ extern "C" {
             entity->position        = zplm_vec3_zero();
             entity->stream_range    = librg_option_get(LIBRG_DEFAULT_STREAM_RANGE) * 1.0f;
 
-            entity->update_deteoriation = LIBRG_DEFAULT_ENTITY_UPDATE_DETEORIATION;
-            entity->update_policy       = LIBRG_ENTITY_UPDATE_ALWAYS;
-            entity->update_initial_rate = entity->update_rate = 0;
+            entity->update_deteoriation    = LIBRG_DEFAULT_ENTITY_UPDATE_DETEORIATION;
+            entity->update_policy          = LIBRG_ENTITY_UPDATE_ALWAYS;
+            entity->update_initial_rate    = entity->update_rate = 0;
+            entity->update_moving_treshold = 0.03f;
 
             return entity->id;
         }
@@ -1914,7 +1916,7 @@ extern "C" {
                         zplm_vec3_t dir;
                         zplm_vec3_sub(&dir, eblob->last_position, eblob->position);
 
-                        b32 is_moving = (zplm_vec3_dot(dir, dir) != 0.0f);
+                        b32 is_moving = (zplm_vec3_dot(dir, dir) > eblob->update_moving_treshold);
 
                         if (is_moving || eblob->update_now) {
                             eblob->update_rate = eblob->update_initial_rate;
