@@ -298,6 +298,7 @@ extern "C" {
 
         void *user_data;
         zplc_t *stream_branch;
+        zplc_node_t *stream_node;
 
         librg_table_t ignored;
         librg_table_t last_snapshot;
@@ -1114,6 +1115,7 @@ extern "C" {
             entity->flags           = LIBRG_ENTITY_ALIVE;
             entity->position        = zplm_vec3_zero();
             entity->stream_range    = librg_option_get(LIBRG_DEFAULT_STREAM_RANGE) * 1.0f;
+            entity->stream_branch   = NULL;
 
             entity->update_deteoriation    = LIBRG_DEFAULT_ENTITY_UPDATE_DETEORIATION;
             entity->update_policy          = LIBRG_ENTITY_UPDATE_ALWAYS;
@@ -1145,9 +1147,9 @@ extern "C" {
             librg_table_destroy(&entity->last_snapshot);
 
             // remove entity from the streamer
-            // if (entity->branch) {
-            //     zplc_remove(librg_fetch_stream(ctx, entity)->branch, entity);
-            // }
+             if (entity->stream_branch) {
+                 zplc_remove(entity->stream_branch, entity->id);
+             }
         }
 
         if (entity->flags & LIBRG_ENTITY_QUERIED) {
@@ -1162,9 +1164,10 @@ extern "C" {
             librg_entity_visibility_set(ctx, entity->id, true);
         }
 
-        entity->flags     = LIBRG_ENTITY_NONE;
-        entity->position  = zplm_vec3_zero();
-        entity->type      = 0;
+        entity->flags         = LIBRG_ENTITY_NONE;
+        entity->position      = zplm_vec3_zero();
+        entity->type          = 0;
+        entity->stream_branch = NULL;
 
         return true;
     }
@@ -1242,16 +1245,18 @@ extern "C" {
         for (i32 i = 0; i < nodes_count; ++i) {
             if (c->nodes[i].unused) continue;
 
-            b32 inside = zplc__contains(c->dimensions, bounds, c->nodes[i].position.e);
+            librg_entity_id target = (librg_entity_id)c->nodes[i].tag;
 
-            if (inside) {
-                librg_entity_id target = (librg_entity_id)c->nodes[i].tag;
+            if (librg_entity_valid(ctx, target)) {
+                librg_entity_t *blob = librg_entity_fetch(ctx, target);
+                b32 inside = zplc__contains(c->dimensions, bounds, blob->position.e);
 
-                if (!librg_entity_valid(ctx, target)) continue;
-                if (!librg_entity_visibility_get(ctx, target)) continue;
-                if (!librg_entity_visibility_get_for(ctx, target, entity)) continue;
+                if (inside) {
+                    if (!librg_entity_visibility_get(ctx, target)) continue;
+                    if (!librg_entity_visibility_get_for(ctx, target, entity)) continue;
 
-                zpl_array_append(*out_entities, target);
+                    zpl_array_append(*out_entities, target);
+                }
             }
         }
 
@@ -2005,7 +2010,7 @@ extern "C" {
         librg_assert(ctx);
 
         // clear (remove for )
-        zplc_clear(&ctx->streamer);
+        //zplc_clear(&ctx->streamer);
 
         // fill up
         librg_entity_iteratex(ctx, LIBRG_ENTITY_ALIVE, entity, {
@@ -2016,21 +2021,20 @@ extern "C" {
             node.tag        = entity;
             node.position   = blob->position;
 
-            zplc_insert(&ctx->streamer, node);
+             if (blob->stream_branch == NULL) {
+                 blob->stream_branch = zplc_insert(&ctx->streamer, node);
+                 blob->stream_node   = zplc_find_node(blob->stream_branch, entity);
+             }
+             else {
+                 zplc_t *branch = blob->stream_branch;
+                 b32 contains = zplc__contains(branch->dimensions, branch->boundary, blob->position.e);
 
-            // TODO: fix the partial updating bug
-            // if (stream->branch == NULL) {
-            //     stream->branch = zplc_insert(&ctx->streamer, node);
-            // }
-            // else {
-            //     zplc_t *branch = stream->branch;
-            //     b32 contains = zplc__contains(branch->dimensions, branch->boundary, transform->position.e);
-
-            //     if (!contains) {
-            //         zplc_remove(branch, j);
-            //         stream->branch = zplc_insert(&ctx->streamer, node);
-            //     }
-            // }
+                 if (!contains) {
+                     zplc_remove(branch, entity);
+                     blob->stream_branch = zplc_insert(&ctx->streamer, node);
+                     blob->stream_node   = zplc_find_node(branch, entity);
+                 }
+             }
         });
     }
 
