@@ -71,6 +71,7 @@ void on_connect_refused(librg_event_t *event) {
 void on_entity_create(librg_event_t *event) {
     switch (librg_entity_type(event->ctx, event->entity->id)) {
         case DEMO_TYPE_PLAYER:
+            break;
         case DEMO_TYPE_NPC: {
             // hero_t hero_;
             // librg_data_rptr(event->data, &hero_, sizeof(hero_));

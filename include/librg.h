@@ -1846,8 +1846,6 @@ extern "C" {
                 // skip entity delete if this is player's entity
                 if (entity == player) continue;
 
-                librg_entity_t *eblob = librg_entity_fetch(ctx, entity);
-
                 // save write size before writing stuff
                 // (in case we will need reject the event)
                 u32 curr_wsize = librg_data_get_wpos(reliable);
