@@ -42,15 +42,11 @@ void on_connect_refused(librg_event_t *event) {
 }
 
 void on_entity_create(librg_event_t *event) {
-    //foo_t *foo = librg_fetch_foo(event->ctx, event->entity);
-    //librg_data_wptr(event->data, foo, sizeof(foo_t));
-    librg_log("CreateEntity %u update rate: %f\n", event->entity->id, event->entity->update_rate);
+
 }
 
 void on_entity_update(librg_event_t *event) {
-    //librg_data_wf32(event->data, 42);// librg_fetch_foo(event->ctx, event->entity)->a.x);
 
-    librg_log("Entity %u update rate: %f\n", event->entity->id, event->entity->update_rate);
 }
 
 void custom_handler(librg_message_t *msg) {
@@ -110,9 +106,6 @@ int main() {
     for (isize i = 0; i < 10000; i++) {
         librg_entity_id enemy = librg_entity_create(&ctx, 0);
         librg_entity_t *blob = librg_entity_fetch(&ctx, enemy);
-        
-        blob->update_policy = LIBRG_ENTITY_UPDATE_DYNAMIC;
-        blob->update_initial_rate = blob->update_rate = ctx.tick_delay;
 
         //librg_attach_foo(&ctx, enemy, NULL);
         blob->position.x = (float)(2000 - rand() % 4000);
