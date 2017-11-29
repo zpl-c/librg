@@ -286,6 +286,7 @@ extern "C" {
         b32 update_now;
         f32 update_initial_rate;
         f32 update_rate;
+        f32 update_max_rate;
         f32 update_time;
         f32 update_deteoriation;
 
@@ -1820,7 +1821,7 @@ extern "C" {
                             else {
                                 eblob->update_time = 0.0f;
 
-                                if (eblob->update_policy == LIBRG_ENTITY_UPDATE_DYNAMIC) {
+                                if (eblob->update_policy == LIBRG_ENTITY_UPDATE_DYNAMIC && (eblob->update_rate < eblob->update_max_rate)) {
                                     eblob->update_rate += eblob->update_rate * eblob->update_deteoriation;
                                 }
                             }

@@ -21,6 +21,7 @@ void on_connect_accepted(librg_event_t *event) {
 
     event->entity->update_policy = LIBRG_ENTITY_UPDATE_DYNAMIC;
     event->entity->update_initial_rate = event->entity->update_rate = 32.f;
+    event->entity->update_max_rate = event->entity->update_initial_rate * 100.f;
 
     librg_entity_control_set(event->ctx, event->entity->id, event->entity->client_peer);
 }
