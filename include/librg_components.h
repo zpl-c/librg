@@ -3,6 +3,8 @@
  * DON'T USE IT IN YOUR PROJECTS
  */
 
+#error "Don't include librg_components.h !"
+
 #ifndef LIBRG_COMPONENTS_INCLUDE_H
 #define LIBRG_COMPONENTS_INCLUDE_H
 
