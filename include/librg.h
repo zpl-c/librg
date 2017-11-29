@@ -1812,9 +1812,13 @@ extern "C" {
 
                             // check if event was rejected
                             if (event.flags & LIBRG_EVENT_REJECTED) {
-                                updated_entities--;
-                                librg_data_set_wpos(unreliable, curr_wsize);
+                                goto skip_entity;
                             }
+                        }
+                        else {
+                        skip_entity:
+                            updated_entities--;
+                            librg_data_set_wpos(unreliable, curr_wsize);
                         }
                     }
                 }
@@ -1900,8 +1904,6 @@ extern "C" {
     void librg__perform_entity_cooling(librg_ctx_t *ctx) {
         for (isize i = 0; i < ctx->max_entities; i++) {
             librg_entity_t *eblob = &ctx->entity.list[i];
-
-            if (!(eblob->flags & LIBRG_ENTITY_CLIENT)) continue;
 
             eblob->can_update = true;
 
