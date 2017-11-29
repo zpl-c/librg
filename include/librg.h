@@ -1812,7 +1812,10 @@ extern "C" {
                                         eblob->update_now = false;
                                     }
                                 }
-                                goto skip_entity;
+                                
+                                updated_entities--;
+                                librg_data_set_wpos(unreliable, curr_wsize);
+                                continue;
                             }
                             else {
                                 eblob->update_time = 0.0f;
@@ -1827,7 +1830,9 @@ extern "C" {
                                 eblob->update_now = false;
                             }
                             else {
-                                goto skip_entity;
+                                updated_entities--;
+                                librg_data_set_wpos(unreliable, curr_wsize);
+                                continue;
                             }
                         }
 
@@ -1842,7 +1847,6 @@ extern "C" {
 
                         // check if event was rejected
                         if (event.flags & LIBRG_EVENT_REJECTED) {
-                        skip_entity:
                             updated_entities--;
                             librg_data_set_wpos(unreliable, curr_wsize);
                         }
