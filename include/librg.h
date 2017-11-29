@@ -144,8 +144,9 @@ extern "C" {
     #define librg_bit_clear(A,k)   ( A[(k/32)] &= ~(1 << (k%32)) )
     #define librg_bit_test(A,k)    ( A[(k/32)] & (1 << (k%32)) )
 
-    #define LIBRG_MESSAGE_ID            u16
-    #define LIBRG_DATA_STREAMS_AMOUNT   4
+    #define LIBRG_MESSAGE_ID                         u16
+    #define LIBRG_DATA_STREAMS_AMOUNT                4
+    #define LIBRG_DEFAULT_ENTITY_UPDATE_DETEORIATION 0.25f
 
     /**
      *
@@ -261,6 +262,16 @@ extern "C" {
         LIBRG_ENTITY_CONTROLLED = (1 << 10),
     };
 
+    /**
+     * Entity update importance policy
+     */
+
+    enum {
+        LIBRG_ENTITY_UPDATE_ALWAYS,
+        LIBRG_ENTITY_UPDATE_DYNAMIC,
+        LIBRG_ENTITY_UPDATE_MANUAL,
+    };
+
 
     /**
      * Entity blob
@@ -271,7 +282,15 @@ extern "C" {
         u32 type;
         u64 flags;
 
+        u8 update_policy;
+        b32 update_now;
+        f32 update_initial_rate;
+        f32 update_rate;
+        f32 update_time;
+        f32 update_deteoriation;
+
         zplm_vec3_t position;
+        zplm_vec3_t last_position;
         f32 stream_range;
 
         void *user_data;
@@ -1093,6 +1112,10 @@ extern "C" {
             entity->position        = zplm_vec3_zero();
             entity->stream_range    = librg_option_get(LIBRG_DEFAULT_STREAM_RANGE) * 1.0f;
 
+            entity->update_deteoriation = LIBRG_DEFAULT_ENTITY_UPDATE_DETEORIATION;
+            entity->update_policy       = LIBRG_ENTITY_UPDATE_ALWAYS;
+            entity->update_initial_rate = entity->update_rate = 0;
+
             return entity->id;
         }
 
@@ -1773,6 +1796,40 @@ extern "C" {
 
                         librg_data_went(unreliable, entity);
                         librg_data_wptr(unreliable, &eblob->position, sizeof(eblob->position));
+                        
+                        if (eblob->update_policy != LIBRG_ENTITY_UPDATE_MANUAL) {
+                            if (eblob->update_time < eblob->update_rate) {
+                                eblob->update_time += ctx->tick_delay;
+                                {
+                                    zplm_vec3_t dir;
+                                    zplm_vec3_sub(&dir, eblob->last_position, eblob->position);
+
+                                    b32 is_moving = (zplm_vec3_dot(dir, dir) != 0.0f);
+
+                                    if (is_moving || eblob->update_now) {
+                                        eblob->update_rate = eblob->update_initial_rate;
+                                        eblob->last_position = eblob->position;
+                                        eblob->update_now = false;
+                                    }
+                                }
+                                goto skip_entity;
+                            }
+                            else {
+                                eblob->update_time = 0.0f;
+
+                                if (eblob->update_policy == LIBRG_ENTITY_UPDATE_DYNAMIC) {
+                                    eblob->update_rate += eblob->update_rate * eblob->update_deteoriation;
+                                }
+                            }
+                        }
+                        else {
+                            if (eblob->update_now) {
+                                eblob->update_now = false;
+                            }
+                            else {
+                                goto skip_entity;
+                            }
+                        }
 
                         // request custom data from user
                         librg_event_t event = {0}; {
@@ -1785,6 +1842,7 @@ extern "C" {
 
                         // check if event was rejected
                         if (event.flags & LIBRG_EVENT_REJECTED) {
+                        skip_entity:
                             updated_entities--;
                             librg_data_set_wpos(unreliable, curr_wsize);
                         }

@@ -19,6 +19,9 @@ void on_connect_accepted(librg_event_t *event) {
         event->entity->position.z
     );
 
+    event->entity->update_policy = LIBRG_ENTITY_UPDATE_DYNAMIC;
+    event->entity->update_initial_rate = event->entity->update_rate = 32.f;
+
     librg_entity_control_set(event->ctx, event->entity->id, event->entity->client_peer);
 }
 
@@ -40,6 +43,10 @@ void on_entity_create_forplayer(librg_event_t *event) {
             // librg_data_wptr(event->data, hero, sizeof(*hero));
         } break;
     }
+}
+
+void on_entity_update_forplayer(librg_event_t *event) {
+    librg_log("entity %u update rate: %f\n", event->entity->id, event->entity->update_rate);
 }
 
 // void entity_think_cb(librg_ctx_t *ctx, librg_entity_t node) {
@@ -132,6 +139,7 @@ int main() {
     librg_event_add(&ctx, LIBRG_CONNECTION_REQUEST, on_connect_request);
     librg_event_add(&ctx, LIBRG_CONNECTION_ACCEPT, on_connect_accepted);
     librg_event_add(&ctx, LIBRG_ENTITY_CREATE, on_entity_create_forplayer);
+    librg_event_add(&ctx, LIBRG_ENTITY_UPDATE, on_entity_update_forplayer);
 
     //librg_network_add(42, on_spawn_npc);
 
@@ -142,10 +150,13 @@ int main() {
     librg_fetch_transform(librg_entity_create(0))->position.x = i * 20;
 #endif
 
-#if 1
+#if 0
     for (isize i = 0; i < 10000; i++) {
         librg_entity_id enemy = librg_entity_create(&ctx, DEMO_TYPE_NPC);
         librg_entity_t *blob = librg_entity_fetch(&ctx, enemy);
+
+        blob->update_policy = LIBRG_ENTITY_UPDATE_DYNAMIC;
+        blob->update_initial_rate = blob->update_rate = ctx.tick_delay;
 
         blob->position.x = (float)(2000 - rand() % 4000);
         blob->position.y = (float)(2000 - rand() % 4000);
