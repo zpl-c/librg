@@ -1905,6 +1905,8 @@ extern "C" {
         for (isize i = 0; i < ctx->max_entities; i++) {
             librg_entity_t *eblob = &ctx->entity.list[i];
 
+            if (!(eblob->flags & LIBRG_ENTITY_ALIVE)) continue;
+
             eblob->can_update = true;
 
             if (eblob->update_policy != LIBRG_ENTITY_UPDATE_MANUAL) {

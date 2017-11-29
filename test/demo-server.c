@@ -162,7 +162,10 @@ int main() {
         librg_entity_t *blob = librg_entity_fetch(&ctx, enemy);
 
         blob->update_policy = LIBRG_ENTITY_UPDATE_DYNAMIC;
-        blob->update_initial_rate = blob->update_rate = ctx.tick_delay;
+
+        // NOTE: I believe 32 ms is good enough for updating these NPCes, 
+        //       combine that with client-side movement interpolation and you get nice results.
+        blob->update_initial_rate = blob->update_rate = 32.f;
 
         blob->position.x = (float)(2000 - rand() % 4000);
         blob->position.y = (float)(2000 - rand() % 4000);
