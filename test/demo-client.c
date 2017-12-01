@@ -75,6 +75,15 @@ void on_connect_refused(librg_event_t *event) {
 }
 
 void on_entity_create(librg_event_t *event) {
+    event->entity->user_data = zpl_malloc(sizeof(hero_t));
+    hero_t *hero = (hero_t *)event->entity->user_data;
+    librg_data_rptr(event->data, event->entity->user_data, sizeof(hero->stream));
+
+    hero->curr_pos = event->entity->position;
+    hero->last_pos = event->entity->position;
+    hero->target_pos = event->entity->position;
+    hero->delta = 0.0f;
+
     switch (librg_entity_type(event->ctx, event->entity->id)) {
         case DEMO_TYPE_PLAYER:
             break;
@@ -83,14 +92,6 @@ void on_entity_create(librg_event_t *event) {
             // librg_data_rptr(event->data, &hero_, sizeof(hero_));
             // librg_attach_hero(event->ctx, event->entity, &hero_);
 
-            event->entity->user_data = zpl_malloc(sizeof(hero_t));
-            hero_t *hero = (hero_t *)event->entity->user_data;
-            librg_data_rptr(event->data, event->entity->user_data, sizeof(hero->stream));
-
-            hero->curr_pos = event->entity->position;
-            hero->last_pos = event->entity->position;
-            hero->target_pos = event->entity->position;
-            hero->delta = 0.0f;
         } break;
     }
 }
@@ -106,6 +107,7 @@ void on_entity_update(librg_event_t *event) {
     // );
 
     hero_t *hero = (hero_t *)event->entity->user_data;
+    if (!hero) return;
 
     hero->last_pos = hero->target_pos;
     hero->target_pos = event->entity->position;
@@ -294,7 +296,7 @@ int main(int argc, char *argv[]) {
     librg_event_add(&ctx, LIBRG_ENTITY_REMOVE, on_entity_remove);
     librg_event_add(&ctx, LIBRG_CLIENT_STREAMER_UPDATE, on_client_entity_update);
 
-    librg_network_start(&ctx, (librg_address_t) { .host = "localhost", .port = 27010 });
+    librg_network_start(&ctx, (librg_address_t) { .host = "localhost", .port = 7777 });
 
     bool loop = true;
 
