@@ -23,26 +23,8 @@ void on_connect_accepted(librg_event_t *event) {
         event->entity->position.z
     );
 
-    hero_t hero_ = {0};
-    hero_.stream.max_hp = 100;
-    hero_.stream.cur_hp = 40;
-
-    // event->entity->update_policy = LIBRG_ENTITY_UPDATE_DYNAMIC;
-    // event->entity->update_initial_rate = event->entity->update_rate = 32.f;
-    // event->entity->update_max_rate = event->entity->update_initial_rate * 100.f;
-
     librg_entity_control_set(event->ctx, event->entity->id, event->entity->client_peer);
 }
-
-// void on_spawn_npc(librg_message_t *msg) {
-//     librg_transform_t tr;
-//     librg_data_rptr(msg->data, &tr, sizeof(librg_transform_t));
-
-//     librg_entity_t npc = librg_entity_create(msg->ctx, 1);
-//     *librg_fetch_transform(msg->ctx, npc) = tr;
-
-//     // librg_entity_control_remove(event->ctx, librg_entity_get(msg->peer));
-// }
 
 void on_entity_create_forplayer(librg_event_t *event) {
      switch (event->entity->type) {
@@ -56,14 +38,12 @@ void on_entity_create_forplayer(librg_event_t *event) {
 }
 
 void on_entity_update_forplayer(librg_event_t *event) {
-    //librg_limiter_fire(event, &((hero_t *)event->entity->user_data)->stream.limiter);
-
-    //librg_log("entity %u update rate: %f\n", event->entity->id, event->entity->update_rate);
+    // ..
 }
 
 
 void ai_think(librg_ctx_t *ctx) {
-    
+
     for (int i = 0; i < ctx->max_entities; i++)
     {
         if (!librg_entity_valid(ctx, i)) continue;
@@ -110,10 +90,6 @@ void ai_think(librg_ctx_t *ctx) {
     }
 }
 
-// void on_component_register(librg_ctx_t *ctx) {
-//     librg_component_register(ctx, component_hero, sizeof(hero_t));
-// }
-
 void measure(void *userptr) {
 	librg_ctx_t *ctx = (librg_ctx_t *)userptr;
 
@@ -139,8 +115,6 @@ int main() {
                  "==================================================\n";
     librg_log("%s\n\n", test);
 
-	// librg_option_set(LIBRG_MAX_THREADS_PER_UPDATE, 4);
-
     librg_ctx_t ctx     = {0};
     ctx.mode            = LIBRG_MODE_SERVER;
     ctx.tick_delay      = 64;
@@ -155,14 +129,7 @@ int main() {
     librg_event_add(&ctx, LIBRG_ENTITY_CREATE, on_entity_create_forplayer);
     librg_event_add(&ctx, LIBRG_ENTITY_UPDATE, on_entity_update_forplayer);
 
-    //librg_network_add(42, on_spawn_npc);
-
     librg_network_start(&ctx, (librg_address_t) { .port = 7777 });
-
-#if 0
-    for (int i = 0; i < 15; ++i)
-    librg_fetch_transform(librg_entity_create(0))->position.x = i * 20;
-#endif
 
 #if 1
     for (isize i = 0; i < 1200; i++) {
@@ -182,8 +149,6 @@ int main() {
         blob->user_data = zpl_malloc(sizeof(hero_));
         *(hero_t *)blob->user_data = hero_;
         librg_limiter_init(&((hero_t *)blob->user_data)->stream.limiter);
-
-        // hero_t *hero = librg_attach_hero(&ctx, enemy, &hero_);
     }
 #endif
 

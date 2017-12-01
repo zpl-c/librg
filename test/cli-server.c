@@ -2,15 +2,6 @@
 #define LIBRG_DEBUG
 #include <librg.h>
 
-enum {
-    TYPE_VEHICLE = 242,
-};
-
-typedef struct {
-    zplm_vec3_t a;
-} foo_t;
-
-
 void on_connect_request(librg_event_t *event) {
     u32 secret = librg_data_ru32(event->data);
 
@@ -22,7 +13,6 @@ void on_connect_request(librg_event_t *event) {
 void on_connect_accepted(librg_event_t *event) {
     librg_log("on_connect_accepted\n");
     librg_entity_t *blob = event->entity;
-    //librg_attach_foo(event->ctx, event->entity, NULL);
 
     blob->position.x = (float)(2000 - rand() % 4000);
     blob->position.y = (float)(2000 - rand() % 4000);
@@ -33,8 +23,6 @@ void on_connect_accepted(librg_event_t *event) {
         blob->position.y,
         blob->position.z
     );
-
-    librg_message_send_all(event->ctx, 42, NULL, 0);
 }
 
 void on_connect_refused(librg_event_t *event) {
@@ -47,10 +35,6 @@ void on_entity_create(librg_event_t *event) {
 
 void on_entity_update(librg_event_t *event) {
 
-}
-
-void custom_handler(librg_message_t *msg) {
-    librg_log("meesage from tha: %d\n", librg_data_ru32(msg->data));
 }
 
 void measure(void *userptr) {
@@ -79,7 +63,6 @@ int main() {
     librg_log("%s\n\n", test);
 
     librg_option_set(LIBRG_MAX_ENTITIES_PER_BRANCH, 4);
-    // librg_option_set(LIBRG_MAX_THREADS_PER_UPDATE, 8);
 
     librg_ctx_t ctx     = {0};
 
@@ -92,14 +75,12 @@ int main() {
 
     librg_init(&ctx);
 
-    //librg_event_add(&ctx, LIBRG_CONNECTION_REQUEST, on_connect_request);
+    librg_event_add(&ctx, LIBRG_CONNECTION_REQUEST, on_connect_request);
     librg_event_add(&ctx, LIBRG_CONNECTION_ACCEPT, on_connect_accepted);
     librg_event_add(&ctx, LIBRG_CONNECTION_REFUSE, on_connect_refused);
 
     librg_event_add(&ctx, LIBRG_ENTITY_CREATE, on_entity_create);
     librg_event_add(&ctx, LIBRG_ENTITY_UPDATE, on_entity_update);
-
-    librg_network_add(&ctx, 42, custom_handler);
 
     librg_network_start(&ctx, (librg_address_t) { .host = "localhost", .port = 7777 });
 
