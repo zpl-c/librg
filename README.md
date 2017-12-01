@@ -260,12 +260,12 @@ If you have tested it, and it compiles, or it perhaps stopped compiling, please 
 
 | *Compiler* / Target   | Windows               | Linux                 | macOS                 | iOS                   | Android               |
 |:-:|:-:|:-:|:-:|:-:|:-:    |
-| *clang C*             | :grey_question:       | :white_check_mark:    | :white_check_mark:    | :white_check_mark:    | :white_check_mark:          |
-| *gcc C*               |                       | :white_check_mark:    | :white_check_mark:    |                       | :grey_question:       |
+| *clang C*             | :grey_question:       | :white_check_mark:    | :white_check_mark:    | :white_check_mark:    | :grey_question:       |
+| *gcc C*               |                       | :white_check_mark:    | :white_check_mark:    |                       |                       |
 | *msvc C*              | :white_check_mark:    |                       |                       |                       |                       |
 | *mingw C*             | :white_check_mark:    |                       |                       |                       |                       |
-| *clang C++*           | :grey_question:       | :white_check_mark:    | :white_check_mark:    | :grey_question:       | :red_circle:          |
-| *gcc C++*             |                       | :white_check_mark:    | :grey_question:       |                       | :grey_question:       |
+| *clang C++*           | :grey_question:       | :white_check_mark:    | :white_check_mark:    | :grey_question:       | :white_check_mark:    |
+| *gcc C++*             |                       | :white_check_mark:    | :grey_question:       |                       |                       |
 | *msvc C++*            | :white_check_mark:    |                       |                       |                       |                       |
 | *mingw C++*           | :white_check_mark:    |                       |                       |                       |                       |
 
