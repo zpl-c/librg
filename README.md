@@ -332,16 +332,16 @@ Also you can look inside our [test](test/) folder, there are many different thin
 We started testing the library for different platforms. This table provides some sort of description for compatibility.
 If you have tested it, and it compiles, or it perhaps stopped compiling, please feel free to describe the issue in the [issues](https://github.com/librg/librg/issues).
 
-| *Compiler* / Target   | Windows               | Linux                 | macOS                 | iOS               | Android           |
-|:-:|:-:|:-:|:-:|:-:|:-:|
-| *clang C*             | :grey_question:       | :white_check_mark:    | :white_check_mark:    | :grey_question:   | :red_circle:      |
-| *gcc C*               |                       | :white_check_mark:    | :white_check_mark:    |                   | :grey_question:   |
-| *msvc C*              | :white_check_mark:    |                       |                       |                   |                   |
-| *mingw C*             | :white_check_mark:    |                       |                       |                   |                   |
-| *clang C++*           | :grey_question:       | :white_check_mark:    | :white_check_mark:    | :grey_question:   | :red_circle:      |
-| *gcc C++*             |                       | :white_check_mark:    | :grey_question:       |                   | :grey_question:   |
-| *msvc C++*            | :white_check_mark:    |                       |                       |                   |                   |
-| *mingw C++*           | :white_check_mark:    |                       |                       |                   |                   |
+| *Compiler* / Target   | Windows               | Linux                 | macOS                 | iOS                   | Android               |
+|:-:|:-:|:-:|:-:|:-:|:-:    |
+| *clang C*             | :grey_question:       | :white_check_mark:    | :white_check_mark:    | :white_check_mark:    | :red_circle:          |
+| *gcc C*               |                       | :white_check_mark:    | :white_check_mark:    |                       | :grey_question:       |
+| *msvc C*              | :white_check_mark:    |                       |                       |                       |                       |
+| *mingw C*             | :white_check_mark:    |                       |                       |                       |                       |
+| *clang C++*           | :grey_question:       | :white_check_mark:    | :white_check_mark:    | :grey_question:       | :red_circle:          |
+| *gcc C++*             |                       | :white_check_mark:    | :grey_question:       |                       | :grey_question:       |
+| *msvc C++*            | :white_check_mark:    |                       |                       |                       |                       |
+| *mingw C++*           | :white_check_mark:    |                       |                       |                       |                       |
 
 <sub>
 :white_check_mark: - compiles/runs without any errors.  
