@@ -25,30 +25,6 @@
   </sub>
 </div>
 
-## Table of Contents
-
-* [Purpose](#purpose)
-* [Use-cases](#use-cases)
-* [Features](#features)
-* [Plans](#plans)
-* [How it works](#how-it-works)
-    * [General](#general)
-    * [Server streaming](#server-streaming)
-    * [Client streaming](#client-streaming)
-    * [Custom data](#custom-data)
-* [Structure](#structure)
-    * [List](#list)
-    * [Information](#information)
-    * [Build instructions](#build-instructions)
-* [Installation](#installation)
-* [Examples](#examples)
-    * [Server](#server)
-    * [Client](#client)
-    * [Additional](#additional)
-* [Testing](#testing)
-* [Contributors](#contributors)
-* [License](#license)
-
 ## Desciption
 
 Ever wondered why is it always so hard to make a multiplayer game, even the most basic one?
