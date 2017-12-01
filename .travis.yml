@@ -1,14 +1,21 @@
 language: c
-compiler:
-  - clang
-  - gcc
 
 before_install:
-  - curl -sL https://deb.nodesource.com/setup_8.x | sudo -E bash -
-  - sudo apt-get install -y nodejs
+    - curl -sL https://deb.nodesource.com/setup_8.x | sudo -E bash -
+    - sudo apt-get install -y nodejs
+
+after_failure:
+    - curl -v -H User-Agent:bot -H Content-Type:application/json -d '{"content":"Latest build has FAILED!"}' https://discordapp.com/api/webhooks/$DISCORD_WEBHOOK_CHANNEL_ID/$DISCORD_WEBHOOK_TOKEN
+
+after_success:
+    - curl -v -H User-Agent:bot -H Content-Type:application/json -d '{"content":"Latest build has SUCCEEDED!"}' https://discordapp.com/api/webhooks/$DISCORD_WEBHOOK_CHANNEL_ID/$DISCORD_WEBHOOK_TOKEN
 
 script:
-  - npm install
-  - cmake -DLIBRG_TEST=1
-  - make
-  - ./librg_test
+    - npm install
+    - mkdir -p build
+    - export INCLUDES="-I include -I node_modules/zpl.c/include -I node_modules/zpl_math.c/include -I node_modules/zpl_cull.c/include -I node_modules/zpl_event.c/include -I node_modules/enet.c/include -DHAS_SOCKLEN_T=1"
+    - export LINKER="-pthread -lm -ldl"
+    - gcc -g -std=c99 $INCLUDES test/build-test.c $LINKER -o build/test-gcc-c.o && build/test-gcc-c.o
+    - clang -g -std=c99 $INCLUDES test/build-test.c $LINKER -o build/test-clang-c.o && build/test-clang-c.o
+    - g++ -g -std=c++11 $INCLUDES test/build-test.cpp $LINKER -o build/test-gpp-cpp.o && build/test-gpp-cpp.o
+    - clang++ -g -std=c++11 $INCLUDES test/build-test.cpp $LINKER -o build/test-clang-cpp.o && build/test-clang-cpp.o

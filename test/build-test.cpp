@@ -1,4 +1,5 @@
 #define LIBRG_IMPLEMENTATION
+#define LIBRG_CXX11_EXTENSIONS
 #include <librg.h>
 
 void on_connect_accepted(librg_event_t *event) {
@@ -17,6 +18,9 @@ int main() {
 
     // adding event handlers
     librg_event_add(&ctx, LIBRG_CONNECTION_ACCEPT, on_connect_accepted);
+
+    librg_event_t e = {0};
+    librg_event_trigger(&ctx, 42, &e);
 
     // starting server
     librg_address_t address = {0}; address.port = 27010;
