@@ -75,23 +75,18 @@ void on_connect_refused(librg_event_t *event) {
 }
 
 void on_entity_create(librg_event_t *event) {
-    event->entity->user_data = zpl_malloc(sizeof(hero_t));
-    hero_t *hero = (hero_t *)event->entity->user_data;
-    librg_data_rptr(event->data, event->entity->user_data, sizeof(hero->stream));
-
-    hero->curr_pos = event->entity->position;
-    hero->last_pos = event->entity->position;
-    hero->target_pos = event->entity->position;
-    hero->delta = 0.0f;
-
     switch (librg_entity_type(event->ctx, event->entity->id)) {
         case DEMO_TYPE_PLAYER:
             break;
         case DEMO_TYPE_NPC: {
-            // hero_t hero_;
-            // librg_data_rptr(event->data, &hero_, sizeof(hero_));
-            // librg_attach_hero(event->ctx, event->entity, &hero_);
+            event->entity->user_data = zpl_malloc(sizeof(hero_t));
+            hero_t *hero = (hero_t *)event->entity->user_data;
+            librg_data_rptr(event->data, event->entity->user_data, sizeof(hero->stream));
 
+            hero->curr_pos = event->entity->position;
+            hero->last_pos = event->entity->position;
+            hero->target_pos = event->entity->position;
+            hero->delta = 0.0f;
         } break;
     }
 }

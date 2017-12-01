@@ -45,17 +45,14 @@ void on_connect_accepted(librg_event_t *event) {
 // }
 
 void on_entity_create_forplayer(librg_event_t *event) {
-    // switch (event->entity->type) {
-    //     case DEMO_TYPE_PLAYER:
-    //         break;
-    //     case DEMO_TYPE_NPC: {
-            // hero_t* hero = librg_fetch_hero(event->ctx, event->entity);
-            // librg_data_wptr(event->data, hero, sizeof(*hero));
-
+     switch (event->entity->type) {
+         case DEMO_TYPE_PLAYER:
+             break;
+         case DEMO_TYPE_NPC: {
             hero_t *hero = (hero_t *)event->entity->user_data;
             librg_data_wptr(event->data, event->entity->user_data, sizeof(hero->stream));
-    //     } break;
-    // }
+         } break;
+     }
 }
 
 void on_entity_update_forplayer(librg_event_t *event) {
