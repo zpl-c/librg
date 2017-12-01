@@ -43,7 +43,6 @@ void on_entity_update_forplayer(librg_event_t *event) {
 
 
 void ai_think(librg_ctx_t *ctx) {
-
     for (int i = 0; i < ctx->max_entities; i++)
     {
         if (!librg_entity_valid(ctx, i)) continue;
