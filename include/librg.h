@@ -82,8 +82,9 @@
 
 #ifdef ZPL_SYSTEM_WINDOWS
 #define _WINSOCK_DEPRECATED_NO_WARNINGS
-#include <enet.h>
 #endif
+
+#include <enet.h>
 
 #endif
 
