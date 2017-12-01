@@ -92,15 +92,6 @@ void on_entity_create(librg_event_t *event) {
 }
 
 void on_entity_update(librg_event_t *event) {
-    // librg_transform_t *transform = librg_fetch_transform(event->entity);
-
-    // librg_log("moving entity %u at: %f %f %f\n",
-    //     event->entity,
-    //     transform->position.x,
-    //     transform->position.y,
-    //     transform->position.z
-    // );
-
     hero_t *hero = (hero_t *)event->entity->user_data;
     if (!hero) return;
 
@@ -110,14 +101,7 @@ void on_entity_update(librg_event_t *event) {
 }
 
 void on_client_entity_update(librg_event_t *event) {
-//     librg_transform_t *transform = librg_fetch_transform(player);
-//     if (!transform) return;
-
-//     librg_log("sending pos: %f %f %f\n",
-//         transform->position.x,
-//         transform->position.y,
-//         transform->position.z
-//     );
+    // ..
 }
 
 /**
@@ -151,9 +135,6 @@ void render_entity(librg_ctx_t *ctx, librg_entity_id entity) {
     SDL_Rect position = default_position();
     librg_entity_t *blob = librg_entity_fetch(ctx, entity);
 
-    // librg_transform_t *transform = librg_fetch_transform(ctx, entity);
-    // hero_t *hero = librg_fetch_hero(ctx, entity);
-
     hero_t *hero = (hero_t *)blob->user_data;
 
     if (entity == player || !hero) {
@@ -183,16 +164,9 @@ void render_entity(librg_ctx_t *ctx, librg_entity_id entity) {
         SDL_RenderFillRect( sdl_renderer, &zone );
     }
 
-    // if (hero && hero->cur_hp > 0) {
-        position.h = 5;
-        SDL_SetRenderDrawColor(sdl_renderer, 255, 0, 0, 150);
-        SDL_RenderFillRect(sdl_renderer, &position);
-
-    //     position.w = 20 * (hero->cur_hp / (float)hero->max_hp);
-
-    //     SDL_SetRenderDrawColor(sdl_renderer, 0, 255, 0, 150);
-    //     SDL_RenderFillRect(sdl_renderer, &position);
-    // }
+    position.h = 5;
+    SDL_SetRenderDrawColor(sdl_renderer, 255, 0, 0, 150);
+    SDL_RenderFillRect(sdl_renderer, &position);
 }
 
 void render(librg_ctx_t *ctx)
@@ -223,8 +197,6 @@ void render(librg_ctx_t *ctx)
 }
 
 void on_entity_remove(librg_event_t *event) {
-    // librg_log("calling destroy %d\n", event->entity);
-
     if (event->entity->type == DEMO_TYPE_NPC) {
         zpl_mfree(event->entity->user_data);
     }
@@ -233,8 +205,8 @@ void on_entity_remove(librg_event_t *event) {
 void interpolate_npcs(librg_ctx_t *ctx) {
     for (u32 i = 0; i < ctx->max_entities; i++) {
         if (i == player) continue;
-        
-        librg_entity_t *entity = librg_entity_fetch(ctx, i); 
+
+        librg_entity_t *entity = librg_entity_fetch(ctx, i);
 
         if (!entity) continue;
 
@@ -345,17 +317,6 @@ int main(int argc, char *argv[]) {
             blob->position.x = (f32)camera.x;
             blob->position.y = (f32)camera.y;
         }
-
-        // if (keys_held[SDLK_t] && blob) {
-        //     zpl_printf("triggering 1 entity spawn server-side.\n");
-
-        //     librg_send_all(&ctx, 42, librg_lambda(data), {
-        //        librg_data_wptr(&data, &blob->position, sizeof(blob->position));
-        //     });
-
-        //     // keys_held[SDLK_t] = false;
-        // }
-
 
         librg_tick(&ctx);
         interpolate_npcs(&ctx);

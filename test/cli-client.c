@@ -21,7 +21,7 @@ void on_entity_create(librg_event_t *event) {
 }
 
 void on_entity_update(librg_event_t *event) {
-    librg_data_rf32(event->data);
+    // ...
 }
 
 int main() {
