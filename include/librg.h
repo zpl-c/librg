@@ -1705,13 +1705,9 @@ extern "C" {
             librg_table_t next_snapshot = { 0 };
             librg_table_init(&next_snapshot, ctx->allocator);
 
-            zpl_array_t(librg_entity_id) queue;
-            // librg_entity_id *queue_ptr;
-
             // fetch entities in the steram zone
+            zpl_array_t(librg_entity_id) queue;
             usize queue_count = librg_entity_query(ctx, player, &queue);
-            // librg_log("outside: %X \n", queue);
-            // librg_log("outside: %X \n", blob->last_query);
 
             u32 created_entities = 0;
             u32 updated_entities = cast(u32)queue_count;
@@ -1940,9 +1936,6 @@ extern "C" {
 
     librg_inline void librg__execute_server_entity_insert(librg_ctx_t *ctx) {
         librg_assert(ctx);
-
-        // clear (remove for )
-        //zplc_clear(&ctx->streamer);
 
         // fill up
         librg_entity_iteratex(ctx, LIBRG_ENTITY_ALIVE, entity, {
