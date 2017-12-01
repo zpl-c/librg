@@ -117,10 +117,6 @@ int main() {
     zpl_timer_set(tick_timer, 1000 * 1000, -1, measure);
     zpl_timer_start(tick_timer, 1000);
 
-    zpl_printf("librg_ctx_t: %d\n", sizeof(librg_data_t));
-    zpl_printf("librg_message_t: %d\n", sizeof(librg_peer_t));
-    zpl_printf("librg_event_t: %d\n", sizeof(librg_packet_t));
-
     while (true) {
         librg_tick(&ctx);
         zpl_sleep_ms(1);

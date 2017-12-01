@@ -256,14 +256,12 @@ extern "C" {
      */
 
     enum {
-        LIBRG_ENTITY_NONE       = 0,
-        LIBRG_ENTITY_ALIVE      = (1 << 0),
-
-        LIBRG_ENTITY_CLIENT     = (1 << 4),
-        LIBRG_ENTITY_IGNORING   = (1 << 5),
-        LIBRG_ENTITY_QUERIED    = (1 << 6),
-
-        LIBRG_ENTITY_CONTROLLED = (1 << 10),
+        LIBRG_ENTITY_NONE       = 0, /* general flag, all destroyed/non-created entities have it */
+        LIBRG_ENTITY_ALIVE      = (1 << 0), /* general flag, all created entities have it */
+        LIBRG_ENTITY_CLIENT     = (1 << 1), /* flag describing entities created for client peer */
+        LIBRG_ENTITY_IGNORING   = (1 << 2), /* flag showing that entity has ignore overrides */
+        LIBRG_ENTITY_QUERIED    = (1 << 3), /* flag showing that entity has a cached culler query */
+        LIBRG_ENTITY_CONTROLLED = (1 << 4), /* flag showing if the entity is controlled(streamed) by some peer */
     };
 
     /**
@@ -309,12 +307,10 @@ extern "C" {
 
     typedef enum {
         LIBRG_EVENT_NONE        = 0,        /* default empty user-created event */
-
         LIBRG_EVENT_REJECTED    = (1 << 0), /* whether or not this event was rejected */
         LIBRG_EVENT_REJECTABLE  = (1 << 1), /* can this event be rejected by user */
-
-        LIBRG_EVENT_REMOTE      = (1 << 4), /* event was based on network message */
-        LIBRG_EVENT_LOCAL       = (1 << 5), /* event was created locally */
+        LIBRG_EVENT_REMOTE      = (1 << 2), /* event was based on network message */
+        LIBRG_EVENT_LOCAL       = (1 << 3), /* event was created locally */
     } librg_event_flag_e;
 
 

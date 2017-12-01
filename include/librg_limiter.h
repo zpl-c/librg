@@ -1,3 +1,10 @@
+/**
+ * An example limiter implementation
+ *
+ * Can be used to reduce number of udpate sends for every entity
+ * Can be easily modified to one's needs
+ */
+
 #ifndef LIBRG_LIMITER_INCLUDE_H
 #define LIBRG_LIMITER_INCLUDE_H
 
