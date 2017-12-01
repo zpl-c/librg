@@ -9,7 +9,7 @@
 
 void on_connect_request(librg_event_t *event) {
     if (librg_data_ru32(event->data) != 42) {
-        return librg_event_reject(event);
+        librg_event_reject(event);
     }
 }
 
