@@ -3,10 +3,15 @@
 #include <librg.h>
 #include <librg_limiter.h>
 #include <SDL.h>
+
+#define DEMO_CLIENT
 #include "demo-defines.h"
 
 #define SIZE_X 800
 #define SIZE_Y 600
+
+zpl_global f64 last_delta;
+zpl_global f64 last_time;
 
 /**
  * SDL PART
@@ -79,7 +84,13 @@ void on_entity_create(librg_event_t *event) {
             // librg_attach_hero(event->ctx, event->entity, &hero_);
 
             event->entity->user_data = zpl_malloc(sizeof(hero_t));
-            librg_data_rptr(event->data, event->entity->user_data, sizeof(hero_t));
+            hero_t *hero = (hero_t *)event->entity->user_data;
+            librg_data_rptr(event->data, event->entity->user_data, sizeof(hero->stream));
+
+            hero->curr_pos = event->entity->position;
+            hero->last_pos = event->entity->position;
+            hero->target_pos = event->entity->position;
+            hero->delta = 0.0f;
         } break;
     }
 }
@@ -93,6 +104,12 @@ void on_entity_update(librg_event_t *event) {
     //     transform->position.y,
     //     transform->position.z
     // );
+
+    hero_t *hero = (hero_t *)event->entity->user_data;
+
+    hero->last_pos = hero->target_pos;
+    hero->target_pos = event->entity->position;
+    hero->delta = .0f;
 }
 
 void on_client_entity_update(librg_event_t *event) {
@@ -140,8 +157,16 @@ void render_entity(librg_ctx_t *ctx, librg_entity_id entity) {
     // librg_transform_t *transform = librg_fetch_transform(ctx, entity);
     // hero_t *hero = librg_fetch_hero(ctx, entity);
 
-    position.x += blob->position.x - 10;
-    position.y += blob->position.y - 10;
+    hero_t *hero = (hero_t *)blob->user_data;
+
+    if (entity == player) {
+        position.x += blob->position.x - 10;
+        position.y += blob->position.y - 10;
+    }
+    else {
+        position.x += hero->curr_pos.x - 10;
+        position.y += hero->curr_pos.y - 10;
+    }
 
     position.w = 20;
     position.h = 20;
@@ -208,6 +233,25 @@ void on_entity_remove(librg_event_t *event) {
     }
 }
 
+void interpolate_npcs(librg_ctx_t *ctx) {
+    for (u32 i = 0; i < ctx->max_entities; i++) {
+        if (i == player) continue;
+        
+        librg_entity_t *entity = librg_entity_fetch(ctx, i); 
+
+        if (!entity) continue;
+
+        hero_t *hero = (hero_t *)entity->user_data;
+
+        hero->delta += (last_delta /(f32) (ctx->tick_delay));
+
+        zplm_vec3_t delta_pos;
+        zplm_vec3_lerp(&delta_pos, hero->last_pos, hero->target_pos, zpl_clamp01(hero->delta));
+
+        hero->curr_pos = delta_pos;
+    }
+}
+
 
 bool shooting = false;
 bool keys_held[323] = { false };
@@ -235,10 +279,10 @@ int main(int argc, char *argv[]) {
                         "==================================================\n");
 
     librg_ctx_t ctx     = {0};
-    ctx.tick_delay      = 32;
+    ctx.tick_delay      = 64;
     ctx.mode            = LIBRG_MODE_CLIENT;
     ctx.world_size      = zplm_vec3(5000.0f, 5000.0f, 0.f);
-    ctx.max_entities    = 15000;
+    ctx.max_entities    = 2000;
 
     librg_init(&ctx);
 
@@ -255,6 +299,10 @@ int main(int argc, char *argv[]) {
     bool loop = true;
 
     while (loop) {
+        f64 curr_time = zpl_utc_time_now();
+        last_delta = (curr_time - last_time) / 1000.f;
+        last_time = curr_time;
+
         SDL_Event event;
 
         while (SDL_PollEvent(&event)) {
@@ -312,8 +360,8 @@ int main(int argc, char *argv[]) {
 
 
         librg_tick(&ctx);
+        interpolate_npcs(&ctx);
         render(&ctx);
-
     }
 
     librg_network_stop(&ctx);

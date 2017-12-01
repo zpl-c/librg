@@ -3,6 +3,8 @@
 #define LIBRG_LIMITER_IMPLEMENTATION
 #include <librg.h>
 #include <librg_limiter.h>
+
+#define DEMO_SERVER
 #include "demo-defines.h"
 
 void on_connect_request(librg_event_t *event) {
@@ -22,13 +24,13 @@ void on_connect_accepted(librg_event_t *event) {
     );
 
     hero_t hero_ = {0};
-    hero_.max_hp = 100;
-    hero_.cur_hp = 40;
+    hero_.stream.max_hp = 100;
+    hero_.stream.cur_hp = 40;
 
     event->entity->user_data = zpl_malloc(sizeof(hero_));
     *(hero_t *)event->entity->user_data = hero_;
     hero_t *hero = (hero_t *)event->entity->user_data;
-    librg_limiter_init(&hero->limiter);
+    librg_limiter_init(&hero->stream.limiter);
 
     // event->entity->update_policy = LIBRG_ENTITY_UPDATE_DYNAMIC;
     // event->entity->update_initial_rate = event->entity->update_rate = 32.f;
@@ -55,13 +57,14 @@ void on_entity_create_forplayer(librg_event_t *event) {
             // hero_t* hero = librg_fetch_hero(event->ctx, event->entity);
             // librg_data_wptr(event->data, hero, sizeof(*hero));
 
-            librg_data_wptr(event->data, event->entity->user_data, sizeof(hero_t));
+            hero_t *hero = (hero_t *)event->entity->user_data;
+            librg_data_wptr(event->data, event->entity->user_data, sizeof(hero->stream));
         } break;
     }
 }
 
 void on_entity_update_forplayer(librg_event_t *event) {
-    librg_limiter_fire(event, &((hero_t *)event->entity->user_data)->limiter);
+    librg_limiter_fire(event, &((hero_t *)event->entity->user_data)->stream.limiter);
 
     //librg_log("entity %u update rate: %f\n", event->entity->id, event->entity->update_rate);
 }
@@ -77,38 +80,38 @@ void ai_think(librg_ctx_t *ctx) {
 
             hero_t *hero = entity->user_data;
 
-            if (hero->walk_time == 0) {
-                hero->walk_time = 1000;
-                hero->accel.x += (rand() % 3 - 1.0) / 10.0;
-                hero->accel.y += (rand() % 3 - 1.0) / 10.0;
+            if (hero->stream.walk_time == 0) {
+                hero->stream.walk_time = 1000;
+                hero->stream.accel.x += (rand() % 3 - 1.0) / 10.0;
+                hero->stream.accel.y += (rand() % 3 - 1.0) / 10.0;
 
-                hero->accel.x = (hero->accel.x > -1.0) ? ((hero->accel.x < 1.0) ? hero->accel.x : 1.0) : -1.0;
-                hero->accel.y = (hero->accel.y > -1.0) ? ((hero->accel.y < 1.0) ? hero->accel.y : 1.0) : -1.0;
+                hero->stream.accel.x = (hero->stream.accel.x > -1.0) ? ((hero->stream.accel.x < 1.0) ? hero->stream.accel.x : 1.0) : -1.0;
+                hero->stream.accel.y = (hero->stream.accel.y > -1.0) ? ((hero->stream.accel.y < 1.0) ? hero->stream.accel.y : 1.0) : -1.0;
             }
             else {
                 zplm_vec3_t curpos = entity->position;
 
-                curpos.x += hero->accel.x;
-                curpos.y += hero->accel.y;
+                curpos.x += hero->stream.accel.x;
+                curpos.y += hero->stream.accel.y;
 
                 if (curpos.x < 0 || curpos.x >= 5000) {
-                    curpos.x += hero->accel.x * -2;
-                    hero->accel.x *= -1;
+                    curpos.x += hero->stream.accel.x * -2;
+                    hero->stream.accel.x *= -1;
                 }
 
                 if (curpos.y < 0 || curpos.y >= 5000) {
-                    curpos.y += hero->accel.y * -2;
-                    hero->accel.y *= -1;
+                    curpos.y += hero->stream.accel.y * -2;
+                    hero->stream.accel.y *= -1;
                 }
 #define PP(x) x*x
-                if (zplm_vec3_mag2(hero->accel) > PP(0.3)) {
+                if (zplm_vec3_mag2(hero->stream.accel) > PP(0.3)) {
                     entity->position = curpos;
                 }
 #undef PP
-                hero->walk_time -= 32.0f;
+                hero->stream.walk_time -= 32.0f;
 
-                if (hero->walk_time < 0) {
-                    hero->walk_time = 0;
+                if (hero->stream.walk_time < 0) {
+                    hero->stream.walk_time = 0;
                 }
             }
         }
@@ -148,10 +151,10 @@ int main() {
 
     librg_ctx_t ctx     = {0};
     ctx.mode            = LIBRG_MODE_SERVER;
-    ctx.tick_delay      = 32;
+    ctx.tick_delay      = 64;
     ctx.world_size      = zplm_vec3(5000.0f, 5000.0f, 0.f);
     ctx.max_connections = 128;
-    ctx.max_entities    = 15000,
+    ctx.max_entities    = 2000,
 
     librg_init(&ctx);
 
@@ -170,7 +173,7 @@ int main() {
 #endif
 
 #if 1
-    for (isize i = 0; i < 10000; i++) {
+    for (isize i = 0; i < 1200; i++) {
         librg_entity_id enemy = librg_entity_create(&ctx, DEMO_TYPE_NPC);
         librg_entity_t *blob = librg_entity_fetch(&ctx, enemy);
 
@@ -178,15 +181,15 @@ int main() {
         blob->position.y = (float)(2000 - rand() % 4000);
 
         hero_t hero_ = {0};
-        hero_.max_hp = 100;
-        hero_.cur_hp = 40;
+        hero_.stream.max_hp = 100;
+        hero_.stream.cur_hp = 40;
 
-        hero_.accel.x = (rand() % 3 - 1.0);
-        hero_.accel.y = (rand() % 3 - 1.0);
+        hero_.stream.accel.x = (rand() % 3 - 1.0);
+        hero_.stream.accel.y = (rand() % 3 - 1.0);
 
         blob->user_data = zpl_malloc(sizeof(hero_));
         *(hero_t *)blob->user_data = hero_;
-        librg_limiter_init(&((hero_t *)blob->user_data)->limiter);
+        librg_limiter_init(&((hero_t *)blob->user_data)->stream.limiter);
 
         // hero_t *hero = librg_attach_hero(&ctx, enemy, &hero_);
     }

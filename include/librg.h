@@ -79,7 +79,11 @@
 #include <zpl_math.h>
 #include <zpl_cull.h>
 #include <zpl_event.h>
+
+#ifdef ZPL_SYSTEM_WINDOWS
+#define _WINSOCK_DEPRECATED_NO_WARNINGS
 #include <enet.h>
+#endif
 
 #endif
 
