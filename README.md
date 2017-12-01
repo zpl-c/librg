@@ -27,11 +27,11 @@
 
 ## Desciption
 
-Ever wondered why is it always so hard to make a multiplayer game, even the most basic one?
+Have you ever wondered why is it always so hard to make a multi-player game, even the most basic one?
 And the complexity even increases with bigger amounts of players and things you need to sync between your clients.
 This library is designed exactly to solve that problem. It has a simple interface with highly flexible base which allows you to build great things!
 
-Many people think that implementing networking solution for your game project is the most complicated and time consuming task  
+Many people think that implementing networking solution for your game project is the most complicated and time consuming task.
 We believe many people are afraid to even try, which results in the fact, that you almost never see small games made by indie developers having any type of networking involved.
 
 Thus we hope that with this library, which is just a small step in the direction, we might help anyone and everyone who wants to add a multi-player capabilities inside one's game.
@@ -52,7 +52,7 @@ Thus we hope that with this library, which is just a small step in the direction
 
 #### General
 
-As we mentioned before, librg has a simple interface. Like many C libraries, it has some sort of application context, which makes it a thread-safe. Here is sample server code:
+As we've mentioned before, librg has a simple interface. Like many C libraries, it has some sort of application context, which makes it  thread-safe and offers the ability to run multiple instances under the same process. Here is sample server code:
 
 ```c
 int main(int argc, char const *argv[]) {
@@ -75,7 +75,7 @@ int main(int argc, char const *argv[]) {
 
 #### Events
 
-Everything is built around events, something gets created - the related event gets triggered. Your task as a developer is to use these events and write appropirate handlers.
+Everything is built around events, something gets created - the related event gets triggered. Your task as a developer is to use these events and write appropriate handlers.
 
 Let's look at the example, client connects to the server, spawns on the map, and librg triggers `LIBRG_ENTIY_CREATE` event for every entity in the player's range:
 
@@ -96,7 +96,7 @@ void mygame_entity_create(librg_event_t *event) {
     // ...
 ```
 
-This way, the client on his side creates all entities that sever tells him to create.
+This way, the client on his side creates all entities that server tells him to create.
 And the best part is that, server will tell only about those entities that are in the specified range.
 This allows you to have bigger amounts of synced data, using the same amount of bandwidth.
 
@@ -134,12 +134,12 @@ void myclient_entity_update(librg_event_t *event) {
 
 ```
 
-Now when you write data on the server, you just read it back on the client in the same order as it was written. That's it, you have a server streamed sync!
+Now, when you write data on the server, you just read it back on the client in the same order as it was written. That's it, you have a server streamed sync!
 
 #### Messages
 
-After you syncronized your clients with your server state, you want to trigger some actions/commands on the server, so it could become interactive.
-And the way you can do it is quite simple, it is similar to events you are familar already, so it should be an easy task:
+Considering you've already synced your server and clients after reading the previous section, you might want to trigger some actions/commands on the server, so it could become interactive.
+And the way you can do it is quite simple, it is similar to events you are familiar already, so it should be an easy task:
 
 ```c
 /* server side */
@@ -175,7 +175,7 @@ Considering the fact that you probably don't have any game logic on the server, 
 This can be achieved quite easily, you can just call method `librg_entity_control_set` on the server, for specific entity.
 It will make provided client responsive for streaming this entity to the server.
 
-Now, what you need to do is just update that entity data from your local client's game world. And that's also can be achieved quite easily:
+Now, what you need to do is just to update that entity data from your local client's game world. And that can also be achieved quite easily:
 
 ```c
 /* client side */
@@ -192,7 +192,7 @@ void mygame_client_stream(librg_event_t *event) {
     // ...
 ```
 
-Now on the server side, you pretty much do the same, it is very similar to what we did for entity update with only difference, is `LIBRG_CLIENT_STREAMER_UPDATE` event id.
+Now on the server side, you pretty much do the same, it is very similar to what we did for entity update, with only difference being that we use `LIBRG_CLIENT_STREAMER_UPDATE` event id.
 
 #### Additional
 
@@ -260,7 +260,7 @@ If you have tested it, and it compiles, or it perhaps stopped compiling, please 
 
 | *Compiler* / Target   | Windows               | Linux                 | macOS                 | iOS                   | Android               |
 |:-:|:-:|:-:|:-:|:-:|:-:    |
-| *clang C*             | :grey_question:       | :white_check_mark:    | :white_check_mark:    | :white_check_mark:    | :red_circle:          |
+| *clang C*             | :grey_question:       | :white_check_mark:    | :white_check_mark:    | :white_check_mark:    | :white_check_mark:          |
 | *gcc C*               |                       | :white_check_mark:    | :white_check_mark:    |                       | :grey_question:       |
 | *msvc C*              | :white_check_mark:    |                       |                       |                       |                       |
 | *mingw C*             | :white_check_mark:    |                       |                       |                       |                       |
