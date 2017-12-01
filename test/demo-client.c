@@ -161,7 +161,7 @@ void render_entity(librg_ctx_t *ctx, librg_entity_id entity) {
 
     hero_t *hero = (hero_t *)blob->user_data;
 
-    if (entity == player) {
+    if (entity == player || !hero) {
         position.x += blob->position.x - 10;
         position.y += blob->position.y - 10;
     }
@@ -244,6 +244,7 @@ void interpolate_npcs(librg_ctx_t *ctx) {
         if (!entity) continue;
 
         hero_t *hero = (hero_t *)entity->user_data;
+        if (!hero) continue;
 
         hero->delta += (last_delta /(f32) (ctx->tick_delay));
 

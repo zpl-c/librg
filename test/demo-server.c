@@ -27,11 +27,6 @@ void on_connect_accepted(librg_event_t *event) {
     hero_.stream.max_hp = 100;
     hero_.stream.cur_hp = 40;
 
-    event->entity->user_data = zpl_malloc(sizeof(hero_));
-    *(hero_t *)event->entity->user_data = hero_;
-    hero_t *hero = (hero_t *)event->entity->user_data;
-    librg_limiter_init(&hero->stream.limiter);
-
     // event->entity->update_policy = LIBRG_ENTITY_UPDATE_DYNAMIC;
     // event->entity->update_initial_rate = event->entity->update_rate = 32.f;
     // event->entity->update_max_rate = event->entity->update_initial_rate * 100.f;
@@ -64,7 +59,7 @@ void on_entity_create_forplayer(librg_event_t *event) {
 }
 
 void on_entity_update_forplayer(librg_event_t *event) {
-    librg_limiter_fire(event, &((hero_t *)event->entity->user_data)->stream.limiter);
+    //librg_limiter_fire(event, &((hero_t *)event->entity->user_data)->stream.limiter);
 
     //librg_log("entity %u update rate: %f\n", event->entity->id, event->entity->update_rate);
 }
