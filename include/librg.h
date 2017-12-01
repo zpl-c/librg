@@ -221,7 +221,6 @@ extern "C" {
      *
      */
 
-
     struct librg_ctx_t;
 
     typedef ENetPeer   librg_peer_t;
