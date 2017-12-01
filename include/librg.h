@@ -401,12 +401,14 @@ extern "C" {
             librg_data_t streams[LIBRG_DATA_STREAMS_AMOUNT];
         };
 
+#ifdef LIBRG_MULTITHREADED
         struct {
             zpl_atomic32_t signal;
             zpl_atomic32_t work_count;
             zpl_thread_t   *update_workers;
             zpl_mutex_t    *send_lock;
         } threading;
+#endif
 
         zpl_buffer_t(librg_message_cb *) messages;
 
@@ -1832,7 +1834,6 @@ extern "C" {
                 librg_data_went(reliable, entity);
                 removed_entities++;
 
-                
                 // write the rest
                 librg_event_t event = { 0 }; {
                     event.data = reliable;
@@ -1856,8 +1857,9 @@ extern "C" {
             librg_table_destroy(&blob->last_snapshot);
             *last_snapshot = next_snapshot;
 
+#ifdef LIBRG_MULTITHREADED
             if (librg_option_get(LIBRG_MAX_THREADS_PER_UPDATE) > 0) zpl_mutex_lock(ctx->threading.send_lock);
-
+#endif
             // send the data, via differnt channels and reliability setting
             if (librg_data_get_wpos(reliable) > (sizeof(LIBRG_MESSAGE_ID) + sizeof(u32) * 2)) {
                 enet_peer_send(blob->client_peer, librg_option_get(LIBRG_NETWORK_PRIMARY_CHANNEL),
@@ -1869,7 +1871,9 @@ extern "C" {
                 enet_packet_create(unreliable->rawptr, librg_data_get_wpos(unreliable), ENET_PACKET_FLAG_UNRELIABLE_FRAGMENT)
             );
 
+#ifdef LIBRG_MULTITHREADED
             if (librg_option_get(LIBRG_MAX_THREADS_PER_UPDATE) > 0) zpl_mutex_unlock(ctx->threading.send_lock);
+#endif
 
             // and cleanup
             librg_data_reset(reliable);
@@ -1877,6 +1881,7 @@ extern "C" {
         }
     }
 
+#ifdef LIBRG_MULTITHREADED
     isize librg__execute_server_entity_update_worker(zpl_thread_t *thread) {
         librg_update_worker_si_t *si = cast(librg_update_worker_si_t *)thread->user_data;
         librg_ctx_t *ctx = si->ctx;
@@ -1908,6 +1913,7 @@ extern "C" {
 
         return 0;
     }
+#endif
 
     librg_internal void librg__execute_server_entity_update(librg_ctx_t *ctx) {
         librg_assert(ctx);
@@ -1917,6 +1923,7 @@ extern "C" {
             return;
         }
 
+#ifdef LIBRG_MULTITHREADED
         zpl_atomic32_store(&ctx->threading.signal, librg_thread_work);
         zpl_atomic32_store(&ctx->threading.work_count, librg_option_get(LIBRG_MAX_THREADS_PER_UPDATE));
 
@@ -1928,6 +1935,7 @@ extern "C" {
         }
 
         zpl_atomic32_store(&ctx->threading.signal, librg_thread_idle);
+#endif
     }
 
     librg_inline void librg__execute_server_entity_insert(librg_ctx_t *ctx) {
@@ -2269,6 +2277,7 @@ extern "C" {
         zplc_init(&ctx->streamer, ctx->allocator, dimension, world, ctx->min_branch_size, librg_option_get(LIBRG_MAX_ENTITIES_PER_BRANCH));
         librg_table_init(&ctx->entity.ignored, ctx->allocator);
 
+#ifdef LIBRG_MULTITHREADED
         // threading
         usize thread_count = librg_option_get(LIBRG_MAX_THREADS_PER_UPDATE);
         if (thread_count > 0) {
@@ -2296,6 +2305,7 @@ extern "C" {
                 zpl_thread_start(ctx->threading.update_workers + i, librg__execute_server_entity_update_worker, si);
             }
         }
+#endif
 
         // events
         zplev_init(&ctx->events, ctx->allocator);
@@ -2340,6 +2350,7 @@ extern "C" {
         zplc_free(&ctx->streamer);
         librg_table_destroy(&ctx->entity.ignored);
 
+#ifdef LIBRG_MULTITHREADED
         // threading
         usize thread_count = librg_option_get(LIBRG_MAX_THREADS_PER_UPDATE);
         if (thread_count > 0) {
@@ -2353,6 +2364,7 @@ extern "C" {
             zpl_mutex_destroy(ctx->threading.send_lock);
             zpl_free(ctx->allocator, ctx->threading.send_lock);
         }
+#endif
 
         for (isize i = 0; i < LIBRG_DATA_STREAMS_AMOUNT; ++i) {
             librg_data_free(&ctx->streams[i]);
