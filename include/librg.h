@@ -24,6 +24,7 @@
  * sdl2.h
  *
  * Version History:
+ * 3.0.2 - Dependency updates
  * 3.0.1 - minor api patch
  * 3.0.0 - contexts, major api changes, fried potato, other stuff
  *
