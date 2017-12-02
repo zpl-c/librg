@@ -24,6 +24,7 @@
  * sdl2.h
  *
  * Version History:
+ * 3.0.3 - Small fixes
  * 3.0.2 - Dependency updates
  * 3.0.1 - minor api patch
  * 3.0.0 - contexts, major api changes, fried potato, other stuff
@@ -150,6 +151,11 @@ extern "C" {
     #define librg_bit_set(A,k)     ( A[(k/32)] |= (1 << (k%32)) )
     #define librg_bit_clear(A,k)   ( A[(k/32)] &= ~(1 << (k%32)) )
     #define librg_bit_test(A,k)    ( A[(k/32)] & (1 << (k%32)) )
+
+    #ifndef LIBRG_DATA_GROW_FORMULA
+    #define LIBRG_DATA_GROW_FORMULA(x) (2*(x) + 16)
+    #endif
+
 
     #define LIBRG_MESSAGE_ID                         u16
     #define LIBRG_DATA_STREAMS_AMOUNT                4
@@ -964,7 +970,7 @@ extern "C" {
     librg_inline void librg_data_grow(librg_data_t *data, usize min_size) {
         librg_assert(data && data->rawptr);
 
-        usize new_capacity = ZPL_BS_GROW_FORMULA(data->capacity);
+        usize new_capacity = LIBRG_DATA_GROW_FORMULA(data->capacity);
         if (new_capacity < (min_size))
             new_capacity = (min_size);
 
