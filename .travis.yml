@@ -5,10 +5,10 @@ before_install:
     - sudo apt-get install -y nodejs
 
 after_failure:
-    - curl -v -H User-Agent:bot -H Content-Type:application/json -d '{"content":"Latest build has FAILED!"}' https://discordapp.com/api/webhooks/$DISCORD_WEBHOOK_CHANNEL_ID/$DISCORD_WEBHOOK_TOKEN
+    - curl -v -H User-Agent:bot -H Content-Type:application/json -d '{"content":"**librg** Latest build has FAILED!"}' https://discordapp.com/api/webhooks/$DISCORD_WEBHOOK_CHANNEL_ID/$DISCORD_WEBHOOK_TOKEN
 
 after_success:
-    - curl -v -H User-Agent:bot -H Content-Type:application/json -d '{"content":"Latest build has SUCCEEDED!"}' https://discordapp.com/api/webhooks/$DISCORD_WEBHOOK_CHANNEL_ID/$DISCORD_WEBHOOK_TOKEN
+    - curl -v -H User-Agent:bot -H Content-Type:application/json -d '{"content":"**librg** Latest build has SUCCEEDED!"}' https://discordapp.com/api/webhooks/$DISCORD_WEBHOOK_CHANNEL_ID/$DISCORD_WEBHOOK_TOKEN
 
 script:
     - npm install
