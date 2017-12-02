@@ -5,7 +5,41 @@
 #include <librg_limiter.h>
 
 #define DEMO_SERVER
-#include "demo-defines.h"
+
+enum {
+    DEMO_SPAWN_BLOCK = LIBRG_EVENT_LAST,
+};
+
+enum {
+    DEMO_TYPE_PLAYER,
+    DEMO_TYPE_NPC,
+};
+
+// enum {
+//     component_hero = librg_component_last,
+// };
+
+typedef struct {
+
+    struct {
+        zplm_vec3_t accel;
+        f32 walk_time;
+        f32 cooldown;
+        i32 max_hp;
+        i32 cur_hp;
+        librg_limiter_t limiter;
+    } stream;
+
+#ifdef DEMO_CLIENT
+    // interpolation
+    f32 delta;
+    zplm_vec3_t curr_pos, last_pos, target_pos;
+#endif
+} hero_t;
+
+// generate methods for components
+// librg_component(hero, component_hero, hero_t);
+
 
 void on_connect_request(librg_event_t *event) {
     if (librg_data_ru32(event->data) != 42) {
@@ -132,11 +166,10 @@ int main() {
 
 #if 1
     for (isize i = 0; i < 1200; i++) {
-        librg_entity_id enemy = librg_entity_create(&ctx, DEMO_TYPE_NPC);
-        librg_entity_t *blob = librg_entity_fetch(&ctx, enemy);
+        librg_entity_t *enemy = librg_entity_create(&ctx, DEMO_TYPE_NPC);
 
-        blob->position.x = (float)(2000 - rand() % 4000);
-        blob->position.y = (float)(2000 - rand() % 4000);
+        enemy->position.x = (float)(2000 - rand() % 4000);
+        enemy->position.y = (float)(2000 - rand() % 4000);
 
         hero_t hero_ = {0};
         hero_.stream.max_hp = 100;
@@ -145,9 +178,9 @@ int main() {
         hero_.stream.accel.x = (rand() % 3 - 1.0);
         hero_.stream.accel.y = (rand() % 3 - 1.0);
 
-        blob->user_data = zpl_malloc(sizeof(hero_));
-        *(hero_t *)blob->user_data = hero_;
-        librg_limiter_init(&((hero_t *)blob->user_data)->stream.limiter);
+        enemy->user_data = zpl_malloc(sizeof(hero_));
+        *(hero_t *)enemy->user_data = hero_;
+        librg_limiter_init(&((hero_t *)enemy->user_data)->stream.limiter);
     }
 #endif
 
