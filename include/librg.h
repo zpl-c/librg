@@ -24,6 +24,7 @@
  * sdl2.h
  *
  * Version History:
+ * 3.0.5 - Patched librg_callback_cb arg value
  * 3.0.4 - Fixed Android and iOS support
  * 3.0.3 - Small fixes
  * 3.0.2 - Dependency updates
