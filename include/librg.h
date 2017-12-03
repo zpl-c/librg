@@ -24,6 +24,7 @@
  * sdl2.h
  *
  * Version History:
+ * 3.0.4 - Fixed Android and iOS support
  * 3.0.3 - Small fixes
  * 3.0.2 - Dependency updates
  * 3.0.1 - minor api patch
@@ -1211,7 +1212,7 @@ extern "C" {
     }
 
     librg_inline void librg_entity_iterate(librg_ctx_t *ctx, u64 flags, librg_entity_cb callback) {
-        librg_entity_iteratex(ctx, flags, librg_lambda(entity), { callback(ctx, librg_entity_fetch(entity)); });
+        librg_entity_iteratex(ctx, flags, librg_lambda(entity), { callback(ctx, librg_entity_fetch(ctx, entity)); });
     }
 
 

@@ -44,7 +44,7 @@ typedef struct {
 void on_connect_request(librg_event_t *event) {
     u32 secret = librg_data_ru32(event->data);
 
-    librg_log(" ==== secret is %d\n", secret);
+    // librg_log(" ==== secret is %d\n", secret);
     if (secret != 42) {
         librg_event_reject(event);
     }

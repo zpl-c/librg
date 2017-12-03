@@ -151,7 +151,9 @@ SDL_Rect default_position() {
     return position;
 }
 
-void render_entity(librg_ctx_t *ctx, librg_entity_id entity) {
+void render_entity(librg_ctx_t *ctx, librg_entity_t *blob) {
+    librg_entity_id entity = blob->id;
+
     // set render color
     if (entity == player) {
         SDL_SetRenderDrawColor( sdl_renderer, 150, 250, 150, 255 );
@@ -167,7 +169,6 @@ void render_entity(librg_ctx_t *ctx, librg_entity_id entity) {
     }
 
     SDL_Rect position = default_position();
-    librg_entity_t *blob = librg_entity_fetch(ctx, entity);
 
     hero_t *hero = (hero_t *)blob->user_data;
 
