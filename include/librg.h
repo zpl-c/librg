@@ -1161,8 +1161,8 @@ extern "C" {
     }
 
     librg_inline b32 librg_entity_valid(librg_ctx_t *ctx, librg_entity_id id) {
-        librg_assert(ctx && id < ctx->max_entities);
-        return (ctx->entity.list[id].flags & LIBRG_ENTITY_ALIVE);
+        librg_assert(ctx);
+        return (id < ctx->max_entities && (ctx->entity.list[id].flags & LIBRG_ENTITY_ALIVE));
     }
 
     librg_inline u32 librg_entity_type(librg_ctx_t *ctx, librg_entity_id id) {
