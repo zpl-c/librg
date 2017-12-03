@@ -341,7 +341,7 @@ extern "C" {
      * Callbacks
      */
 
-    typedef void (librg_entity_cb)(struct librg_ctx_t *ctx, librg_entity_id entity);
+    typedef void (librg_entity_cb)(struct librg_ctx_t *ctx, librg_entity_t *entity);
     typedef void (librg_message_cb)(librg_message_t *msg);
     typedef void (librg_event_cb)(librg_event_t *event);
 
@@ -1211,7 +1211,7 @@ extern "C" {
     }
 
     librg_inline void librg_entity_iterate(librg_ctx_t *ctx, u64 flags, librg_entity_cb callback) {
-        librg_entity_iteratex(ctx, flags, librg_lambda(entity), { callback(ctx, entity); });
+        librg_entity_iteratex(ctx, flags, librg_lambda(entity), { callback(ctx, librg_entity_fetch(entity)); });
     }
 
 
@@ -1439,6 +1439,7 @@ extern "C" {
             librg_event_trigger(msg->ctx, LIBRG_CONNECTION_ACCEPT, &event);
         }
         else {
+            librg_dbg("librg__connection_refuse\n");
             librg_message_send_to(msg->ctx, LIBRG_CONNECTION_REFUSE, msg->peer, NULL, 0);
 
             event.data   = NULL;
@@ -1450,6 +1451,7 @@ extern "C" {
 
     // CLIENT
     librg_internal void librg__callback_connection_refuse(librg_message_t *msg) {
+        librg_dbg("librg__connection_refuse/n");
         librg__event_create(event, msg);
         librg_event_trigger(msg->ctx, LIBRG_CONNECTION_REFUSE, &event);
     }
