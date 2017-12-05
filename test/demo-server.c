@@ -127,20 +127,20 @@ void ai_think(librg_ctx_t *ctx) {
 }
 
 void measure(void *userptr) {
-	librg_ctx_t *ctx = (librg_ctx_t *)userptr;
+    librg_ctx_t *ctx = (librg_ctx_t *)userptr;
 
-	if (!ctx || !ctx->network.host) return;
+    if (!ctx || !ctx->network.host) return;
 
-	static u32 lastdl = 0;
-	static u32 lastup = 0;
+    static u32 lastdl = 0;
+    static u32 lastup = 0;
 
-	f32 dl = (ctx->network.host->totalReceivedData - lastdl) * 8.0f / (1000.0f * 1000); // mbps
-	f32 up = (ctx->network.host->totalSentData - lastup) * 8.0f / (1000.0f * 1000); // mbps
+    f32 dl = (ctx->network.host->totalReceivedData - lastdl) * 8.0f / (1000.0f * 1000); // mbps
+    f32 up = (ctx->network.host->totalSentData - lastup) * 8.0f / (1000.0f * 1000); // mbps
 
-	lastdl = ctx->network.host->totalReceivedData;
-	lastup = ctx->network.host->totalSentData;
+    lastdl = ctx->network.host->totalReceivedData;
+    lastup = ctx->network.host->totalSentData;
 
-	librg_log("librg_update: took %f ms. Current used bandwidth D/U: (%f / %f) mbps. \r", ctx->last_update, dl, up);
+    librg_log("librg_update: took %f ms. Current used bandwidth D/U: (%f / %f) mbps. \r", ctx->last_update, dl, up);
 }
 
 int main() {
@@ -187,10 +187,10 @@ int main() {
     }
 #endif
 
-	zpl_timer_t *tick_timer = zpl_timer_add(ctx.timers);
-	tick_timer->user_data = (void *)&ctx; /* provide ctx as a argument to timer */
-	zpl_timer_set(tick_timer, 1000 * 1000, -1, measure);
-	zpl_timer_start(tick_timer, 1000);
+    zpl_timer_t *tick_timer = zpl_timer_add(ctx.timers);
+    tick_timer->user_data = (void *)&ctx; /* provide ctx as a argument to timer */
+    zpl_timer_set(tick_timer, 1000 * 1000, -1, measure);
+    zpl_timer_start(tick_timer, 1000);
 
     while (true) {
         librg_tick(&ctx);
