@@ -80,16 +80,16 @@
 #define ENET_IMPLEMENTATION
 #endif
 
-#include <zpl.h>
-#include <zpl_math.h>
-#include <zpl_cull.h>
-#include <zpl_event.h>
+#include "zpl.h"
+#include "zpl_math.h"
+#include "zpl_cull.h"
+#include "zpl_event.h"
 
 #ifdef ZPL_SYSTEM_WINDOWS
 #define _WINSOCK_DEPRECATED_NO_WARNINGS
 #endif
 
-#include <enet.h>
+#include "enet.h"
 
 #endif
 
