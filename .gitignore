@@ -2,6 +2,7 @@
 build/*
 node_modules/
 build-win/*
+pkg/
 
 # vs shit
 *.dir/

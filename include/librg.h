@@ -90,7 +90,9 @@
 #endif
 
 #ifdef ZPL_SYSTEM_UNIX
+#ifndef HAS_SOCKLEN_T
 #define HAS_SOCKLEN_T
+#endif
 #endif
 
 #include "enet.h"
