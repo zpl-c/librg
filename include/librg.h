@@ -89,6 +89,10 @@
 #define _WINSOCK_DEPRECATED_NO_WARNINGS
 #endif
 
+#ifdef ZPL_SYSTEM_UNIX
+#define HAS_SOCKLEN_T
+#endif
+
 #include "enet.h"
 
 #endif
