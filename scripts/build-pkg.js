@@ -14,7 +14,7 @@ const files = [
 ]
 
 const pkg = './pkg/'
-const pkg_includes = './pkg/include/'
+const pkg_includes = './pkg/librg/'
 
 // recreate pkg dir
 fs.rmdirSync(pkg)
