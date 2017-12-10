@@ -89,10 +89,8 @@
 #define _WINSOCK_DEPRECATED_NO_WARNINGS
 #endif
 
-#ifdef ZPL_SYSTEM_UNIX
-#ifndef HAS_SOCKLEN_T
+#if defined(ZPL_SYSTEM_UNIX) && !defined(HAS_SOCKLEN_T)
 #define HAS_SOCKLEN_T
-#endif
 #endif
 
 #include "enet.h"
@@ -2217,7 +2215,7 @@ extern "C" {
                     }
                     else {
                         /* print message id, casted to biggest size */
-                        librg_dbg("network: unknown message: %llu\n", (u64)id);
+                        librg_dbg("network: unknown message: %lu\n", (u64)id);
                     }
 
                     enet_packet_destroy(event.packet);
