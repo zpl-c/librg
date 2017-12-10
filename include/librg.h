@@ -75,14 +75,12 @@
 #ifdef LIBRG_IMPLEMENTATION
 #define ZPL_IMPLEMENTATION
 #define ZPLM_IMPLEMENTATION
-#define ZPLC_IMPLEMENTATION
 #define ZPLEV_IMPLEMENTATION
 #define ENET_IMPLEMENTATION
 #endif
 
 #include "zpl.h"
 #include "zpl_math.h"
-#include "zpl_cull.h"
 #include "zpl_event.h"
 
 #ifdef ZPL_SYSTEM_WINDOWS
@@ -198,6 +196,11 @@ extern "C" {
         LIBRG_MODE_CLIENT,
     };
 
+    enum {
+        LIBRG_SPACE_2D = 2,
+        LIBRG_SPACE_3D = 3,
+    };
+
     /**
      * Default built-in events
      * define your events likes this:
@@ -275,6 +278,7 @@ extern "C" {
         LIBRG_ENTITY_IGNORING   = (1 << 2), /* flag showing that entity has ignore overrides */
         LIBRG_ENTITY_QUERIED    = (1 << 3), /* flag showing that entity has a cached culler query */
         LIBRG_ENTITY_CONTROLLED = (1 << 4), /* flag showing if the entity is controlled(streamed) by some peer */
+        LIBRG_ENTITY_UNUSED     = (1 << 5), /* flag showing whether the entity's space is unused */
     };
 
     /**
@@ -290,7 +294,7 @@ extern "C" {
         f32 stream_range;
 
         void *user_data;
-        zplc_t *stream_branch;
+        struct librg_space_t *stream_branch;
 
         librg_table_t ignored;
         librg_table_t last_snapshot;
@@ -300,6 +304,30 @@ extern "C" {
 
         zpl_array_t(librg_entity_id) last_query;
     } librg_entity_t;
+
+
+    /**
+     * World space structure
+     */
+
+    typedef struct librg_space_t {
+        zpl_allocator_t                          allocator;
+
+        u32                                      max_nodes;
+        isize                                    dimensions;
+        zplm_aabb3_t                             boundary;
+        zplm_vec3_t                              min_bounds;
+        b32                                      use_min_bounds;
+        zpl_array_t(struct librg_space_node_t)   nodes;
+        zpl_array_t(usize)                       free_nodes;
+        zpl_array_t(struct librg_space_t)        spaces;
+    } librg_space_t;
+
+
+    typedef struct librg_space_node_t {
+        librg_entity_t *blob;
+        b32 unused;
+    } librg_space_node_t;
 
 
     /**
@@ -428,7 +456,7 @@ extern "C" {
         zpl_allocator_t allocator;
         zpl_timer_pool  timers;
         zplev_pool      events;
-        zplc_t          streamer;
+        librg_space_t   world;
     } librg_ctx_t;
 
 
@@ -1116,6 +1144,7 @@ extern "C" {
         return NULL;
     }
 
+    b32 librg__space_remove_node(librg_space_t *c, librg_entity_t *tag);
 
     /**
      * Entity destructors
@@ -1135,7 +1164,7 @@ extern "C" {
 
             // remove entity from the streamer
              if (entity->stream_branch) {
-                 zplc_remove(entity->stream_branch, entity->id);
+                 librg__space_remove_node(entity->stream_branch, entity);
              }
         }
 
@@ -1220,25 +1249,44 @@ extern "C" {
         librg_entity_iteratex(ctx, flags, librg_lambda(entity), { callback(ctx, librg_entity_fetch(ctx, entity)); });
     }
 
+    b32 librg__space_intersects(isize dims, zplm_aabb3_t a, zplm_aabb3_t b) {
+        for (i32 i = 0; i < dims; ++i) {
+            if (zpl_abs(a.centre.e[i] - b.centre.e[i]) > (a.half_size.e[i] + b.half_size.e[i])) return false;
+        }
+
+        return true;
+    }
+
+
+    b32 librg__space_contains(isize dims, zplm_aabb3_t a, f32 *point) {
+        for (i32 i = 0; i < dims; ++i) {
+            if (!( a.centre.e[i] - a.half_size.e[i] <= point[i]
+                   && a.centre.e[i] + a.half_size.e[i] >= point[i])) {
+                return false;
+            }
+        }
+
+        return true;
+    }
 
     /**
-     * Queriying
+     * Querying
      */
 
     // custom query method
-    void librg__entity_query(librg_ctx_t *ctx, librg_entity_id entity, zplc_t *c, zplc_bounds_t bounds, librg_entity_id **out_entities) {
+    void librg__entity_query(librg_ctx_t *ctx, librg_entity_id entity, librg_space_t *c, zplm_aabb3_t bounds, librg_entity_id **out_entities) {
         if (c->nodes == NULL) return;
-        if (!zplc__intersects(c->dimensions, c->boundary, bounds)) return;
+        if (!librg__space_intersects(c->dimensions, c->boundary, bounds)) return;
 
         isize nodes_count = zpl_array_count(c->nodes);
         for (i32 i = 0; i < nodes_count; ++i) {
             if (c->nodes[i].unused) continue;
 
-            librg_entity_id target = (librg_entity_id)c->nodes[i].tag;
+            librg_entity_id target = c->nodes[i].blob->id;
 
             if (librg_entity_valid(ctx, target)) {
-                librg_entity_t *blob = librg_entity_fetch(ctx, target);
-                b32 inside = zplc__contains(c->dimensions, bounds, blob->position.e);
+                librg_entity_t *blob = c->nodes[i].blob;
+                b32 inside = librg__space_contains(c->dimensions, bounds, blob->position.e);
 
                 if (inside) {
                     if (!librg_entity_visibility_get(ctx, target)) continue;
@@ -1249,13 +1297,13 @@ extern "C" {
             }
         }
 
-        if(c->trees == NULL) return;
+        if(c->spaces == NULL) return;
 
-        isize trees_count = zpl_array_count(c->trees);
-        if (trees_count == 0) return;
+        isize spaces_count = zpl_array_count(c->spaces);
+        if (spaces_count == 0) return;
 
-        for (i32 i = 0; i < trees_count; ++i) {
-            librg__entity_query(ctx, entity, (c->trees+i), bounds, out_entities);
+        for (i32 i = 0; i < spaces_count; ++i) {
+            librg__entity_query(ctx, entity, (c->spaces+i), bounds, out_entities);
         }
     }
 
@@ -1272,11 +1320,10 @@ extern "C" {
         // reset array to 0
         zpl_array_count(blob->last_query) = 0;
 
-        zplc_bounds_t search_bounds;
+        zplm_aabb3_t search_bounds;
         search_bounds.centre    = blob->position;
         search_bounds.half_size = zplm_vec3(blob->stream_range, blob->stream_range, blob->stream_range);
-
-        librg__entity_query(ctx, entity, &ctx->streamer, search_bounds, &blob->last_query);
+        librg__entity_query(ctx, entity, &ctx->world, search_bounds, &blob->last_query);
         *out_entities = blob->last_query;
 
         return zpl_array_count(blob->last_query);
@@ -1951,6 +1998,151 @@ extern "C" {
 #endif
     }
 
+    b32 librg__space_bounds_small_enough(zplm_aabb3_t a, zplm_vec3_t b) {
+        //TODO(zaklaus): Is this the best way we can determine bounds for k-d ?
+        return a.half_size.x <= b.x && a.half_size.y <= b.y && a.half_size.z <= b.z;
+    }
+
+    zpl_global f32 librg__space_tpl[][3] = {
+        {-1.0f, -1.0f, -1.0f},
+        {+1.0f, -1.0f, -1.0f},
+        {-1.0f, +1.0f, -1.0f},
+        {+1.0f, +1.0f, -1.0f},
+        {-1.0f, -1.0f, +1.0f},
+        {+1.0f, -1.0f, +1.0f},
+        {-1.0f, +1.0f, +1.0f},
+        {+1.0f, +1.0f, +1.0f},
+    };
+
+    void librg__space_split(librg_space_t *c) {
+        zplm_aabb3_t hd = c->boundary;
+        for (i32 i = 0; i < c->dimensions; ++i) {
+            hd.half_size.e[i] /= 2.0f;
+        }
+
+        i32 loops = 4;
+        if (c->dimensions == LIBRG_SPACE_3D)
+            loops = 8;
+
+        f32 p[3] = {0};
+        for (i32 i = 0; i < loops; ++i) {
+            librg_space_t space = {0};
+            zplm_aabb3_t bounds = {0};
+            p[0] = c->boundary.centre.e[0] + hd.half_size.e[0]*librg__space_tpl[i][0];
+            p[1] = c->boundary.centre.e[1] + hd.half_size.e[1]*librg__space_tpl[i][1];
+            p[2] = c->boundary.centre.e[2] + hd.half_size.e[2]*librg__space_tpl[i][2];
+            zpl_memcopy(bounds.centre.e, p, 3 * sizeof(f32));
+            bounds.half_size = hd.half_size;
+
+            space.boundary   = bounds;
+            space.min_bounds = c->min_bounds;
+            space.use_min_bounds = c->use_min_bounds;
+            space.max_nodes  = c->max_nodes;
+            space.dimensions = c->dimensions;
+            space.allocator  = c->allocator;
+
+            zpl_array_append(c->spaces, space);
+        }
+    }
+
+    b32 librg__space_remove_node(librg_space_t *c, librg_entity_t *tag) {
+        if (c->nodes == NULL) return false;
+        for (i32 i = 0; i < zpl_array_count(c->nodes); ++i) {
+            librg_space_node_t *node = &c->nodes[i];
+            if (node->blob == tag) {
+                if (node->unused) return false;
+                if (c->free_nodes == NULL) {
+                    zpl_array_init_reserve(c->free_nodes, c->allocator, c->max_nodes);
+                }
+                zpl_array_append(c->free_nodes, i);
+                node->unused = true;
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    void librg__space_init(librg_space_t *c, zpl_allocator_t a, isize dims, zplm_aabb3_t bounds, zplm_vec3_t min_bounds, u32 max_nodes) {
+        librg_space_t c_ = {0};
+        *c            = c_;
+        c->allocator  = a;
+        c->boundary   = bounds;
+        c->min_bounds = min_bounds;
+        c->use_min_bounds = zplm_vec3_mag(min_bounds) > 0.0f;
+        c->max_nodes  = max_nodes;
+        c->dimensions = dims;
+
+    }
+
+    void librg__space_clear(librg_space_t *c) {
+        // TODO(ZaKlaus): Support more allocators?
+        if (c->allocator.proc == zpl_arena_allocator_proc) {
+            zpl_free_all(c->allocator);
+            c->nodes = NULL;
+            c->spaces = NULL;
+            return;
+        }
+
+        if (c->nodes) {
+            zpl_array_free(c->nodes);
+            c->nodes = NULL;
+        }
+
+        if (!c->spaces) return;
+        isize spaces_count = zpl_array_count(c->spaces);
+        for (i32 i = 0; i < spaces_count; ++i) {
+            librg__space_clear((c->spaces+i));
+        }
+
+        zpl_array_free(c->spaces);
+        if (c->free_nodes) zpl_array_free(c->free_nodes);
+        c->spaces = NULL;
+        c->free_nodes = NULL;
+    }
+
+    librg_inline librg_space_t *librg__space_insert(librg_ctx_t *ctx, librg_space_t *space, librg_space_node_t node) {
+        if (!librg__space_contains(space->dimensions, space->boundary, node.blob->position.e)) return NULL;
+
+        if (space->nodes == NULL) {
+            zpl_array_init(space->nodes, space->allocator);
+        }
+
+        if (space->free_nodes && zpl_array_count(space->free_nodes) > 0) {
+            node.unused = false;
+            space->nodes[space->free_nodes[zpl_array_count(space->free_nodes)-1]] = node;
+            zpl_array_pop(space->free_nodes);
+            return space;
+        }
+
+        if ((usize)zpl_array_count(space->nodes) < space->max_nodes) {
+            insert:
+            zpl_array_append(space->nodes, node);
+            return space;
+        }
+
+        if (space->use_min_bounds && librg__space_bounds_small_enough(space->boundary, space->min_bounds)) {
+            goto insert;
+        }
+
+        if (space->spaces == NULL) {
+            zpl_array_init(space->spaces, space->allocator);
+        }
+
+        isize spaces_count = zpl_array_count(space->spaces);
+        if (spaces_count == 0) {
+            librg__space_split(space);
+        }
+
+        spaces_count = zpl_array_count(space->spaces);
+        for (i32 i = 0; i < spaces_count; ++i) {
+            librg_space_t *sub = librg__space_insert(ctx, (space->spaces+i), node);
+            if (sub) return sub;
+        }
+
+        return NULL;
+    }
+
     librg_inline void librg__execute_server_entity_insert(librg_ctx_t *ctx) {
         librg_assert(ctx);
 
@@ -1958,23 +2150,21 @@ extern "C" {
         librg_entity_iteratex(ctx, LIBRG_ENTITY_ALIVE, entity, {
             librg_entity_t *blob = &ctx->entity.list[entity];
 
-            zplc_node_t node = { 0 };
+            librg_space_node_t node = { 0 };
 
-            node.tag        = entity;
-            node.position   = blob->position;
+            node.blob        = blob;
 
-             if (blob->stream_branch == NULL) {
-                 blob->stream_branch = zplc_insert(&ctx->streamer, node);
-             }
-             else {
-                 zplc_t *branch = blob->stream_branch;
-                 b32 contains = zplc__contains(branch->dimensions, branch->boundary, blob->position.e);
-
-                 if (!contains) {
-                     zplc_remove(branch, entity);
-                     blob->stream_branch = zplc_insert(&ctx->streamer, node);
-                 }
-             }
+            if (blob->stream_branch == NULL) {
+                blob->stream_branch = librg__space_insert(ctx, &ctx->world, node);
+            }
+            else {
+                librg_space_t *branch = blob->stream_branch;
+                b32 contains = librg__space_contains(branch->dimensions, branch->boundary, blob->position.e);
+                if (!contains) {
+                    librg__space_remove_node(branch, blob);
+                    blob->stream_branch = librg__space_insert(ctx, &ctx->world, node);
+                }
+            }
         });
     }
 
@@ -2272,10 +2462,10 @@ extern "C" {
         }
 
         // streamer
-        zplc_bounds_t world = {0};
-        world.centre = zplm_vec3(0, 0, 0);
+        zplm_aabb3_t world = {0};
+        world.centre    = zplm_vec3(0, 0, 0);
         world.half_size = zplm_vec3(ctx->world_size.x, ctx->world_size.y, ctx->world_size.z);
-        zplc_dim_e dimension = ctx->world_size.z == 0.0f ? zplc_dim_2d_ev : zplc_dim_3d_ev;
+        u32 dimension   = ctx->world_size.z == 0.0f ? LIBRG_SPACE_2D : LIBRG_SPACE_3D;
 
         if (ctx->min_branch_size.x == -1.0f &&
             ctx->min_branch_size.y == -1.0f &&
@@ -2284,7 +2474,7 @@ extern "C" {
             ctx->min_branch_size = no_min_bounds;
         }
 
-        zplc_init(&ctx->streamer, ctx->allocator, dimension, world, ctx->min_branch_size, librg_option_get(LIBRG_MAX_ENTITIES_PER_BRANCH));
+        librg__space_init(&ctx->world, ctx->allocator, dimension, world, ctx->min_branch_size, librg_option_get(LIBRG_MAX_ENTITIES_PER_BRANCH));
         librg_table_init(&ctx->entity.ignored, ctx->allocator);
 
 #ifdef LIBRG_MULTITHREADED
@@ -2357,7 +2547,7 @@ extern "C" {
         zpl_array_free(ctx->entity.remove_queue);
 
         // streamer
-        zplc_free(&ctx->streamer);
+        librg__space_clear(&ctx->world);
         librg_table_destroy(&ctx->entity.ignored);
 
 #ifdef LIBRG_MULTITHREADED
