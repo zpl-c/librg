@@ -32,4 +32,3 @@ fs.copyFileSync('./include/librg.h', pkg_includes + 'librg.h')
 
 // copy files else
 files.map(file => fs.copyFileSync(file, pkg + file))
-
