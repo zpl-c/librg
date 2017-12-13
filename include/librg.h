@@ -1,7 +1,5 @@
 /**
- * LIBRG - reguider library
- *
- * A library for building simple and elegant cross-platform mmo client-server solutions.
+ * librg - a library for building simple and elegant cross-platform mmo client-server solutions.
  *
  * Usage:
  * #define LIBRG_IMPLEMENTATION exactly in ONE source file right BEFORE including the library, like:
@@ -24,6 +22,7 @@
  * sdl2.h
  *
  * Version History:
+ * 3.0.7 - Fix for entity query dublication for player entities
  * 3.0.5 - Patched librg_callback_cb arg value
  * 3.0.4 - Fixed Android and iOS support
  * 3.0.3 - Small fixes
@@ -1132,11 +1131,11 @@ extern "C" {
         if (entity->flags & LIBRG_ENTITY_CLIENT) {
             entity->client_peer     = NULL;
             librg_table_destroy(&entity->last_snapshot);
+        }
 
-            // remove entity from the streamer
-             if (entity->stream_branch) {
-                 zplc_remove(entity->stream_branch, entity->id);
-             }
+        // remove entity from the streamer
+        if (entity->stream_branch) {
+            zplc_remove(entity->stream_branch, entity->id);
         }
 
         if (entity->flags & LIBRG_ENTITY_QUERIED) {

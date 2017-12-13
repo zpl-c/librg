@@ -1,6 +1,6 @@
 {
   "name": "librg.c",
-  "version": "3.0.6",
+  "version": "3.0.7",
   "description": "Pure C library for building simple and elegant cross-platform mmo client-server solutions.",
   "main": "include/librg.h",
   "directories": {
@@ -23,7 +23,7 @@
     "enet.c": "^1.4.5",
     "zpl.c": "^4.0.1",
     "zpl_cull.c": "^3.1.3",
-    "zpl_event.c": "^1.0.8",
+    "zpl_event.c": "^1.0.9",
     "zpl_math.c": "^1.1.0"
   }
 }
