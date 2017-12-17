@@ -1826,9 +1826,10 @@ extern "C" {
 
                     // request custom data from user
                     librg_event_t event = {0}; {
-                        event.data = reliable;
+                        event.peer   = blob->client_peer;
+                        event.data   = reliable;
                         event.entity = eblob;
-                        event.flags = (LIBRG_EVENT_REJECTABLE | LIBRG_EVENT_LOCAL);
+                        event.flags  = (LIBRG_EVENT_REJECTABLE | LIBRG_EVENT_LOCAL);
                     }
 
                     librg_event_trigger(ctx, LIBRG_ENTITY_CREATE, &event);
@@ -1859,9 +1860,10 @@ extern "C" {
 
                         // request custom data from user
                         librg_event_t event = { 0 }; {
-                            event.data = unreliable;
+                            event.peer   = blob->client_peer;
+                            event.data   = unreliable;
                             event.entity = eblob;
-                            event.flags = (LIBRG_EVENT_REJECTABLE | LIBRG_EVENT_LOCAL);
+                            event.flags  = (LIBRG_EVENT_REJECTABLE | LIBRG_EVENT_LOCAL);
                         }
 
                         librg_event_trigger(ctx, LIBRG_ENTITY_UPDATE, &event);
@@ -1907,9 +1909,10 @@ extern "C" {
 
                 // write the rest
                 librg_event_t event = { 0 }; {
-                    event.data = reliable;
-                    event.entity = blob;
-                    event.flags = (LIBRG_EVENT_REJECTABLE | LIBRG_EVENT_LOCAL);
+                    event.peer   = blob->client_peer;
+                    event.data   = reliable;
+                    event.entity = librg_entity_fetch(ctx, entity);
+                    event.flags  = (LIBRG_EVENT_REJECTABLE | LIBRG_EVENT_LOCAL);
                 }
 
                 librg_event_trigger(ctx, LIBRG_ENTITY_REMOVE, &event);
