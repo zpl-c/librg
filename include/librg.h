@@ -66,47 +66,38 @@
 
 // disable asserts for release build
 #if !defined(LIBRG_DEBUG)
-#define ZPL_ASSERT_MSG(cond, msg, ...)
+#   define ZPL_ASSERT_MSG(cond, msg, ...)
 #endif
 
 #ifndef LIBRG_CUSTOM_INCLUDES
-
-#ifdef LIBRG_IMPLEMENTATION
-#define ZPL_IMPLEMENTATION
-#define ZPLM_IMPLEMENTATION
-#define ZPLEV_IMPLEMENTATION
-#define ENET_IMPLEMENTATION
-#endif
-
-#include "zpl.h"
-#include "zpl_math.h"
-#include "zpl_event.h"
-
-#ifdef ZPL_SYSTEM_WINDOWS
-#define _WINSOCK_DEPRECATED_NO_WARNINGS
-#endif
-
-#if defined(ZPL_SYSTEM_UNIX) && !defined(HAS_SOCKLEN_T)
-#define HAS_SOCKLEN_T
-#endif
-
-#include "enet.h"
-
+#   ifdef LIBRG_IMPLEMENTATION
+#       define ZPL_IMPLEMENTATION
+#       define ZPLM_IMPLEMENTATION
+#       define ZPLEV_IMPLEMENTATION
+#       define ENET_IMPLEMENTATION
+#   endif
+#   include "zpl.h"
+#   include "zpl_math.h"
+#   include "zpl_event.h"
+#   ifdef ZPL_SYSTEM_WINDOWS
+#       define _WINSOCK_DEPRECATED_NO_WARNINGS
+#   endif
+#   if defined(ZPL_SYSTEM_UNIX) && !defined(HAS_SOCKLEN_T)
+#       define HAS_SOCKLEN_T
+#   endif
+#   include "enet.h"
 #endif
 
 #ifdef LIBRG_SHARED
-
-#if defined(_WIN32)
-#define LIBRG_API ZPL_EXTERN __declspec(dllexport)
+#   if defined(_WIN32)
+#       define LIBRG_API ZPL_EXTERN __declspec(dllexport)
+#   else
+#       define LIBRG_API ZPL_EXTERN __attribute__((visibility("default")))
+#   endif
 #else
-#define LIBRG_API ZPL_EXTERN __attribute__((visibility("default")))
-#endif
-#else
-
-#ifndef LIBRG_API
-#define LIBRG_API ZPL_DEF
-#endif
-
+#   ifndef LIBRG_API
+#       define LIBRG_API ZPL_DEF
+#   endif
 #endif
 
 #ifdef __cplusplus
@@ -1164,7 +1155,7 @@ extern "C" {
 
         // remove entity from the streamer
         if (entity->stream_branch) {
-            zplc_remove(entity->stream_branch, entity->id);
+            librg__space_remove_node(entity->stream_branch, entity);
         }
 
         if (entity->flags & LIBRG_ENTITY_QUERIED) {
@@ -2404,7 +2395,7 @@ extern "C" {
                     }
                     else {
                         /* print message id, casted to biggest size */
-                        librg_dbg("network: unknown message: %lu\n", (u64)id);
+                        librg_dbg("network: unknown message: %llu\n", (u64)id);
                     }
 
                     enet_packet_destroy(event.packet);
