@@ -14,14 +14,15 @@
  * Dependencies:
  * zpl.h
  * zpl_math.h
- * zpl_cull.h
- * zpl_event.h
  * enet.h
  *
  * For the demo:
  * sdl2.h
  *
  * Version History:
+ * 3.1.0 - Removed zpl_cull and zpl_event dependencies
+ *
+ *
  * 3.0.7 - Fix for entity query dublication for player entities
  * 3.0.5 - Patched librg_callback_cb arg value
  * 3.0.4 - Fixed Android and iOS support
@@ -70,21 +71,19 @@
 #endif
 
 #ifndef LIBRG_CUSTOM_INCLUDES
-#   ifdef LIBRG_IMPLEMENTATION
-#       define ZPL_IMPLEMENTATION
-#       define ZPLM_IMPLEMENTATION
-#       define ZPLEV_IMPLEMENTATION
-#       define ENET_IMPLEMENTATION
-#   endif
-#   include "zpl.h"
-#   include "zpl_math.h"
-#   include "zpl_event.h"
 #   ifdef ZPL_SYSTEM_WINDOWS
 #       define _WINSOCK_DEPRECATED_NO_WARNINGS
 #   endif
 #   if defined(ZPL_SYSTEM_UNIX) && !defined(HAS_SOCKLEN_T)
 #       define HAS_SOCKLEN_T
 #   endif
+#   ifdef LIBRG_IMPLEMENTATION
+#       define ZPL_IMPLEMENTATION
+#       define ZPLM_IMPLEMENTATION
+#       define ENET_IMPLEMENTATION
+#   endif
+#   include "zpl.h"
+#   include "zpl_math.h"
 #   include "enet.h"
 #endif
 
@@ -336,6 +335,7 @@ extern "C" {
     } librg_message_t;
 
 
+
     typedef enum {
         LIBRG_EVENT_NONE        = 0,        /* default empty user-created event */
         LIBRG_EVENT_REJECTED    = (1 << 0), /* whether or not this event was rejected */
@@ -368,6 +368,9 @@ extern "C" {
     typedef void (librg_entity_cb)(struct librg_ctx_t *ctx, librg_entity_t *entity);
     typedef void (librg_message_cb)(librg_message_t *msg);
     typedef void (librg_event_cb)(librg_event_t *event);
+
+    typedef zpl_array_t(librg_event_cb *) librg_event_block;
+    ZPL_TABLE_DECLARE(static, librg_event_pool, librg_event_pool_, librg_event_block);
 
 
     /**
@@ -443,10 +446,10 @@ extern "C" {
 
         zpl_buffer_t(librg_message_cb *) messages;
 
-        zpl_allocator_t allocator;
-        zpl_timer_pool  timers;
-        zplev_pool      events;
-        librg_space_t   world;
+        zpl_allocator_t     allocator;
+        zpl_timer_pool      timers;
+        librg_event_pool    events;
+        librg_space_t       world;
     } librg_ctx_t;
 
 
@@ -908,6 +911,7 @@ extern "C" {
 extern "C" {
 #endif
 
+    ZPL_TABLE_DEFINE(librg_event_pool, librg_event_pool_, librg_event_block);
     ZPL_TABLE_DEFINE(librg_table_t, librg_table_, u32);
 
     librg_inline void librg_option_set(librg_option_e option, u32 value) {
@@ -926,12 +930,24 @@ extern "C" {
      */
 
     librg_inline u64 librg_event_add(librg_ctx_t *ctx, u64 id, librg_event_cb callback) {
-        return zplev_add(&ctx->events, id, (zplev_cb *)callback);
+        librg_assert(ctx);
+        librg_event_block *block = librg_event_pool_get(&ctx->events, id);
+
+        if (!block) {
+            librg_event_block arr;
+            zpl_array_init(arr, ctx->allocator);
+            librg_event_pool_set(&ctx->events, id, arr);
+            block = librg_event_pool_get(&ctx->events, id);
+        }
+
+        u64 offset = zpl_array_count(block);
+        zpl_array_append(*block, callback);
+        return offset;
     }
 
     void librg_event_trigger(librg_ctx_t *ctx, u64 id, librg_event_t *event) {
         librg_assert(event); event->ctx = ctx;
-        zplev_block *block = zplev_pool_get(&ctx->events, id);
+        librg_event_block *block = librg_event_pool_get(&ctx->events, id);
         if (!block) return;
 
         for (isize i = 0; i < zpl_array_count(*block) && !(event->flags & LIBRG_EVENT_REJECTED); ++i) {
@@ -940,7 +956,12 @@ extern "C" {
     }
 
     librg_inline void librg_event_remove(librg_ctx_t *ctx, u64 id, u64 index) {
-        zplev_remove(&ctx->events, id, index);
+        librg_assert(ctx);
+        librg_event_block *block = librg_event_pool_get(&ctx->events, id);
+
+        if (block) {
+            zpl_array_remove_at(*block, (isize)index);
+        }
     }
 
     librg_inline void librg_event_reject(librg_event_t *event) {
@@ -2498,7 +2519,7 @@ extern "C" {
 #endif
 
         // events
-        zplev_init(&ctx->events, ctx->allocator);
+        librg_event_pool_init(&ctx->events, ctx->allocator);
         zpl_buffer_init(ctx->messages, ctx->allocator, librg_option_get(LIBRG_NETWORK_CAPACITY));
 
         // init timers
@@ -2531,7 +2552,16 @@ extern "C" {
         // free all timers and events first
         zpl_array_free(ctx->timers);
         zpl_buffer_free(ctx->messages, ctx->allocator);
-        zplev_destroy(&ctx->events);
+
+        for (isize i = 0; i < zpl_array_count(ctx->events.entries); ++i) {
+            librg_event_block *block = &ctx->events.entries[i].value;
+
+            if (block) {
+                zpl_array_free(*block);
+            }
+        }
+
+        librg_event_pool_destroy(&ctx->events);
 
         zpl_free(ctx->allocator, ctx->entity.list);
         zpl_array_free(ctx->entity.remove_queue);

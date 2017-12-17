@@ -1,5 +1,4 @@
 #define LIBRG_IMPLEMENTATION
-#define LIBRG_CXX11_EXTENSIONS
 #include <librg.h>
 
 void on_connect_accepted(librg_event_t *event) {

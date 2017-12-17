@@ -19,3 +19,7 @@ script:
     - clang -g -std=c99 $INCLUDES test/build-test.c $LINKER -o build/test-clang-c.o && build/test-clang-c.o
     - g++ -g -std=c++11 $INCLUDES test/build-test.cpp $LINKER -o build/test-gpp-cpp.o && build/test-gpp-cpp.o
     - clang++ -g -std=c++11 $INCLUDES test/build-test.cpp $LINKER -o build/test-clang-cpp.o && build/test-clang-cpp.o
+    - gcc -O3 -std=c99 $INCLUDES test/build-test.c $LINKER -o build/test-gcc-c.o && build/test-gcc-c.o
+    - clang -O3 -std=c99 $INCLUDES test/build-test.c $LINKER -o build/test-clang-c.o && build/test-clang-c.o
+    - g++ -O3 -std=c++11 $INCLUDES test/build-test.cpp $LINKER -o build/test-gpp-cpp.o && build/test-gpp-cpp.o
+    - clang++ -O3 -std=c++11 $INCLUDES test/build-test.cpp $LINKER -o build/test-clang-cpp.o && build/test-clang-cpp.o
