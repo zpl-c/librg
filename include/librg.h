@@ -1741,7 +1741,7 @@ extern "C" {
         librg_data_wu32_at(&data, amount, sizeof(LIBRG_MESSAGE_ID));
 
         enet_peer_send(ctx->network.peer, librg_option_get(LIBRG_NETWORK_SECONDARY_CHANNEL),
-            enet_packet_create(data.rawptr, librg_data_get_wpos(&data), ENET_PACKET_FLAG_UNRELIABLE_FRAGMENT)
+            enet_packet_create(data.rawptr, librg_data_get_wpos(&data), 0)
         );
 
         librg_data_free(&data);
@@ -1928,7 +1928,7 @@ extern "C" {
             }
 
             enet_peer_send(blob->client_peer, librg_option_get(LIBRG_NETWORK_SECONDARY_CHANNEL),
-                enet_packet_create(unreliable->rawptr, librg_data_get_wpos(unreliable), ENET_PACKET_FLAG_UNRELIABLE_FRAGMENT)
+                enet_packet_create(unreliable->rawptr, librg_data_get_wpos(unreliable), 0)
             );
 
 #ifdef LIBRG_MULTITHREADED
