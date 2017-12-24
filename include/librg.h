@@ -20,8 +20,13 @@
  * sdl2.h
  *
  * Version History:
- * 3.1.0 - Removed zpl_cull and zpl_event dependencies
- *
+ * 3.1.0
+ * - Removed zpl_cull and zpl_event dependencies
+ * - added librg_network_kick()
+ * - saving current librg_address_t to ctx->network
+ * - refactor to proper disconnection code
+ * - exclude local client entity from LIBRG_CONNECTION_DISCONNECT
+ * - moved options and some few other things to the implementation part
  *
  * 3.0.7 - Fix for entity query dublication for player entities
  * 3.0.5 - Patched librg_callback_cb arg value
@@ -38,6 +43,15 @@
  * 2.1.0 - Inner bitstream refactors, with slight interface changes
  * 2.0.2 - C++ and MSVC related fixes
  * 2.0.0 - Initial C version rewrite
+ *
+ * Things TODO:
+ * v3.2.0?
+ * - DEBUG packet size validation (FEATURE)
+ * - control queuing, sending after create/update (BUG)
+ * v3.3.0?
+ * - refactoring librg_table_t (FEATURE)
+ * - remove entity ignore for target entity that was disconnected/deleted (BUG)
+ * - possibly adding stream_range to the query, to make it bi-sided (FEATURE)
  *
  * Copyright 2017 Vladyslav Hrytsenko
  *
