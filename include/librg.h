@@ -1897,7 +1897,7 @@ extern "C" {
                 librg_event_t event = { 0 }; {
                     event.peer   = blob->client_peer;
                     event.data   = reliable;
-                    event.entity = librg_entity_fetch(ctx, entity);
+                    event.entity = &ctx->entity.list[entity];
                     event.flags  = (LIBRG_EVENT_REJECTABLE | LIBRG_EVENT_LOCAL);
                 }
 
