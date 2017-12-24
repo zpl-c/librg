@@ -13,7 +13,7 @@
 
 <br />
 <div align="center">
-  Pure C99 library for building simple and elegant cross-platform mmo client-server solutions.
+  Pure C99 game networking library for building simple and elegant cross-platform mmo client-server solutions.
 </div>
 
 <div align="center">
@@ -25,7 +25,7 @@
   </sub>
 </div>
 
-## Desciption
+## Introduction
 
 Have you ever wondered why is it always so hard to make a multi-player game, even the most basic one?
 And the complexity even increases with bigger amounts of players and things you need to sync between your clients.
@@ -35,6 +35,12 @@ Many people think that implementing networking solution for your game project is
 We believe many people are afraid to even try, which results in the fact, that you almost never see small games made by indie developers having any type of networking involved.
 
 Thus we hope that with this library, which is just a small step in the direction, we might help anyone and everyone who wants to add a multi-player capabilities inside one's game.
+
+## Description
+
+**librg** is a light-weight "mid-level" (can be considered/used as both low-level and high-level) game networking library. It is based on our fork of **ENet** library,
+which gives us low-level UDP networking with optional reliablility. That, accompanied by our, hand-made general purpose **zpl** library, high-peformant network culling algorithms,
+event-based approach to creating and managing your flow and simple inteface, gives you tools to create a simple and at the same time powerful mutiplayer based project.
 
 ## Features
 
@@ -227,9 +233,7 @@ Current list and description of dependencies looks like this:
 |:-:|:-:|---|
 | [enet](https://github.com/zpl-c/enet) | ![](https://img.shields.io/npm/v/enet.c.svg?maxAge=3600) | **enet** is a quite popular high performant low-level network library. A core for the librg. |
 | [zpl](https://github.com/zpl-c/zpl) | ![](https://img.shields.io/npm/v/zpl.c.svg?maxAge=3600) | **zpl** is a basic library containing many functions you would use in everyday programming.|
-| [zpl-cull](https://github.com/zpl-c/zpl-cull) | ![](https://img.shields.io/npm/v/zpl_cull.c.svg?maxAge=3600) | **zpl-cull** is culling library. Used to create an entity tree, and query objects based on that. |
 | [zpl-math](https://github.com/zpl-c/zpl-math) | ![](https://img.shields.io/npm/v/zpl_math.c.svg?maxAge=3600) | **zpl-math** is obviously a math library. Used mostly in the streamer part. |
-| [zpl-event](https://github.com/zpl-c/zpl-event) | ![](https://img.shields.io/npm/v/zpl_event.c.svg?maxAge=3600) | **zpl-event** is simple and yet powerful event library. Most of the public interfaces of librg are build using zpl-event. |
 
 ### Build instructions
 librg comes with a **[CMakeLists.txt](CMakeLists.txt)** file. You can use it to integrate the library inside your project. Or use it as a boilerplate for new project.

@@ -99,59 +99,34 @@
 #   endif
 #endif
 
+#ifndef LIBRG_DATA_GROW_FORMULA
+#   define LIBRG_DATA_GROW_FORMULA(x) (2*(x) + 16)
+#endif
+
+#define LIBRG_MESSAGE_ID            u16
+#define LIBRG_DATA_STREAMS_AMOUNT   4
+
+#define librg_global        zpl_global
+#define librg_inline        zpl_inline
+#define librg_internal      zpl_internal
+
+#define librg_assert        ZPL_ASSERT
+#define librg_assert_msg    ZPL_ASSERT_MSG
+#define librg_lambda(name)  name
+
+#if !defined(librg_log)
+#   define librg_log zpl_printf
+#endif
+
+#if defined(LIBRG_DEBUG)
+#   define librg_dbg(fmt, ...) librg_log(fmt, ##__VA_ARGS__)
+#else
+#   define librg_dbg(fmt, ...)
+#endif
+
 #ifdef __cplusplus
 extern "C" {
 #endif
-
-
-    /**
-     *
-     * BASIC DEFINITOINS
-     *
-     */
-
-    #ifndef librg_log
-    #define librg_log           zpl_printf
-    #endif
-
-    #define librg_global        zpl_global
-    #define librg_inline        zpl_inline
-    #define librg_internal      zpl_internal
-    #define librg_assert        ZPL_ASSERT
-    #define librg_assert_msg    ZPL_ASSERT_MSG
-    #define librg_lambda(name)  name
-
-    #if defined(__cplusplus) || defined(_MSC_VER)
-    #define librg_void char
-    #else
-    #define librg_void void
-    #endif
-
-    #ifdef LIBRG_DEBUG
-    #define librg_dbg(fmt, ...) librg_log(fmt, ##__VA_ARGS__)
-    #define librg_measure(TITLE, CODE) do { \
-            u64 start  = zpl_utc_time_now(); CODE; \
-            f32 result = (zpl_utc_time_now() - start) / 1000.0; \
-            librg_log("%s: took %f ms.\n", TITLE, result); \
-        } while(0)
-    #else
-    #define librg_dbg(fmt, ...)
-    #define librg_measure(TITLE, CODE)
-    #endif
-
-    #define librg_bit_size 32
-    #define librg_ceiling(x,y)     ( ((x) + (y) - 1) / (y) )
-    #define librg_bit_set(A,k)     ( A[(k/32)] |= (1 << (k%32)) )
-    #define librg_bit_clear(A,k)   ( A[(k/32)] &= ~(1 << (k%32)) )
-    #define librg_bit_test(A,k)    ( A[(k/32)] & (1 << (k%32)) )
-
-    #ifndef LIBRG_DATA_GROW_FORMULA
-    #define LIBRG_DATA_GROW_FORMULA(x) (2*(x) + 16)
-    #endif
-
-
-    #define LIBRG_MESSAGE_ID                         u16
-    #define LIBRG_DATA_STREAMS_AMOUNT                4
 
     /**
      *
@@ -451,27 +426,6 @@ extern "C" {
         librg_event_pool    events;
         librg_space_t       world;
     } librg_ctx_t;
-
-
-    /**
-     * Global option storage
-     */
-
-    librg_global u32 librg_options[LIBRG_OPTIONS_SIZE] = {
-        /*LIBRG_PLATFORM_ID*/               1,
-        /*LIBRG_PLATFORM_PROTOCOL*/         1,
-        /*LIBRG_PLATFORM_BUILD*/            1,
-        /*LIBRG_DEFAULT_CLIENT_TYPE*/       0,
-        /*LIBRG_DEFAULT_STREAM_RANGE*/      250,
-        /*LIBRG_DEFAULT_DATA_SIZE*/         1024,
-        /*LIBRG_NETWORK_CAPACITY*/          2048,
-        /*LIBRG_NETWORK_CHANNELS*/          4,
-        /*LIBRG_NETWORK_PRIMARY_CHANNEL*/   1,
-        /*LIBRG_NETWORK_SECONDARY_CHANNEL*/ 2,
-        /*LIBRG_NETWORK_MESSAGE_CHANNEL*/   3,
-        /*LIBRG_MAX_ENTITIES_PER_BRANCH*/   4,
-        /*LIBRG_MAX_THREADS_PER_UPDATE*/    0, /* MT is disabled by default = 0 */
-    };
 
 
     /**
@@ -777,7 +731,6 @@ extern "C" {
     #define librg_data_wmid ZPL_JOIN2(librg_data_w, LIBRG_MESSAGE_ID)
     #define librg_data_rmid ZPL_JOIN2(librg_data_r, LIBRG_MESSAGE_ID)
 
-
     /**
      *
      * NETWORK
@@ -910,6 +863,26 @@ extern "C" {
 #ifdef __cplusplus
 extern "C" {
 #endif
+
+    /**
+     * Global option storage
+     */
+
+    librg_global u32 librg_options[LIBRG_OPTIONS_SIZE] = {
+        /*LIBRG_PLATFORM_ID*/               1,
+        /*LIBRG_PLATFORM_PROTOCOL*/         1,
+        /*LIBRG_PLATFORM_BUILD*/            1,
+        /*LIBRG_DEFAULT_CLIENT_TYPE*/       0,
+        /*LIBRG_DEFAULT_STREAM_RANGE*/      250,
+        /*LIBRG_DEFAULT_DATA_SIZE*/         1024,
+        /*LIBRG_NETWORK_CAPACITY*/          2048,
+        /*LIBRG_NETWORK_CHANNELS*/          4,
+        /*LIBRG_NETWORK_PRIMARY_CHANNEL*/   1,
+        /*LIBRG_NETWORK_SECONDARY_CHANNEL*/ 2,
+        /*LIBRG_NETWORK_MESSAGE_CHANNEL*/   3,
+        /*LIBRG_MAX_ENTITIES_PER_BRANCH*/   4,
+        /*LIBRG_MAX_THREADS_PER_UPDATE*/    0, /* MT is disabled by default = 0 */
+    };
 
     ZPL_TABLE_DEFINE(librg_event_pool, librg_event_pool_, librg_event_block);
     ZPL_TABLE_DEFINE(librg_table_t, librg_table_, u32);
@@ -2495,7 +2468,7 @@ extern "C" {
         // threading
         usize thread_count = librg_option_get(LIBRG_MAX_THREADS_PER_UPDATE);
         if (thread_count > 0) {
-            librg_log("librg: warning, LIBRG_MAX_THREADS_PER_UPDATE is experimental, and highly unstable!\n");
+            librg_dbg("librg: warning, LIBRG_MAX_THREADS_PER_UPDATE is experimental, and highly unstable!\n");
 
             ctx->threading.update_workers = (zpl_thread_t *)zpl_alloc(ctx->allocator, sizeof(zpl_thread_t)*thread_count);
             usize step = ctx->max_entities / thread_count;
