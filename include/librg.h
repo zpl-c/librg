@@ -389,6 +389,7 @@ extern "C" {
             librg_peer_t *peer;
             librg_host_t *host;
             librg_table_t connected_peers;
+            librg_address_t last_address;
         } network;
 
         struct {
@@ -2220,6 +2221,8 @@ extern "C" {
             ctx->network.peer = enet_host_connect(ctx->network.host, &address, librg_option_get(LIBRG_NETWORK_CHANNELS), 0);
             librg_assert_msg(ctx->network.peer, "could not setup peer for provided address");
         }
+
+        ctx->network.last_address = addr;
     }
 
     void librg_network_stop(librg_ctx_t *ctx) {
