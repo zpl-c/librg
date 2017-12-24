@@ -52,6 +52,7 @@
  * - refactoring librg_table_t (FEATURE)
  * - remove entity ignore for target entity that was disconnected/deleted (BUG)
  * - possibly adding stream_range to the query, to make it bi-sided (FEATURE)
+ * - tree/space node flattening (FEATURE)
  *
  * Copyright 2017 Vladyslav Hrytsenko
  *
