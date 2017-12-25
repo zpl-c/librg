@@ -1371,7 +1371,7 @@ extern "C" {
             blob->control_peer = peer;
         }
 
-        librg_message_t *msg = zpl_alloc(ctx->allocator, sizeof(librg_message_t)); {
+        librg_message_t *msg = (librg_message_t *)zpl_alloc(ctx->allocator, sizeof(librg_message_t)); {
             LIBRG_MESSAGE_ID id = LIBRG_CLIENT_STREAMER_ADD;
 
             msg->peer   = peer;
