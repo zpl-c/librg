@@ -27,6 +27,7 @@
  * - refactor to proper disconnection code
  * - exclude local client entity from LIBRG_CONNECTION_DISCONNECT
  * - moved options and some few other things to the implementation part
+ * - fixed issue with replacing entity control
  *
  * 3.0.7 - Fix for entity query dublication for player entities
  * 3.0.5 - Patched librg_callback_cb arg value
@@ -1357,6 +1358,10 @@ extern "C" {
             if (blob->control_peer == peer) {
                 return;
             }
+
+            librg_send_to(ctx, LIBRG_CLIENT_STREAMER_REMOVE, blob->control_peer, librg_lambda(data), {
+                librg_data_went(&data, entity);
+            });
 
             blob->control_peer = peer;
         }
