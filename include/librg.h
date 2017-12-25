@@ -28,6 +28,7 @@
  * - exclude local client entity from LIBRG_CONNECTION_DISCONNECT
  * - moved options and some few other things to the implementation part
  * - fixed issue with replacing entity control
+ * - fixed issue with add control queuing beign sent before create entity packet
  *
  * 3.0.7 - Fix for entity query dublication for player entities
  * 3.0.5 - Patched librg_callback_cb arg value
@@ -48,8 +49,6 @@
  * Things TODO:
  * v3.2.0?
  * - DEBUG packet size validation (FEATURE)
- * - control queuing, sending after create/update (BUG)
- * v3.3.0?
  * - refactoring librg_table_t (FEATURE)
  * - remove entity ignore for target entity that was disconnected/deleted (BUG)
  * - possibly adding stream_range to the query, to make it bi-sided (FEATURE)
@@ -414,6 +413,7 @@ extern "C" {
             librg_table_t ignored;
             struct librg_entity_t *list;
             zpl_array_t(librg_entity_id) remove_queue;
+            zpl_array_t(librg_message_t *) add_control_queue;
         } entity;
 
         union {
@@ -1371,9 +1371,18 @@ extern "C" {
             blob->control_peer = peer;
         }
 
-        librg_send_to(ctx, LIBRG_CLIENT_STREAMER_ADD, peer, librg_lambda(data), {
-            librg_data_went(&data, entity);
-        });
+        librg_message_t *msg = zpl_alloc(ctx->allocator, sizeof(librg_message_t)); {
+            LIBRG_MESSAGE_ID id = LIBRG_CLIENT_STREAMER_ADD;
+
+            msg->peer   = peer;
+            msg->packet = enet_packet_create_offset(
+                &entity, sizeof(librg_entity_id), sizeof(LIBRG_MESSAGE_ID), ENET_PACKET_FLAG_RELIABLE
+            );
+
+            zpl_memcopy(msg->packet->data, &id, sizeof(LIBRG_MESSAGE_ID));
+        }
+
+        zpl_array_append(ctx->entity.add_control_queue, msg);
     }
 
     librg_inline librg_peer_t *librg_entity_control_get(librg_ctx_t *ctx, librg_entity_id entity) {
@@ -1558,7 +1567,12 @@ extern "C" {
         }
 
         librg_event_trigger(msg->ctx, LIBRG_CONNECTION_DISCONNECT, &event);
-        librg_entity_destroy(msg->ctx, *entity);
+
+        if (librg_is_server(msg->ctx)) {
+            librg_entity_destroy(msg->ctx, *entity);
+        } else {
+            librg__entity_destroy(msg->ctx, *entity);
+        }
     }
 
     // CLIENT
@@ -2181,6 +2195,17 @@ extern "C" {
         zpl_array_clear(ctx->entity.remove_queue);
     }
 
+    librg_inline void librg__execture_server_entity_control(librg_ctx_t *ctx) {
+        for (isize i = 0; i < zpl_array_count(ctx->entity.add_control_queue); i++) {
+            librg_message_t *msg = ctx->entity.add_control_queue[i];
+            librg_log("sedning control queue to someone\n");
+            enet_peer_send(msg->peer, librg_option_get(LIBRG_NETWORK_MESSAGE_CHANNEL), msg->packet);
+            zpl_free(ctx->allocator, msg);
+        }
+
+        zpl_array_clear(ctx->entity.add_control_queue);
+    }
+
     librg_internal void librg__tick_cb(void *data) {
         u64 start  = zpl_utc_time_now();
         librg_ctx_t *ctx = (librg_ctx_t *)data;
@@ -2190,6 +2215,7 @@ extern "C" {
             librg__execute_server_entity_insert(ctx); /* create the server cull tree */
             librg__execute_server_entity_update(ctx); /* create and send updates to all clients */
             librg__execute_server_entity_destroy(ctx); /* destroy queued entities */
+            librg__execture_server_entity_control(ctx); /* send controll add for created entities */
         } else {
             librg__execute_client_update(ctx); /* send information about client updates */
         }
@@ -2471,6 +2497,7 @@ extern "C" {
         }
 
         zpl_array_init(ctx->entity.remove_queue, ctx->allocator);
+        zpl_array_init(ctx->entity.add_control_queue, ctx->allocator);
 
         for (i8 i = 0; i < LIBRG_DATA_STREAMS_AMOUNT; ++i) {
             librg_data_init(&ctx->streams[i]);
@@ -2569,6 +2596,7 @@ extern "C" {
 
         zpl_free(ctx->allocator, ctx->entity.list);
         zpl_array_free(ctx->entity.remove_queue);
+        zpl_array_free(ctx->entity.add_control_queue);
 
         // streamer
         librg__space_clear(&ctx->world);
