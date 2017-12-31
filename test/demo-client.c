@@ -328,7 +328,7 @@ int main(int argc, char *argv[]) {
             }
         }
 
-        i32 speed = 5;
+        i32 speed = 35;
 
         if (keys_held[SDLK_a]) {
             camera.x -= speed;

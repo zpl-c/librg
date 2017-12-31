@@ -72,7 +72,7 @@
 #define LIBRG_INCLUDE_H
 
 #define LIBRG_VERSION_MAJOR 3
-#define LIBRG_VERSION_MINOR 0
+#define LIBRG_VERSION_MINOR 2
 #define LIBRG_VERSION_PATCH 0
 #define LIBRG_VERSION_CREATE(major, minor, patch) (((major)<<16) | ((minor)<<8) | (patch))
 #define LIBRG_VERSION_GET_MAJOR(version) (((version)>>16)&0xFF)
