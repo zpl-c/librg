@@ -60,13 +60,24 @@ void on_connect_accepted(librg_event_t *event) {
         event->entity->position.z
     );
 
+    event->entity->stream_range = 1000.0f;
+
+    hero_t hero_ = {0};
+    hero_.stream.max_hp = 100;
+    hero_.stream.cur_hp = 40;
+
+    hero_.stream.accel.x = (rand() % 3 - 1.0);
+    hero_.stream.accel.y = (rand() % 3 - 1.0);
+
+    event->entity->user_data = zpl_malloc(sizeof(hero_));
+    *(hero_t *)event->entity->user_data = hero_;
+
     librg_entity_control_set(event->ctx, event->entity->id, event->entity->client_peer);
 }
 
 void on_entity_create_forplayer(librg_event_t *event) {
      switch (event->entity->type) {
          case DEMO_TYPE_PLAYER:
-             break;
          case DEMO_TYPE_NPC: {
             hero_t *hero = (hero_t *)event->entity->user_data;
             librg_data_wptr(event->data, event->entity->user_data, sizeof(hero->stream));

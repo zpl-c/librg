@@ -111,7 +111,6 @@ void on_connect_refused(librg_event_t *event) {
 void on_entity_create(librg_event_t *event) {
     switch (librg_entity_type(event->ctx, event->entity->id)) {
         case DEMO_TYPE_PLAYER:
-            break;
         case DEMO_TYPE_NPC: {
             event->entity->user_data = zpl_malloc(sizeof(hero_t));
             hero_t *hero = (hero_t *)event->entity->user_data;
@@ -232,9 +231,9 @@ void render(librg_ctx_t *ctx)
 }
 
 void on_entity_remove(librg_event_t *event) {
-    if (event->entity->type == DEMO_TYPE_NPC) {
+    // if (event->entity->type == DEMO_TYPE_NPC) {
         zpl_mfree(event->entity->user_data);
-    }
+    // }
 }
 
 void interpolate_npcs(librg_ctx_t *ctx) {
@@ -328,7 +327,7 @@ int main(int argc, char *argv[]) {
             }
         }
 
-        i32 speed = 35;
+        i32 speed = 25;
 
         if (keys_held[SDLK_a]) {
             camera.x -= speed;
