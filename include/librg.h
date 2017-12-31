@@ -2198,7 +2198,6 @@ extern "C" {
     librg_inline void librg__execture_server_entity_control(librg_ctx_t *ctx) {
         for (isize i = 0; i < zpl_array_count(ctx->entity.add_control_queue); i++) {
             librg_message_t *msg = ctx->entity.add_control_queue[i];
-            librg_log("sedning control queue to someone\n");
             enet_peer_send(msg->peer, librg_option_get(LIBRG_NETWORK_MESSAGE_CHANNEL), msg->packet);
             zpl_free(ctx->allocator, msg);
         }
