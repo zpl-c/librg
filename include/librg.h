@@ -20,6 +20,12 @@
  * sdl2.h
  *
  * Version History:
+ * 3.2.0
+ * - Fixed minor memory client-side memory leak with empty control list
+ * - Added method for allocating the librg_ctx_t for the bindings
+ * - Added method for allocating the librg_data_t for the bindings
+ *
+ * Version History:
  * 3.1.0
  * - Removed zpl_cull and zpl_event dependencies
  * - added librg_network_kick()
@@ -685,6 +691,11 @@ extern "C" {
     LIBRG_API void librg_data_init_size(librg_data_t *data, usize size);
 
     /**
+     * Initialize new bitstream with custom mem size (bindings stuff)
+     */
+    LIBRG_API librg_data_t *librg_data_init_new();
+
+    /**
      * Free initialized bitstream
      */
     LIBRG_API void librg_data_free(librg_data_t *data);
@@ -1005,6 +1016,12 @@ extern "C" {
     librg_inline void librg_data_init(librg_data_t *data) {
         librg_assert(data);
         librg_data_init_size(data, librg_option_get(LIBRG_DEFAULT_DATA_SIZE));
+    }
+
+    librg_inline librg_data_t *librg_data_init_new() {
+        librg_data_t *data = (librg_data_t *)zpl_malloc(sizeof(librg_data_t));
+        librg_data_init(data);
+        return data;
     }
 
     librg_inline void librg_data_free(librg_data_t *data) {
@@ -2643,7 +2660,7 @@ extern "C" {
     }
 
     librg_inline librg_ctx_t *librg_allocate_ctx() {
-        return zpl_malloc(sizeof(librg_ctx_t));
+        return (librg_ctx_t *)zpl_malloc(sizeof(librg_ctx_t));
     }
 
     #undef librg__event_create
