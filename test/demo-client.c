@@ -41,7 +41,7 @@ typedef struct {
 // librg_component(hero, component_hero, hero_t);
 
 
-#define SIZE_X 800
+#define SIZE_X 1600
 #define SIZE_Y 600
 
 zpl_global f64 last_delta;
@@ -131,6 +131,26 @@ void on_entity_update(librg_event_t *event) {
     hero->last_pos = hero->target_pos;
     hero->target_pos = event->entity->position;
     hero->delta = .0f;
+}
+
+void interpolate_npcs(librg_ctx_t *ctx) {
+    for (u32 i = 0; i < ctx->max_entities; i++) {
+        if (i == player) continue;
+
+        librg_entity_t *entity = librg_entity_fetch(ctx, i);
+
+        if (!entity) continue;
+
+        hero_t *hero = (hero_t *)entity->user_data;
+        if (!hero) continue;
+
+        hero->delta += (last_delta / (f32)(64));
+
+        zplm_vec3_t delta_pos;
+        zplm_vec3_lerp(&delta_pos, hero->last_pos, hero->target_pos, zpl_clamp01(hero->delta));
+
+        hero->curr_pos = delta_pos;
+    }
 }
 
 void on_client_entity_update(librg_event_t *event) {
@@ -235,27 +255,6 @@ void on_entity_remove(librg_event_t *event) {
         zpl_mfree(event->entity->user_data);
     // }
 }
-
-void interpolate_npcs(librg_ctx_t *ctx) {
-    for (u32 i = 0; i < ctx->max_entities; i++) {
-        if (i == player) continue;
-
-        librg_entity_t *entity = librg_entity_fetch(ctx, i);
-
-        if (!entity) continue;
-
-        hero_t *hero = (hero_t *)entity->user_data;
-        if (!hero) continue;
-
-        hero->delta += (last_delta /(f32) (ctx->tick_delay));
-
-        zplm_vec3_t delta_pos;
-        zplm_vec3_lerp(&delta_pos, hero->last_pos, hero->target_pos, zpl_clamp01(hero->delta));
-
-        hero->curr_pos = delta_pos;
-    }
-}
-
 
 bool shooting = false;
 bool keys_held[323] = { false };

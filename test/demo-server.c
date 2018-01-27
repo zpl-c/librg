@@ -87,6 +87,7 @@ void on_entity_create_forplayer(librg_event_t *event) {
 
 void on_entity_update_forplayer(librg_event_t *event) {
     // ..
+    librg_data_wu64(event->data, zpl_utc_time_now());
 }
 
 
@@ -165,7 +166,7 @@ int main() {
     librg_ctx_t ctx     = {0};
     ctx.mode            = LIBRG_MODE_SERVER;
     ctx.tick_delay      = 64;
-    ctx.world_size      = zplm_vec3(5000.0f, 5000.0f, 0.f);
+    ctx.world_size      = zplm_vec3(50000.0f, 50000.0f, 0.f);
     ctx.max_connections = 128;
     ctx.max_entities    = 2000,
 

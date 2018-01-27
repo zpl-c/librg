@@ -200,6 +200,20 @@ void mygame_client_stream(librg_event_t *event) {
 
 Now on the server side, you pretty much do the same, it is very similar to what we did for entity update, with only difference being that we use `LIBRG_CLIENT_STREAMER_UPDATE` event id.
 
+#### Querying
+
+Sometimes when you need loop over entities visible (streamed) for a particlar entity on the server, you will need to do a query:
+
+```c
+    librg_entity_id *results;
+    int amount = librg_entity_query(&ctx, my_entity_id, &results);
+
+    for (int i = 0; i < amount; ++i) {
+        librg_entity_t *entity = librg_entity_fetch(&ctx, results[i]);
+        // do stuff with entity
+    }
+```
+
 #### Additional
 
 You can and **MUST** (not really, but we really advise you to) look into the source code ([librg.h](include/librg.h)).

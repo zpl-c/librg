@@ -51,9 +51,12 @@
  * - DEBUG packet size validation (FEATURE)
  * - refactoring librg_table_t (FEATURE)
  * - remove entity ignore for target entity that was disconnected/deleted (BUG)
+ * - remove controller peer for entity, on owner disconnect (BUG)
  * - possibly adding stream_range to the query, to make it bi-sided (FEATURE)
  * - tree/space node flattening (FEATURE)
- *
+ *                                                                 
+ * https://antriel.com/post/online-platformer-5/#server-update-data
+ *                                                                 
  * Copyright 2017 Vladyslav Hrytsenko
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -454,6 +457,11 @@ extern "C" {
      * Get global cross-instance option for librg
      */
     LIBRG_API u32 librg_option_get(librg_option_e option);
+
+    /**
+     * Allocate librg ctx
+     */
+    LIBRG_API librg_ctx_t *librg_allocate_ctx();
 
     /**
      * Main initialization method
@@ -1753,6 +1761,7 @@ extern "C" {
         });
 
         if (amount < 1) {
+            librg_data_free(&data);
             return;
         }
 
@@ -2624,13 +2633,17 @@ extern "C" {
         enet_deinitialize();
     }
 
-    zpl_inline void librg_release(void *ptr) {
+    librg_inline void librg_release(void *ptr) {
         zpl_mfree(ptr);
     }
 
-    zpl_inline void librg_release_array(void *ptr) {
+    librg_inline void librg_release_array(void *ptr) {
         librg_assert(ptr);
         zpl_array_free(ptr);
+    }
+
+    librg_inline librg_ctx_t *librg_allocate_ctx() {
+        return zpl_malloc(sizeof(librg_ctx_t));
     }
 
     #undef librg__event_create
