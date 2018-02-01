@@ -168,8 +168,8 @@ void myserver_onmessage2(librg_message_t *msg) {
 
 /* client side */
     // ...
-    librg_messsage_send_all(&ctx, MESSAGE_1, NULL, 0); /* send an empty message */
-    librg_messsage_send_all(&ctx, MESSAGE_2, &yourData, sizeof(yourData)); /* send some clean data */
+    librg_message_send_all(&ctx, MESSAGE_1, NULL, 0); /* send an empty message */
+    librg_message_send_all(&ctx, MESSAGE_2, &yourData, sizeof(yourData)); /* send some clean data */
 ```
 
 #### Client sync
