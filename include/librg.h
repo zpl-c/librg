@@ -91,40 +91,43 @@
 
 // disable asserts for release build
 #if !defined(LIBRG_DEBUG)
-#   define ZPL_ASSERT_MSG(cond, msg, ...)
+    #define ZPL_ASSERT_MSG(cond, msg, ...)
 #endif
 
+/* include definitions */
 #ifndef LIBRG_CUSTOM_INCLUDES
-#   ifdef ZPL_SYSTEM_WINDOWS
-#       define _WINSOCK_DEPRECATED_NO_WARNINGS
-#   endif
-#   if defined(ZPL_SYSTEM_UNIX) && !defined(HAS_SOCKLEN_T)
-#       define HAS_SOCKLEN_T
-#   endif
-#   ifdef LIBRG_IMPLEMENTATION
-#       define ZPL_IMPLEMENTATION
-#       define ZPLM_IMPLEMENTATION
-#       define ENET_IMPLEMENTATION
-#   endif
-#   include "zpl.h"
-#   include "zpl_math.h"
-#   include "enet.h"
+    #ifdef ZPL_SYSTEM_WINDOWS
+        #define _WINSOCK_DEPRECATED_NO_WARNINGS
+    #endif
+    #if defined(ZPL_SYSTEM_UNIX) && !defined(HAS_SOCKLEN_T)
+        #define HAS_SOCKLEN_T
+    #endif
+    #ifdef LIBRG_IMPLEMENTATION
+        #define ZPL_IMPLEMENTATION
+        #define ZPLM_IMPLEMENTATION
+        #define ENET_IMPLEMENTATION
+    #endif
+    #include "zpl.h"
+    #include "zpl_math.h"
+    #include "enet.h"
 #endif
 
+/* library mode (stastic or dynamic) */
 #ifdef LIBRG_SHARED
-#   if defined(_WIN32)
-#       define LIBRG_API ZPL_EXTERN __declspec(dllexport)
-#   else
-#       define LIBRG_API ZPL_EXTERN __attribute__((visibility("default")))
-#   endif
+    #if defined(_WIN32)
+        #define LIBRG_API ZPL_EXTERN __declspec(dllexport)
+    #else
+        #define LIBRG_API ZPL_EXTERN __attribute__((visibility("default")))
+    #endif
 #else
-#   ifndef LIBRG_API
-#       define LIBRG_API ZPL_DEF
-#   endif
+    #ifndef LIBRG_API
+        #define LIBRG_API ZPL_DEF
+    #endif
 #endif
 
+/* default constants/methods used */
 #ifndef LIBRG_DATA_GROW_FORMULA
-#   define LIBRG_DATA_GROW_FORMULA(x) (2*(x) + 16)
+    #define LIBRG_DATA_GROW_FORMULA(x) (2*(x) + 16)
 #endif
 
 #define LIBRG_MESSAGE_ID            u16
@@ -139,26 +142,20 @@
 #define librg_lambda(name)  name
 
 #if !defined(librg_log)
-#   define librg_log zpl_printf
+    #define librg_log zpl_printf
 #endif
 
 #if defined(LIBRG_DEBUG)
-#   define librg_dbg(fmt, ...) librg_log(fmt, ##__VA_ARGS__)
+    #define librg_dbg(fmt, ...) librg_log(fmt, ##__VA_ARGS__)
 #else
-#   define librg_dbg(fmt, ...)
+    #define librg_dbg(fmt, ...)
 #endif
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-    /**
-     *
-     * OPTIONS
-     *
-     */
-
-    typedef enum {
+    enum {
         LIBRG_PLATFORM_ID,
         LIBRG_PLATFORM_PROTOCOL,
         LIBRG_PLATFORM_BUILD,
@@ -177,16 +174,6 @@ extern "C" {
         LIBRG_MAX_THREADS_PER_UPDATE,
 
         LIBRG_OPTIONS_SIZE,
-    } librg_option_e;
-
-    enum {
-        LIBRG_MODE_SERVER,
-        LIBRG_MODE_CLIENT,
-    };
-
-    enum {
-        LIBRG_SPACE_2D = 2,
-        LIBRG_SPACE_3D = 3,
     };
 
     /**
@@ -215,17 +202,15 @@ extern "C" {
         LIBRG_EVENT_LAST,
     };
 
-    /**
-     * Table for various entity bool storages
-     */
+    enum {
+        LIBRG_MODE_SERVER,
+        LIBRG_MODE_CLIENT,
+    };
+
+    /* Table for various entity bool storages */
     ZPL_TABLE_DECLARE(extern, librg_table_t, librg_table_, u32);
 
-    /**
-     *
-     * CORE
-     *
-     */
-
+    /* structures and datatypes */
     struct librg_ctx_t;
 
     typedef ENetPeer   librg_peer_t;
@@ -244,7 +229,6 @@ extern "C" {
         zpl_allocator_t allocator;
     } librg_data_t;
 
-
     /**
      * Simple host address
      * used to configure network on start
@@ -254,11 +238,9 @@ extern "C" {
         char *host;
     } librg_address_t;
 
-
     /**
      * Entity flags
      */
-
     enum {
         LIBRG_ENTITY_NONE       = 0, /* general flag, all destroyed/non-created entities have it */
         LIBRG_ENTITY_ALIVE      = (1 << 0), /* general flag, all created entities have it */
@@ -272,7 +254,6 @@ extern "C" {
     /**
      * Entity blob
      */
-
     typedef struct librg_entity_t {
         u32 id;
         u32 type;
@@ -293,11 +274,9 @@ extern "C" {
         zpl_array_t(librg_entity_id) last_query;
     } librg_entity_t;
 
-
     /**
      * World space structure
      */
-
     typedef struct librg_space_t {
         zpl_allocator_t                          allocator;
 
@@ -311,12 +290,10 @@ extern "C" {
         zpl_array_t(struct librg_space_t)        spaces;
     } librg_space_t;
 
-
     typedef struct librg_space_node_t {
         librg_entity_t *blob;
         b32 unused;
     } librg_space_node_t;
-
 
     /**
      * Message structure
@@ -333,16 +310,13 @@ extern "C" {
         void *user_data; /* optional: user information */
     } librg_message_t;
 
-
-
-    typedef enum {
+    enum {
         LIBRG_EVENT_NONE        = 0,        /* default empty user-created event */
         LIBRG_EVENT_REJECTED    = (1 << 0), /* whether or not this event was rejected */
         LIBRG_EVENT_REJECTABLE  = (1 << 1), /* can this event be rejected by user */
         LIBRG_EVENT_REMOTE      = (1 << 2), /* event was based on network message */
         LIBRG_EVENT_LOCAL       = (1 << 3), /* event was created locally */
-    } librg_event_flag_e;
-
+    };
 
     /**
      * Event structure
@@ -359,23 +333,18 @@ extern "C" {
         void *user_data; /* optional: user information */
     } librg_event_t;
 
-
     /**
      * Callbacks
      */
-
     typedef void (librg_entity_cb)(struct librg_ctx_t *ctx, librg_entity_t *entity);
     typedef void (librg_message_cb)(librg_message_t *msg);
     typedef void (librg_event_cb)(librg_event_t *event);
-
     typedef zpl_array_t(librg_event_cb *) librg_event_block;
     ZPL_TABLE_DECLARE(static, librg_event_pool, librg_event_pool_, librg_event_block);
-
 
     /**
      * Multithreading stuff
      */
-
     enum {
         librg_thread_idle,
         librg_thread_work,
@@ -389,11 +358,9 @@ extern "C" {
         struct librg_ctx_t *ctx;
     } librg_update_worker_si_t;
 
-
     /**
      * Context + config struct
      */
-
     typedef struct librg_ctx_t {
         // core
         u16 mode;
@@ -453,16 +420,21 @@ extern "C" {
         librg_space_t       world;
     } librg_ctx_t;
 
+    /**
+     *
+     * CORE
+     *
+     */
 
     /**
      * Set global cross-instance option for librg
      */
-    LIBRG_API void librg_option_set(librg_option_e option, u32 value);
+    LIBRG_API void librg_option_set(u32 option, u32 value);
 
     /**
      * Get global cross-instance option for librg
      */
-    LIBRG_API u32 librg_option_get(librg_option_e option);
+    LIBRG_API u32 librg_option_get(u32 option);
 
     /**
      * Allocate librg ctx
@@ -907,10 +879,12 @@ extern "C" {
 extern "C" {
 #endif
 
-    /**
-     * Global option storage
-     */
+    enum {
+        LIBRG_SPACE_2D = 2,
+        LIBRG_SPACE_3D = 3,
+    };
 
+    /* Global option storage */
     librg_global u32 librg_options[LIBRG_OPTIONS_SIZE] = {
         /*LIBRG_PLATFORM_ID*/               1,
         /*LIBRG_PLATFORM_PROTOCOL*/         1,
@@ -930,11 +904,11 @@ extern "C" {
     ZPL_TABLE_DEFINE(librg_event_pool, librg_event_pool_, librg_event_block);
     ZPL_TABLE_DEFINE(librg_table_t, librg_table_, u32);
 
-    librg_inline void librg_option_set(librg_option_e option, u32 value) {
+    librg_inline void librg_option_set(u32 option, u32 value) {
         librg_options[option] = value;
     }
 
-    librg_inline u32 librg_option_get(librg_option_e option) {
+    librg_inline u32 librg_option_get(u32 option) {
         return librg_options[option];
     }
 
@@ -982,7 +956,7 @@ extern "C" {
 
     librg_inline void librg_event_reject(librg_event_t *event) {
         librg_assert(event);
-        event->flags = (librg_event_flag_e)(event->flags | LIBRG_EVENT_REJECTED);
+        event->flags = (event->flags | LIBRG_EVENT_REJECTED);
     }
 
     librg_inline b32 librg_event_rejectable(librg_event_t *event) {
