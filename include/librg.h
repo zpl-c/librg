@@ -358,6 +358,19 @@ extern "C" {
         struct librg_ctx_t *ctx;
     } librg_update_worker_si_t;
 
+    typedef struct librg__timesync_t {
+        f32 server_step;
+
+        f32 integrator;
+        f32 total_drift;
+
+        f64 start_time;
+        f64 expected_time;
+
+        u64 server_ticks;
+        u64 client_ticks;
+    } librg__timesync_t;
+
     /**
      * Context + config struct
      */
@@ -373,7 +386,7 @@ extern "C" {
         zplm_vec3_t world_size;
         zplm_vec3_t min_branch_size;
 
-        f32 last_update;
+        f64 last_update;
         void *user_data;
 
         struct {
@@ -418,6 +431,7 @@ extern "C" {
         zpl_timer_pool      timers;
         librg_event_pool    events;
         librg_space_t       world;
+        librg__timesync_t   time_sync;
     } librg_ctx_t;
 
     /**
@@ -912,6 +926,31 @@ extern "C" {
         return librg_options[option];
     }
 
+    f64 librg__timesync_now(librg__timesync_t *sync) {
+        return zpl_time_now() + sync->total_drift;
+    }
+
+    void librg__timesync_init(librg__timesync_t *sync, f32 server_step, f64 server_time) {
+        sync->integrator    = 0.0;
+        sync->total_drift   = server_time;
+        sync->server_step   = server_step;
+        sync->start_time    = librg__timesync_now(sync);
+        sync->expected_time = librg__timesync_now(sync) + server_step;
+    }
+
+    f64 librg__timesync_since_start(librg__timesync_t *sync) {
+        return librg__timesync_now(sync) - sync->start_time;
+    }
+
+    void librg__timesync_server_update(librg__timesync_t *sync) {
+        f64 time_difference = sync->expected_time - librg__timesync_now(sync);
+        f64 integrator      = sync->integrator * 0.9 + time_difference;
+        f64 adjustment      = zplm_clamp(integrator * 0.01, -0.1, 0.1);
+
+        sync->integrator     = integrator;
+        sync->total_drift   += adjustment;
+        sync->expected_time += sync->server_step;
+    }
 
     /**
      *
@@ -1440,6 +1479,7 @@ extern "C" {
             librg_data_wu16(&data, librg_option_get(LIBRG_PLATFORM_ID));
             librg_data_wu16(&data, librg_option_get(LIBRG_PLATFORM_BUILD));
             librg_data_wu16(&data, librg_option_get(LIBRG_PLATFORM_PROTOCOL));
+            librg_data_wf64(&data, zpl_time_now());
 
             librg_event_t event = {0}; {
                 event.peer  = msg->peer;
@@ -1466,6 +1506,7 @@ extern "C" {
         u16 platform_id       = librg_data_ru16(msg->data);
         u16 platform_build    = librg_data_ru16(msg->data);
         u16 platform_protocol = librg_data_ru16(msg->data);
+        f64 client_time       = librg_data_rf64(msg->data);
 
         b32 blocked = (platform_id != librg_option_get(LIBRG_PLATFORM_ID) || platform_protocol != librg_option_get(LIBRG_PLATFORM_PROTOCOL));
 
@@ -1502,6 +1543,9 @@ extern "C" {
 
             // send accept
             librg_send_to(msg->ctx, LIBRG_CONNECTION_ACCEPT, msg->peer, librg_lambda(data), {
+                librg_data_wf32(&data, msg->ctx->tick_delay);
+                librg_data_wf64(&data, client_time);
+                librg_data_wf64(&data, zpl_time_now());
                 librg_data_went(&data, entity->id);
             });
 
@@ -1533,14 +1577,19 @@ extern "C" {
     librg_internal void librg__callback_connection_accept(librg_message_t *msg) {
         librg_dbg("librg__connection_accept\n");
 
+        f32 server_delay = librg_data_rf32(msg->data);
+        f64 client_time  = librg_data_rf64(msg->data);
+        f64 server_time  = librg_data_rf64(msg->data) + ((zpl_time_now() - client_time) / 2.0);
+        librg__timesync_init(&msg->ctx->time_sync, server_delay, server_time);
+
         librg_entity_id entity = librg_data_rent(msg->data);
         librg_entity_t *blob = &msg->ctx->entity.list[entity];
 
         msg->ctx->entity.count++;
 
-        blob->type     = librg_option_get(LIBRG_DEFAULT_CLIENT_TYPE);
-        blob->flags    = (LIBRG_ENTITY_ALIVE | LIBRG_ENTITY_CLIENT);
-        blob->position = zplm_vec3_zero();
+        blob->type      = librg_option_get(LIBRG_DEFAULT_CLIENT_TYPE);
+        blob->flags     = (LIBRG_ENTITY_ALIVE | LIBRG_ENTITY_CLIENT);
+        blob->position  = zplm_vec3_zero();
 
         // add server peer to storage
         librg_table_set(&msg->ctx->network.connected_peers, cast(u64)msg->peer, entity);
@@ -1618,7 +1667,9 @@ extern "C" {
 
     // CLIENT
     librg_internal void librg__callback_entity_update(librg_message_t *msg) {
-        u32 query_size = librg_data_ru32(msg->data);
+        f64 server_time = librg_data_rf64(msg->data);
+        u32 query_size  = librg_data_ru32(msg->data);
+        librg__timesync_server_update(&msg->ctx->time_sync);
 
         for (usize i = 0; i < query_size; ++i) {
             librg_entity_id entity = librg_data_rent(msg->data);
@@ -2206,7 +2257,7 @@ extern "C" {
     }
 
     librg_internal void librg__tick_cb(void *data) {
-        u64 start  = zpl_utc_time_now();
+        f64 start  = zpl_time_now();
         librg_ctx_t *ctx = (librg_ctx_t *)data;
         librg_assert(ctx);
 
@@ -2219,7 +2270,7 @@ extern "C" {
             librg__execute_client_update(ctx); /* send information about client updates */
         }
 
-        ctx->last_update = (zpl_utc_time_now() - start) / 1000.0f;
+        ctx->last_update = zpl_time_now() - start;
     }
 
 
@@ -2556,8 +2607,8 @@ extern "C" {
         zpl_array_init(ctx->timers, ctx->allocator);
         zpl_timer_t *tick_timer = zpl_timer_add(ctx->timers);
         tick_timer->user_data = (void *)ctx; /* provide ctx as a argument to timer */
-        zpl_timer_set(tick_timer, 1000 * ctx->tick_delay, -1, librg__tick_cb);
-        zpl_timer_start(tick_timer, 1000);
+        zpl_timer_set(tick_timer, ctx->tick_delay * 0.001, -1, librg__tick_cb);
+        zpl_timer_start(tick_timer, 0.250);
 
         // network
         u8 enet_init = enet_initialize();
