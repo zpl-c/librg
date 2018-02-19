@@ -144,7 +144,7 @@ void interpolate_npcs(librg_ctx_t *ctx) {
         hero_t *hero = (hero_t *)entity->user_data;
         if (!hero) continue;
 
-        hero->delta += (last_delta / (f32)(64));
+        hero->delta += (last_delta);
 
         zplm_vec3_t delta_pos;
         zplm_vec3_lerp(&delta_pos, hero->last_pos, hero->target_pos, zpl_clamp01(hero->delta));
@@ -286,6 +286,8 @@ int main(int argc, char *argv[]) {
     ctx.mode            = LIBRG_MODE_CLIENT;
     ctx.world_size      = zplm_vec3(5000.0f, 5000.0f, 0.f);
     ctx.max_entities    = 2000;
+
+    librg_option_set(LIBRG_NETWORK_UPDATE_BUFFER_DELAY, 200);
 
     librg_init(&ctx);
 

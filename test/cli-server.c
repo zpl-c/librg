@@ -66,7 +66,7 @@ int main() {
 
     librg_ctx_t ctx     = {0};
 
-    ctx.tick_delay      = 1000;
+    ctx.tick_delay      = 32;
     ctx.mode            = LIBRG_MODE_SERVER;
     ctx.world_size      = zplm_vec3(5000.0f, 5000.0f, 0.f);
     ctx.min_branch_size = zplm_vec3(-1, -1, -1);
@@ -94,8 +94,8 @@ int main() {
 
     zpl_timer_t *tick_timer = zpl_timer_add(ctx.timers);
     tick_timer->user_data = (void *)&ctx; /* provide ctx as a argument to timer */
-    zpl_timer_set(tick_timer, 1000 * 1000, -1, measure);
-    zpl_timer_start(tick_timer, 1000);
+    zpl_timer_set(tick_timer, 1.0, -1, measure);
+    zpl_timer_start(tick_timer, 1.0);
 
     while (true) {
         librg_tick(&ctx);

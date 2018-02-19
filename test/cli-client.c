@@ -32,6 +32,8 @@ int main() {
                  "==================================================\n";
     librg_log("%s\n\n", test);
 
+    librg_option_set(LIBRG_NETWORK_UPDATE_BUFFER_DELAY, 64);
+
     librg_ctx_t original     = {0};
     original.tick_delay      = 1000;
     original.mode            = LIBRG_MODE_CLIENT;
@@ -61,7 +63,7 @@ int main() {
             librg_tick(&ctxs[i]);
         }
 
-        zpl_sleep_ms(1);
+        zpl_sleep_ms(250);
     }
 
     return 0;
