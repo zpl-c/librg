@@ -345,6 +345,7 @@ extern "C" {
     typedef void (librg_entity_cb)(struct librg_ctx_t *ctx, librg_entity_t *entity);
     typedef void (librg_message_cb)(librg_message_t *msg);
     typedef void (librg_event_cb)(librg_event_t *event);
+
     typedef zpl_array(librg_event_cb *) librg_event_block;
     ZPL_TABLE_DECLARE(static, librg_event_pool, librg_event_pool_, librg_event_block);
 
@@ -433,11 +434,11 @@ extern "C" {
 
     } librg_ctx_t;
 
-    /**
-     *
-     * CORE
-     *
-     */
+    // =======================================================================//
+    // !
+    // ! Core methods
+    // !
+    // =======================================================================//
 
     /**
      * Set global cross-instance option for librg
@@ -492,12 +493,11 @@ extern "C" {
      */
     LIBRG_API void librg_release_ptr(void *ptr);
 
-
-    /**
-     *
-     * ENTITIES
-     *
-     */
+    // =======================================================================//
+    // !
+    // ! Entities
+    // !
+    // =======================================================================//
 
     /**
      * Create entity and return handle
@@ -594,12 +594,11 @@ extern "C" {
         } \
     } while (0);
 
-
-    /**
-     *
-     * EVENTS
-     *
-     */
+    // =======================================================================//
+    // !
+    // ! Events
+    // !
+    // =======================================================================//
 
     /**
      * Used to attach event handler
@@ -653,12 +652,11 @@ extern "C" {
      */
     LIBRG_API b32 librg_event_succeeded(librg_event_t *event);
 
-
-    /**
-     *
-     * BINARY DATA (BITSTREAM)
-     *
-     */
+    // =======================================================================//
+    // !
+    // ! Binary data (bitstream)
+    // !
+    // =======================================================================//
 
     /**
      * Initialize new bitstream with default mem size
@@ -747,11 +745,11 @@ extern "C" {
     #define librg_data_wmid ZPL_JOIN2(librg_data_w, LIBRG_MESSAGE_ID)
     #define librg_data_rmid ZPL_JOIN2(librg_data_r, LIBRG_MESSAGE_ID)
 
-    /**
-     *
-     * NETWORK
-     *
-     */
+    // =======================================================================//
+    // !
+    // ! Network
+    // !
+    // =======================================================================//
 
     /**
      * Check are we connected
@@ -830,12 +828,11 @@ extern "C" {
      */
     LIBRG_API void librg_message_send_instream_except(librg_ctx_t *ctx, LIBRG_MESSAGE_ID id, librg_entity_id entity_id, librg_peer_t *peer, void *data, usize size);
 
-
-    /**
-     *
-     * EXTENSIONS
-     *
-     */
+    // =======================================================================//
+    // !
+    // ! Extensions
+    // !
+    // =======================================================================//
 
     #define librg__send_internal(CTX, ID, NAME, CALLBACK_CODE, SEND_CODE) \
         librg_data_t NAME; \
@@ -921,11 +918,11 @@ extern "C" {
         return librg_options[option];
     }
 
-    /**
-     *
-     * EVENTS
-     *
-     */
+    // =======================================================================//
+    // !
+    // ! Events
+    // !
+    // =======================================================================//
 
     u64 librg_event_add(librg_ctx_t *ctx, u64 id, librg_event_cb callback) {
         librg_assert(ctx);
@@ -977,13 +974,11 @@ extern "C" {
         return !(event->flags & LIBRG_EVENT_REJECTED);
     }
 
-
-
-    /**
-     *
-     * DATA STREAM (BITSREAM)
-     *
-     */
+    // =======================================================================//
+    // !
+    // ! Binary data (bitstream)
+    // !
+    // =======================================================================//
 
     void librg_data_init_size(librg_data_t *data, usize size) {
         librg_assert(data);
@@ -1123,12 +1118,11 @@ extern "C" {
     #undef LIBRG_GEN_DATA_READWRITE
 
 
-
-    /**
-     *
-     * ENTITIES
-     *
-     */
+    // =======================================================================//
+    // !
+    // ! Entities
+    // !
+    // =======================================================================//
 
     librg_entity_t *librg_entity_create(librg_ctx_t *ctx, u32 type) {
         librg_assert(ctx);
@@ -1416,11 +1410,11 @@ extern "C" {
         blob->control_peer = NULL;
     }
 
-    /**
-     *
-     * NETWORK BUILTIN CALLBACKS
-     *
-     */
+    // =======================================================================//
+    // !
+    // ! Default network callbacks
+    // !
+    // =======================================================================//
 
     // short helper macro
     #define librg__event_create(NAME, MSG) \
@@ -2037,6 +2031,12 @@ extern "C" {
         #endif
     }
 
+    // =======================================================================//
+    // !
+    // ! World Spaces
+    // !
+    // =======================================================================//
+
     b32 librg__space_bounds_small_enough(zplm_aabb3 a, zplm_vec3 b) {
         //TODO(zaklaus): Is this the best way we can determine bounds for k-d ?
         return a.half_size.x <= b.x && a.half_size.y <= b.y && a.half_size.z <= b.z;
@@ -2241,13 +2241,11 @@ extern "C" {
         ctx->last_update = zpl_time_now() - start;
     }
 
-
-
-    /**
-     *
-     * NETWORK
-     *
-     */
+    // =======================================================================//
+    // !
+    // ! Network
+    // !
+    // =======================================================================//
 
     void librg_network_start(librg_ctx_t *ctx, librg_address_t addr) {
         librg_dbg("librg_network_start\n");
@@ -2481,15 +2479,11 @@ extern "C" {
         }
     }
 
-
-
-
-
-    /**
-     *
-     * CORE
-     *
-     */
+    // =======================================================================//
+    // !
+    // ! Core methods
+    // !
+    // =======================================================================//
 
     void librg_init(librg_ctx_t *ctx) {
         librg_dbg("librg_init\n");
