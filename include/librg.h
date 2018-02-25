@@ -252,6 +252,12 @@ extern "C" {
         LIBRG_ENTITY_UNUSED     = (1 << 5), /* flag showing whether the entity's space is unused */
     };
 
+    typedef enum librg_pointer_type {
+        LIBRG_POINTER_CTX,
+        LIBRG_POINTER_DATA,
+        LIBRG_POINTER_EVENT,
+    } librg_pointer_type;
+
     /**
      * Entity blob
      */
@@ -466,11 +472,6 @@ extern "C" {
     LIBRG_API u32 librg_option_get(u32 option);
 
     /**
-     * Allocate librg ctx
-     */
-    LIBRG_API librg_ctx_t *librg_allocate_ctx();
-
-    /**
      * Main initialization method
      * MUST BE called in the begging of your application
      */
@@ -490,18 +491,6 @@ extern "C" {
     LIBRG_API void librg_free(librg_ctx_t *ctx);
 
     /**
-     * Frees a pointer allocated by library
-     * usually used in bindings.
-     */
-    LIBRG_API void librg_release(void *ptr);
-
-    /**
-     * Frees an array allocated by library
-     * usually used in bindings.
-     */
-    LIBRG_API void librg_release_array(void *ptr);
-
-    /**
      * Is librg instance is running
      * in the server mode
      */
@@ -512,6 +501,18 @@ extern "C" {
      * in the client mode
      */
     LIBRG_API b32 librg_is_client(librg_ctx_t *ctx);
+
+    /**
+     * Allocate librg ctx
+     * (to be used inside bindings)
+     */
+    LIBRG_API void *librg_allocate_ptr(librg_pointer_type pointer_type);
+
+    /**
+     * Frees a pointer allocated by library
+     * usually used in bindings.
+     */
+    LIBRG_API void librg_release_ptr(void *ptr);
 
 
     /**
@@ -2821,17 +2822,32 @@ extern "C" {
         enet_deinitialize();
     }
 
-    void librg_release(void *ptr) {
+    void librg_release_ptr(void *ptr) {
+        librg_assert(ptr);
         zpl_mfree(ptr);
     }
 
-    void librg_release_array(void *ptr) {
-        librg_assert(ptr);
-        zpl_array_free(ptr);
-    }
+    void *librg_allocate_ptr(librg_pointer_type type) {
+        void *ptr = NULL;
 
-    librg_ctx_t *librg_allocate_ctx() {
-        return (librg_ctx_t *)zpl_malloc(sizeof(librg_ctx_t));
+        switch (type) {
+            case LIBRG_POINTER_CTX:
+                ptr = (void *)zpl_malloc(sizeof(librg_ctx_t));
+                zpl_zero_size(ptr, sizeof(librg_ctx_t));
+                break;
+
+            case LIBRG_POINTER_DATA:
+                ptr = (void *)zpl_malloc(sizeof(librg_data_t));
+                zpl_zero_size(ptr, sizeof(librg_data_t));
+                break;
+
+            case LIBRG_POINTER_EVENT:
+                ptr = (void *)zpl_malloc(sizeof(librg_event_t));
+                zpl_zero_size(ptr, sizeof(librg_event_t));
+                break;
+        }
+
+        return ptr;
     }
 
     #undef librg__event_create

@@ -168,7 +168,7 @@ int main() {
     ctx.tick_delay      = 100;
     ctx.world_size      = zplm_vec3(50000.0f, 50000.0f, 0.f);
     ctx.max_connections = 128;
-    ctx.max_entities    = 2000,
+    ctx.max_entities    = 2000000,
 
     librg_init(&ctx);
 
@@ -179,8 +179,10 @@ int main() {
 
     librg_network_start(&ctx, (librg_address_t) { .port = 7777 });
 
+    f64 s = zpl_time_now();
+
 #if 1
-    for (isize i = 0; i < 1200; i++) {
+    for (isize i = 0; i < 100000; i++) {
         librg_entity_t *enemy = librg_entity_create(&ctx, DEMO_TYPE_NPC);
 
         enemy->position.x = (float)(2000 - rand() % 4000);
@@ -198,6 +200,8 @@ int main() {
         librg_limiter_init(&((hero_t *)enemy->user_data)->stream.limiter);
     }
 #endif
+
+    librg_log("took %f\n", zpl_time_now() - s);
 
     zpl_timer_t *tick_timer = zpl_timer_add(ctx.timers);
     tick_timer->user_data = (void *)&ctx; /* provide ctx as a argument to timer */
