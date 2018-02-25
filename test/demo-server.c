@@ -166,7 +166,7 @@ int main() {
     librg_ctx_t ctx     = {0};
     ctx.mode            = LIBRG_MODE_SERVER;
     ctx.tick_delay      = 100;
-    ctx.world_size      = zplm_vec3(50000.0f, 50000.0f, 0.f);
+    ctx.world_size      = zplm_vec3f(50000.0f, 50000.0f, 0.f);
     ctx.max_connections = 128;
     ctx.max_entities    = 2000000,
 

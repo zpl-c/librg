@@ -278,23 +278,22 @@ extern "C" {
         librg_peer_t *client_peer;
         librg_peer_t *control_peer;
 
-        zpl_array_t(librg_entity_id) last_query;
+        zpl_array(librg_entity_id) last_query;
     } librg_entity_t;
 
     /**
      * World space structure
      */
     typedef struct librg_space_t {
-        zpl_allocator_t                          allocator;
-
-        u32                                      max_nodes;
-        isize                                    dimensions;
-        zplm_aabb3_t                             boundary;
-        zplm_vec3_t                              min_bounds;
-        b32                                      use_min_bounds;
-        zpl_array_t(struct librg_space_node_t)   nodes;
-        zpl_array_t(usize)                       free_nodes;
-        zpl_array_t(struct librg_space_t)        spaces;
+        zpl_allocator_t allocator;
+        u32 max_nodes;
+        isize dimensions;
+        zplm_aabb3 boundary;
+        zplm_vec3 min_bounds;
+        b32 use_min_bounds;
+        zpl_array(usize) free_nodes;
+        zpl_array(struct librg_space_t) spaces;
+        zpl_array(struct librg_space_node_t) nodes;
     } librg_space_t;
 
     typedef struct librg_space_node_t {
@@ -346,7 +345,7 @@ extern "C" {
     typedef void (librg_entity_cb)(struct librg_ctx_t *ctx, librg_entity_t *entity);
     typedef void (librg_message_cb)(librg_message_t *msg);
     typedef void (librg_event_cb)(librg_event_t *event);
-    typedef zpl_array_t(librg_event_cb *) librg_event_block;
+    typedef zpl_array(librg_event_cb *) librg_event_block;
     ZPL_TABLE_DECLARE(static, librg_event_pool, librg_event_pool_, librg_event_block);
 
     /**
@@ -401,8 +400,8 @@ extern "C" {
             u32 cursor;
             librg_table_t ignored;
             struct librg_entity_t *list;
-            zpl_array_t(librg_entity_id) remove_queue;
-            zpl_array_t(librg_message_t *) add_control_queue;
+            zpl_array(librg_entity_id) remove_queue;
+            zpl_array(librg_message_t *) add_control_queue;
         } entity;
 
         union {
@@ -1303,7 +1302,7 @@ extern "C" {
 
             entity->type            = type;
             entity->flags           = LIBRG_ENTITY_ALIVE;
-            entity->position        = zplm_vec3_zero();
+            entity->position        = zplm_vec3f_zero();
             entity->stream_range    = librg_option_get(LIBRG_DEFAULT_STREAM_RANGE) * 1.0f;
             entity->stream_branch   = NULL;
 
@@ -1351,7 +1350,7 @@ extern "C" {
         }
 
         entity->flags         = LIBRG_ENTITY_NONE;
-        entity->position      = zplm_vec3_zero();
+        entity->position      = zplm_vec3f_zero();
         entity->type          = 0;
         entity->stream_branch = NULL;
 
@@ -1419,7 +1418,7 @@ extern "C" {
         librg_entity_iteratex(ctx, flags, librg_lambda(entity), { callback(ctx, librg_entity_fetch(ctx, entity)); });
     }
 
-    b32 librg__space_intersects(isize dims, zplm_aabb3_t a, zplm_aabb3_t b) {
+    b32 librg__space_intersects(isize dims, zplm_aabb3 a, zplm_aabb3 b) {
         for (i32 i = 0; i < dims; ++i) {
             if (zpl_abs(a.centre.e[i] - b.centre.e[i]) > (a.half_size.e[i] + b.half_size.e[i])) return false;
         }
@@ -1428,7 +1427,7 @@ extern "C" {
     }
 
 
-    b32 librg__space_contains(isize dims, zplm_aabb3_t a, f32 *point) {
+    b32 librg__space_contains(isize dims, zplm_aabb3 a, f32 *point) {
         for (i32 i = 0; i < dims; ++i) {
             if (!( a.centre.e[i] - a.half_size.e[i] <= point[i]
                    && a.centre.e[i] + a.half_size.e[i] >= point[i])) {
@@ -1444,7 +1443,7 @@ extern "C" {
      */
 
     // custom query method
-    void librg__entity_query(librg_ctx_t *ctx, librg_entity_id entity, librg_space_t *c, zplm_aabb3_t bounds, librg_entity_id **out_entities) {
+    void librg__entity_query(librg_ctx_t *ctx, librg_entity_id entity, librg_space_t *c, zplm_aabb3 bounds, librg_entity_id **out_entities) {
         if (c->nodes == NULL) return;
         if (!librg__space_intersects(c->dimensions, c->boundary, bounds)) return;
 
@@ -1490,9 +1489,9 @@ extern "C" {
         // reset array to 0
         zpl_array_count(blob->last_query) = 0;
 
-        zplm_aabb3_t search_bounds;
+        zplm_aabb3 search_bounds;
         search_bounds.centre    = blob->position;
-        search_bounds.half_size = zplm_vec3(blob->stream_range, blob->stream_range, blob->stream_range);
+        search_bounds.half_size = zplm_vec3f(blob->stream_range, blob->stream_range, blob->stream_range);
         librg__entity_query(ctx, entity, &ctx->world, search_bounds, &blob->last_query);
         *out_entities = blob->last_query;
 
@@ -1716,7 +1715,7 @@ extern "C" {
 
         blob->type      = librg_option_get(LIBRG_DEFAULT_CLIENT_TYPE);
         blob->flags     = (LIBRG_ENTITY_ALIVE | LIBRG_ENTITY_CLIENT);
-        blob->position  = zplm_vec3_zero();
+        blob->position  = zplm_vec3f_zero();
 
         // add server peer to storage
         librg_table_set(&msg->ctx->network.connected_peers, cast(u64)msg->peer, entity);
@@ -1970,7 +1969,7 @@ extern "C" {
             librg_table_init(&next_snapshot, ctx->allocator);
 
             // fetch entities in the steram zone
-            zpl_array_t(librg_entity_id) queue;
+            zpl_array(librg_entity_id) queue;
             usize queue_count = librg_entity_query(ctx, player, &queue);
 
             u32 created_entities = 0;
@@ -2203,7 +2202,7 @@ extern "C" {
         #endif
     }
 
-    b32 librg__space_bounds_small_enough(zplm_aabb3_t a, zplm_vec3_t b) {
+    b32 librg__space_bounds_small_enough(zplm_aabb3 a, zplm_vec3_t b) {
         //TODO(zaklaus): Is this the best way we can determine bounds for k-d ?
         return a.half_size.x <= b.x && a.half_size.y <= b.y && a.half_size.z <= b.z;
     }
@@ -2220,7 +2219,7 @@ extern "C" {
     };
 
     void librg__space_split(librg_space_t *c) {
-        zplm_aabb3_t hd = c->boundary;
+        zplm_aabb3 hd = c->boundary;
         for (i32 i = 0; i < c->dimensions; ++i) {
             hd.half_size.e[i] /= 2.0f;
         }
@@ -2232,7 +2231,7 @@ extern "C" {
         f32 p[3] = {0};
         for (i32 i = 0; i < loops; ++i) {
             librg_space_t space = {0};
-            zplm_aabb3_t bounds = {0};
+            zplm_aabb3 bounds = {0};
             p[0] = c->boundary.centre.e[0] + hd.half_size.e[0]*librg__space_tpl[i][0];
             p[1] = c->boundary.centre.e[1] + hd.half_size.e[1]*librg__space_tpl[i][1];
             p[2] = c->boundary.centre.e[2] + hd.half_size.e[2]*librg__space_tpl[i][2];
@@ -2268,7 +2267,7 @@ extern "C" {
         return false;
     }
 
-    void librg__space_init(librg_space_t *c, zpl_allocator_t a, isize dims, zplm_aabb3_t bounds, zplm_vec3_t min_bounds, u32 max_nodes) {
+    void librg__space_init(librg_space_t *c, zpl_allocator_t a, isize dims, zplm_aabb3 bounds, zplm_vec3_t min_bounds, u32 max_nodes) {
         librg_space_t c_ = {0};
         *c            = c_;
         c->allocator  = a;
@@ -2570,7 +2569,7 @@ extern "C" {
     }
 
     void librg_message_send_instream_except(librg_ctx_t *ctx, LIBRG_MESSAGE_ID id, librg_entity_id entity, librg_peer_t * ignored, void *data, usize size) {
-        zpl_array_t(librg_entity_id) queue;
+        zpl_array(librg_entity_id) queue;
         usize count = librg_entity_query(ctx, entity, &queue);
 
         for (isize i = 0; i < count; i++) {
@@ -2701,9 +2700,9 @@ extern "C" {
         }
 
         // streamer
-        zplm_aabb3_t world = {0};
-        world.centre    = zplm_vec3(0, 0, 0);
-        world.half_size = zplm_vec3(ctx->world_size.x, ctx->world_size.y, ctx->world_size.z);
+        zplm_aabb3 world = {0};
+        world.centre    = zplm_vec3f(0, 0, 0);
+        world.half_size = zplm_vec3f(ctx->world_size.x, ctx->world_size.y, ctx->world_size.z);
         u32 dimension   = ctx->world_size.z == 0.0f ? LIBRG_SPACE_2D : LIBRG_SPACE_3D;
 
         if (ctx->min_branch_size.x == -1.0f &&
