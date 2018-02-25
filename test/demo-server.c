@@ -182,7 +182,7 @@ int main() {
     f64 s = zpl_time_now();
 
 #if 1
-    for (isize i = 0; i < 100000; i++) {
+    for (isize i = 0; i < 1000; i++) {
         librg_entity_t *enemy = librg_entity_create(&ctx, DEMO_TYPE_NPC);
 
         enemy->position.x = (float)(2000 - rand() % 4000);
@@ -205,8 +205,8 @@ int main() {
 
     zpl_timer_t *tick_timer = zpl_timer_add(ctx.timers);
     tick_timer->user_data = (void *)&ctx; /* provide ctx as a argument to timer */
-    zpl_timer_set(tick_timer, 1000 * 1000, -1, measure);
-    zpl_timer_start(tick_timer, 1000);
+    zpl_timer_set(tick_timer, 1.0f, -1, measure);
+    zpl_timer_start(tick_timer, 0.01f);
 
     while (true) {
         librg_tick(&ctx);

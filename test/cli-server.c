@@ -51,7 +51,7 @@ void measure(void *userptr) {
     lastdl = ctx->network.host->totalReceivedData;
     lastup = ctx->network.host->totalSentData;
 
-    librg_log("librg_update: took %f ms. Current used bandwidth D/U: (%f / %f) mbps. \r", ctx->last_update, dl, up);
+    zpl_pri("librg_update: took %f ms. Current used bandwidth D/U: (%f / %f) mbps. \r", ctx->last_update, dl, up);
 }
 
 int main() {

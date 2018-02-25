@@ -266,7 +266,7 @@ extern "C" {
         u32 type;
         u64 flags;
 
-        zplm_vec3_t position;
+        zplm_vec3 position;
         f32 stream_range;
 
         void *user_data;
@@ -382,8 +382,8 @@ extern "C" {
         u16 max_connections;
         u32 max_entities;
 
-        zplm_vec3_t world_size;
-        zplm_vec3_t min_branch_size;
+        zplm_vec3 world_size;
+        zplm_vec3 min_branch_size;
 
         f64 last_update;
         void *user_data;
@@ -431,27 +431,6 @@ extern "C" {
         librg_event_pool    events;
         librg_space_t       world;
 
-        struct {
-            f32 server_step;
-            f64 integrator;
-            f64 total_drift;
-            f64 start_time;
-            f64 server_time;
-            f64 expected_time;
-            u64 server_ticks;
-            u64 client_ticks;
-            zpl_timer_t *timer;
-        } time_sync;
-
-        struct {
-            zpl_buffer_t(librg__snapshot_t) snapshots;
-
-            usize start_index;
-            usize next_index;
-            usize capacity;
-
-            f64 offset_time;
-        } update_buffer;
     } librg_ctx_t;
 
     /**
@@ -941,139 +920,6 @@ extern "C" {
     u32 librg_option_get(u32 option) {
         return librg_options[option];
     }
-
-    librg_internal f64 librg__timesync_now(librg_ctx_t *ctx) {
-        return zpl_time_now() - ctx->time_sync.start_time + ctx->time_sync.server_time;
-    }
-
-    void librg__update_buffer_tick(void *ctx);
-
-    librg_internal void librg__timesync_init(librg_ctx_t *ctx, f32 server_step, f64 server_time) {
-        ctx->time_sync.integrator      = 0.0;
-        ctx->time_sync.total_drift     = 0.0;
-        ctx->time_sync.server_time     = server_time;
-        ctx->time_sync.server_step     = server_step;
-        ctx->time_sync.start_time      = zpl_time_now();
-        ctx->time_sync.expected_time   = librg__timesync_now(ctx) + server_step;
-        ctx->time_sync.timer           = zpl_timer_add(ctx->timers);
-
-        ctx->time_sync.timer->user_data = (void *)ctx;
-
-        zpl_timer_set(ctx->time_sync.timer, server_step, -1, librg__update_buffer_tick);
-        zpl_timer_start(ctx->time_sync.timer, 0.01);
-    }
-
-    librg_internal void librg__timesync_free(librg_ctx_t *ctx) {
-        zpl_timer_stop(ctx->time_sync.timer);
-    }
-
-    librg_internal void librg__timesync_server_update(librg_ctx_t *ctx) {
-        // librg_log("server time: %f ");
-
-        // f64 time_difference = ctx->time_sync.expected_time - (librg__timesync_now(ctx));
-        // f64 integrator      = ctx->time_sync.integrator * 0.9 + time_difference;
-        // f64 adjustment      = zplm_clamp(integrator * 0.01, -0.1, 0.1);
-
-        // ctx->time_sync.integrator    = integrator;
-        // ctx->time_sync.total_drift   += adjustment;
-        // ctx->time_sync.expected_time = zpl_time_now() + ctx->time_sync.server_time - ctx->time_sync.start_time + ctx->time_sync.server_step;
-
-        // librg_log("total_drift: %f\n", ctx->time_sync.total_drift);
-    }
-
-    librg_internal void librg__update_buffer_init(librg_ctx_t *ctx, f32 server_step, f64 offset_time) {
-        usize capacity = zplm_ceil(offset_time / server_step) + 1;
-        zpl_buffer_init(ctx->update_buffer.snapshots, zpl_heap_allocator(), capacity);
-
-        ctx->update_buffer.capacity     = capacity;
-        ctx->update_buffer.offset_time  = offset_time;
-        librg__snapshot_t snapshot      = {0};
-
-        for (usize i = 0; i < capacity; ++i) {
-            zpl_buffer_append(ctx->update_buffer.snapshots, snapshot);
-            librg_data_init(&ctx->update_buffer.snapshots[i].data);
-        }
-    }
-
-    librg_internal void librg__update_buffer_free(librg_ctx_t *ctx) {
-        for (usize i = 0; i < zpl_buffer_count(ctx->update_buffer.snapshots); ++i) {
-            librg_data_free(&ctx->update_buffer.snapshots[i].data);
-        }
-
-        zpl_buffer_free(ctx->update_buffer.snapshots, zpl_heap_allocator());
-    }
-
-    librg_internal usize librg__update_buffer_increment(librg_ctx_t *ctx, usize index) {
-        return (index + 1) % zpl_buffer_count(ctx->update_buffer.snapshots);
-    }
-
-    librg_internal void librg__update_buffer_clear_older(librg_ctx_t *ctx, f64 time) {
-        if (ctx->update_buffer.start_index == ctx->update_buffer.next_index) return; //empty
-
-        usize second_index = librg__update_buffer_increment(ctx, ctx->update_buffer.start_index);
-        while (ctx->update_buffer.snapshots[second_index].time < time && second_index != ctx->update_buffer.next_index) {
-            // second is smaller => first is useless
-            // we can move the reader ahead unless we reached end
-            librg_data_reset(&ctx->update_buffer.snapshots[second_index].data);
-            ctx->update_buffer.start_index = second_index;
-            second_index = librg__update_buffer_increment(ctx, second_index);
-        }
-    }
-
-    librg_internal void librg__update_buffer_push(librg_ctx_t *ctx, f64 time, ENetEvent *event) {
-        librg__snapshot_t *snapshot = &ctx->update_buffer.snapshots[ctx->update_buffer.next_index];
-
-        snapshot->time = time;
-        snapshot->peer = event->peer;
-
-        librg_data_reset(&snapshot->data);
-        librg_data_wptr(&snapshot->data, event->packet->data, event->packet->dataLength);
-        librg_data_set_rpos(&snapshot->data, sizeof(LIBRG_MESSAGE_ID) + sizeof(f64));
-
-        ctx->update_buffer.next_index = librg__update_buffer_increment(ctx, ctx->update_buffer.next_index);
-        if (ctx->update_buffer.next_index == ctx->update_buffer.start_index) {
-            ctx->update_buffer.start_index = librg__update_buffer_increment(ctx, ctx->update_buffer.start_index);
-        }
-    }
-
-    librg_internal void librg__callback_entity_update(librg_message_t *);
-
-    void librg__update_buffer_tick(void *userptr) {
-        librg_ctx_t *ctx = (librg_ctx_t *)userptr;
-        if (!ctx->update_buffer.capacity) return;
-
-        f64 time = librg__timesync_now(ctx) - ctx->update_buffer.offset_time;
-        librg__update_buffer_clear_older(ctx, time);
-
-        usize second_index = librg__update_buffer_increment(ctx, ctx->update_buffer.start_index);
-        librg__snapshot_t *snapshot = &ctx->update_buffer.snapshots[ctx->update_buffer.start_index];
-
-        if (second_index == ctx->update_buffer.next_index) {
-            librg_log("no updates, waiting\n");
-            return; // not enough data for interpolation yet, wait
-        }
-
-        if (!librg_data_get_wpos(&snapshot->data)) {
-            librg_log("no updates, waiting 2\n");
-            return;
-        }
-
-        librg_message_t msg = {0}; {
-            msg.ctx     = ctx;
-            msg.data    = &snapshot->data;
-            msg.peer    = snapshot->peer;
-        }
-
-        int size = zpl_buffer_count(ctx->update_buffer.snapshots) - ctx->update_buffer.start_index + ctx->update_buffer.next_index;
-        librg_log("calling update for %f at %f, diff: %f, size is: %d\n", snapshot->time, librg__timesync_now(ctx), librg__timesync_now(ctx) - snapshot->time, size);
-
-        librg__callback_entity_update(&msg);
-        librg_data_reset(&snapshot->data);
-        snapshot->time = 0;
-
-        ctx->update_buffer.start_index = librg__update_buffer_increment(ctx, ctx->update_buffer.start_index);
-    }
-
 
     /**
      *
@@ -1667,8 +1513,6 @@ extern "C" {
             // send accept
             librg_send_to(msg->ctx, LIBRG_CONNECTION_ACCEPT, msg->peer, librg_lambda(data), {
                 librg_data_wf32(&data, msg->ctx->tick_delay / 1000.0f);
-                librg_data_wf64(&data, client_time);
-                librg_data_wf64(&data, zpl_time_now());
                 librg_data_went(&data, entity->id);
             });
 
@@ -1702,11 +1546,6 @@ extern "C" {
         librg_table_init(&msg->ctx->network.connected_peers, msg->ctx->allocator);
 
         f32 server_delay = librg_data_rf32(msg->data);
-        f64 client_time  = librg_data_rf64(msg->data);
-        f64 server_time  = librg_data_rf64(msg->data) + ((zpl_time_now() - client_time) / 2.0f);
-
-        librg__timesync_init(msg->ctx, server_delay, server_time);
-        librg__update_buffer_init(msg->ctx, server_delay, librg_option_get(LIBRG_NETWORK_UPDATE_BUFFER_DELAY) / 1000.0f);
 
         librg_entity_id entity = librg_data_rent(msg->data);
         librg_entity_t *blob = &msg->ctx->entity.list[entity];
@@ -1728,10 +1567,6 @@ extern "C" {
     // SHARED
     librg_internal void librg__callback_connection_disconnect(librg_message_t *msg) {
         librg_dbg("librg__connection_disconnect\n");
-        if (librg_is_client(msg->ctx)) {
-            librg__update_buffer_free(msg->ctx);
-            librg__timesync_free(msg->ctx);
-        }
 
         librg_entity_id *entity = librg_table_get(&msg->ctx->network.connected_peers, cast(u64)msg->peer);
         if (entity && librg_entity_valid(msg->ctx, *entity)) {
@@ -1765,8 +1600,8 @@ extern "C" {
             librg_entity_id entity = librg_data_rent(msg->data);
             u32 type               = librg_data_ru32(msg->data);
 
-            zplm_vec3_t position;
-            librg_data_rptr(msg->data, &position, sizeof(zplm_vec3_t));
+            zplm_vec3 position;
+            librg_data_rptr(msg->data, &position, sizeof(zplm_vec3));
 
             // Create new entity on client side
             librg_entity_t *blob = &msg->ctx->entity.list[entity];
@@ -1806,7 +1641,7 @@ extern "C" {
         for (usize i = 0; i < query_size; ++i) {
             librg_entity_id entity = librg_data_rent(msg->data);
 
-            zplm_vec3_t position;
+            zplm_vec3 position;
             librg_data_rptr(msg->data, &position, sizeof(position));
 
             if (!librg_entity_valid(msg->ctx, entity)) {
@@ -1922,7 +1757,7 @@ extern "C" {
 
             // check if user rejected the event
             if (!(event.flags & LIBRG_EVENT_REJECTED)) {
-                librg_data_wptr(&subdata, &blob->position, sizeof(zplm_vec3_t));
+                librg_data_wptr(&subdata, &blob->position, sizeof(zplm_vec3));
                 librg_data_went(&data, entity);
                 librg_data_wu32(&data, librg_data_get_wpos(&subdata));
 
@@ -2202,7 +2037,7 @@ extern "C" {
         #endif
     }
 
-    b32 librg__space_bounds_small_enough(zplm_aabb3 a, zplm_vec3_t b) {
+    b32 librg__space_bounds_small_enough(zplm_aabb3 a, zplm_vec3 b) {
         //TODO(zaklaus): Is this the best way we can determine bounds for k-d ?
         return a.half_size.x <= b.x && a.half_size.y <= b.y && a.half_size.z <= b.z;
     }
@@ -2267,16 +2102,15 @@ extern "C" {
         return false;
     }
 
-    void librg__space_init(librg_space_t *c, zpl_allocator_t a, isize dims, zplm_aabb3 bounds, zplm_vec3_t min_bounds, u32 max_nodes) {
+    void librg__space_init(librg_space_t *c, zpl_allocator_t a, isize dims, zplm_aabb3 bounds, zplm_vec3 min_bounds, u32 max_nodes) {
         librg_space_t c_ = {0};
         *c            = c_;
         c->allocator  = a;
         c->boundary   = bounds;
         c->min_bounds = min_bounds;
-        c->use_min_bounds = zplm_vec3_mag(min_bounds) > 0.0f;
         c->max_nodes  = max_nodes;
         c->dimensions = dims;
-
+        c->use_min_bounds = zplm_vec3_mag(min_bounds) > 0.0f;
     }
 
     void librg__space_clear(librg_space_t *c) {
@@ -2623,20 +2457,13 @@ extern "C" {
 
                     // get curernt packet id
                     LIBRG_MESSAGE_ID id = librg_data_rmid(&data);
+                    f64 server_time = 0;
 
                     if (id == LIBRG_ENTITY_UPDATE) {
-                        f64 server_time = librg_data_rf64(&data);
-                        librg__timesync_server_update(ctx);
-
-                        // TODO: pushing only existing data
-                        if (librg_option_get(LIBRG_NETWORK_UPDATE_BUFFER_DELAY) != 0) {
-                            librg__update_buffer_push(ctx, server_time, &event);
-                        } else {
-                            msg.data = &data;
-                            ctx->messages[id](&msg);
-                        }
+                        server_time = librg_data_rf64(&data);
                     }
-                    else if (ctx->messages[id]) {
+
+                    if (ctx->messages[id]) {
                         msg.data = &data;
                         ctx->messages[id](&msg);
                     }
@@ -2708,7 +2535,7 @@ extern "C" {
         if (ctx->min_branch_size.x == -1.0f &&
             ctx->min_branch_size.y == -1.0f &&
             ctx->min_branch_size.z == -1.0f) {
-            zplm_vec3_t no_min_bounds = { 0 };
+            zplm_vec3 no_min_bounds = { 0 };
             ctx->min_branch_size = no_min_bounds;
         }
 

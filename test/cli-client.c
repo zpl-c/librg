@@ -37,7 +37,7 @@ int main() {
     librg_ctx_t original     = {0};
     original.tick_delay      = 1000;
     original.mode            = LIBRG_MODE_CLIENT;
-    original.world_size      = zplm_vec3(5000.0f, 5000.0f, 0.f);
+    original.world_size      = zplm_vec3f(5000.0f, 5000.0f, 0.f);
     original.max_entities    = 60000;
 
     #define size 1
