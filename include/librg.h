@@ -668,13 +668,20 @@ LIBRG_API void librg_message_send_instream_except(struct librg_ctx_t *ctx, LIBRG
 
 // =======================================================================//
 // !
-// ! Extensions
+// ! Main context definition
 // !
 // =======================================================================//
 
+typedef zpl_array(librg_event_cb *) librg_event_block;
+ZPL_TABLE_DECLARE(static, librg_event_pool, librg_event_pool_, librg_event_block);
 /**
  * World space structure
  */
+typedef struct librg_space_node_t {
+    struct librg_entity_t *blob;
+    b32 unused;
+} librg_space_node_t;
+
 typedef struct librg_space_t {
     zpl_allocator_t allocator;
     u32 max_nodes;
@@ -686,30 +693,6 @@ typedef struct librg_space_t {
     zpl_array(struct librg_space_t) spaces;
     zpl_array(struct librg_space_node_t) nodes;
 } librg_space_t;
-
-typedef struct librg_space_node_t {
-    struct librg_entity_t *blob;
-    b32 unused;
-} librg_space_node_t;
-
-typedef zpl_array(librg_event_cb *) librg_event_block;
-ZPL_TABLE_DECLARE(static, librg_event_pool, librg_event_pool_, librg_event_block);
-
-/**
- * Multithreading stuff
- */
-enum librg_thread_state {
-    librg_thread_idle,
-    librg_thread_work,
-    librg_thread_exit,
-};
-
-typedef struct {
-    usize id;
-    usize offset;
-    usize count;
-    struct librg_ctx_t *ctx;
-} librg_update_worker_si_t;
 
 /**
  * Context + config struct
@@ -854,6 +837,22 @@ extern "C" {
 
     ZPL_TABLE_DEFINE(librg_event_pool, librg_event_pool_, librg_event_block);
     ZPL_TABLE_DEFINE(librg_table_t, librg_table_, u32);
+
+    /**
+     * Multithreading stuff
+     */
+    enum librg_thread_state {
+        librg_thread_idle,
+        librg_thread_work,
+        librg_thread_exit,
+    };
+
+    typedef struct {
+        usize id;
+        usize offset;
+        usize count;
+        struct librg_ctx_t *ctx;
+    } librg_update_worker_si_t;
 
     void librg_option_set(u32 option, u32 value) {
         librg_options[option] = value;
