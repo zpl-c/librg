@@ -86,8 +86,6 @@ void on_entity_create_forplayer(librg_event_t *event) {
 }
 
 void on_entity_update_forplayer(librg_event_t *event) {
-    // ..
-    librg_data_wu64(event->data, zpl_utc_time_now());
 }
 
 
@@ -165,10 +163,10 @@ int main() {
 
     librg_ctx_t ctx     = {0};
     ctx.mode            = LIBRG_MODE_SERVER;
-    ctx.tick_delay      = 100;
+    ctx.tick_delay      = 32;
     ctx.world_size      = zplm_vec3f(50000.0f, 50000.0f, 0.f);
     ctx.max_connections = 128;
-    ctx.max_entities    = 2000000,
+    ctx.max_entities    = 16000,
 
     librg_init(&ctx);
 
@@ -182,7 +180,7 @@ int main() {
     f64 s = zpl_time_now();
 
 #if 1
-    for (isize i = 0; i < 1000; i++) {
+    for (isize i = 0; i < 100; i++) {
         librg_entity_t *enemy = librg_entity_create(&ctx, DEMO_TYPE_NPC);
 
         enemy->position.x = (float)(2000 - rand() % 4000);

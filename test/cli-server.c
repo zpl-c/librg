@@ -51,7 +51,7 @@ void measure(void *userptr) {
     lastdl = ctx->network.host->totalReceivedData;
     lastup = ctx->network.host->totalSentData;
 
-    zpl_pri("librg_update: took %f ms. Current used bandwidth D/U: (%f / %f) mbps. \r", ctx->last_update, dl, up);
+    librg_dbg("librg_update: took %f ms. Current used bandwidth D/U: (%f / %f) mbps. \r", ctx->last_update, dl, up);
 }
 
 int main() {
@@ -68,8 +68,8 @@ int main() {
 
     ctx.tick_delay      = 32;
     ctx.mode            = LIBRG_MODE_SERVER;
-    ctx.world_size      = zplm_vec3(5000.0f, 5000.0f, 0.f);
-    ctx.min_branch_size = zplm_vec3(-1, -1, -1);
+    ctx.world_size      = zplm_vec3f(5000.0f, 5000.0f, 0.f);
+    ctx.min_branch_size = zplm_vec3f(-1, -1, -1);
     ctx.max_entities    = 60000;
     ctx.max_connections = 1200;
 

@@ -154,7 +154,6 @@ void interpolate_npcs(librg_ctx_t *ctx) {
 }
 
 void on_client_entity_update(librg_event_t *event) {
-    // ..
 }
 
 /**
@@ -282,10 +281,10 @@ int main(int argc, char *argv[]) {
                         "==================================================\n");
 
     librg_ctx_t ctx     = {0};
-    ctx.tick_delay      = 64;
+    ctx.tick_delay      = 32;
     ctx.mode            = LIBRG_MODE_CLIENT;
     ctx.world_size      = zplm_vec3f(5000.0f, 5000.0f, 0.f);
-    ctx.max_entities    = 2000;
+    ctx.max_entities    = 16000;
 
     // librg_option_set(LIBRG_NETWORK_UPDATE_BUFFER_DELAY, 200);
 
