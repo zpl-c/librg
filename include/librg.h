@@ -127,7 +127,7 @@
 
 /* default constants/methods used */
 #ifndef LIBRG_DATA_GROW_FORMULA
-    #define LIBRG_DATA_GROW_FORMULA(x) (2*(x) + 16)
+#define LIBRG_DATA_GROW_FORMULA(x) (2*(x) + 16)
 #endif
 
 #define LIBRG_MESSAGE_ID            u16
@@ -142,736 +142,681 @@
 #define librg_lambda(name)  name
 
 #if !defined(librg_log)
-    #define librg_log zpl_printf
+#define librg_log zpl_printf
 #endif
 
 #if defined(LIBRG_DEBUG)
-    #define librg_dbg(fmt, ...) librg_log(fmt, ##__VA_ARGS__)
+#define librg_dbg(fmt, ...) librg_log(fmt, ##__VA_ARGS__)
 #else
-    #define librg_dbg(fmt, ...)
+#define librg_dbg(fmt, ...)
 #endif
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-    enum {
-        LIBRG_PLATFORM_ID,
-        LIBRG_PLATFORM_PROTOCOL,
-        LIBRG_PLATFORM_BUILD,
+// =======================================================================//
+// !
+// ! Public API
+// !
+// =======================================================================//
 
-        LIBRG_DEFAULT_CLIENT_TYPE,
-        LIBRG_DEFAULT_STREAM_RANGE,
-        LIBRG_DEFAULT_DATA_SIZE,
+struct librg_ctx_t;
+struct librg_data_t;
+struct librg_entity_t;
+struct librg_address_t;
+struct librg_message_t;
+struct librg_event_t;
 
-        LIBRG_NETWORK_CAPACITY,
-        LIBRG_NETWORK_CHANNELS,
-        LIBRG_NETWORK_PRIMARY_CHANNEL,
-        LIBRG_NETWORK_SECONDARY_CHANNEL,
-        LIBRG_NETWORK_MESSAGE_CHANNEL,
-        LIBRG_NETWORK_UPDATE_BUFFER_DELAY,
+typedef ENetPeer   librg_peer_t;
+typedef ENetHost   librg_host_t;
+typedef ENetPacket librg_packet_t;
 
-        LIBRG_MAX_ENTITIES_PER_BRANCH,
-        LIBRG_MAX_THREADS_PER_UPDATE,
+ZPL_TABLE_DECLARE(extern, librg_table_t, librg_table_, u32);
 
-        LIBRG_OPTIONS_SIZE,
-    };
+enum librg_mode         { LIBRG_MODE_SERVER, LIBRG_MODE_CLIENT };
+enum librg_pointer_type { LIBRG_POINTER_CTX, LIBRG_POINTER_DATA, LIBRG_POINTER_EVENT };
 
-    /**
-     * Default built-in events
-     * define your events likes this:
-     *     enum {
-     *         MY_NEW_EVENT_1 = LIBRG_LAST_EVENT,
-     *         MY_NEW_EVENT_2,
-     *         MY_NEW_EVENT_3,
-     *     };
-     */
-    enum {
-        LIBRG_CONNECTION_INIT,
-        LIBRG_CONNECTION_REQUEST,
-        LIBRG_CONNECTION_REFUSE,
-        LIBRG_CONNECTION_ACCEPT,
-        LIBRG_CONNECTION_DISCONNECT,
+/**
+ * Simple host address
+ * used to configure network on start
+ */
+typedef struct librg_address_t { i32 port; char *host; } librg_address_t;
 
-        LIBRG_ENTITY_CREATE,
-        LIBRG_ENTITY_UPDATE,
-        LIBRG_ENTITY_REMOVE,
-        LIBRG_CLIENT_STREAMER_ADD,
-        LIBRG_CLIENT_STREAMER_REMOVE,
-        LIBRG_CLIENT_STREAMER_UPDATE,
+typedef void (librg_entity_cb)(struct librg_ctx_t *ctx, struct librg_entity_t *entity);
+typedef void (librg_message_cb)(struct librg_message_t *msg);
+typedef void (librg_event_cb)(struct librg_event_t *event);
 
-        LIBRG_EVENT_LAST,
-    };
+/**
+ * Allocate librg ctx
+ * (to be used inside bindings)
+ */
+LIBRG_API void *librg_allocate_ptr(enum librg_pointer_type pointer_type);
+/**
+ * Frees a pointer allocated by library
+ * usually used in bindings.
+ */
+LIBRG_API void librg_release_ptr(void *ptr);
+/**
+ * Main initialization method
+ * MUST BE called in the begging of your application
+ */
+LIBRG_API void librg_init(struct librg_ctx_t *ctx);
+/**
+ * Should be called at the end of
+ * execution of the program
+ */
+LIBRG_API void librg_free(struct librg_ctx_t *ctx);
+/**
+ * Main tick method
+ * MUST BE called in your loop
+ * preferably w/o delays
+ */
+LIBRG_API void librg_tick(struct librg_ctx_t *ctx);
 
-    enum {
-        LIBRG_MODE_SERVER,
-        LIBRG_MODE_CLIENT,
-    };
+// =======================================================================//
+// !
+// ! Options
+// !
+// =======================================================================//
 
-    /* Table for various entity bool storages */
-    ZPL_TABLE_DECLARE(extern, librg_table_t, librg_table_, u32);
+enum librg_options {
+    LIBRG_PLATFORM_ID,
+    LIBRG_PLATFORM_PROTOCOL,
+    LIBRG_PLATFORM_BUILD,
 
-    /* structures and datatypes */
-    struct librg_ctx_t;
+    LIBRG_DEFAULT_CLIENT_TYPE,
+    LIBRG_DEFAULT_STREAM_RANGE,
+    LIBRG_DEFAULT_DATA_SIZE,
 
-    typedef ENetPeer   librg_peer_t;
-    typedef ENetHost   librg_host_t;
-    typedef ENetPacket librg_packet_t;
+    LIBRG_NETWORK_CAPACITY,
+    LIBRG_NETWORK_CHANNELS,
+    LIBRG_NETWORK_PRIMARY_CHANNEL,
+    LIBRG_NETWORK_SECONDARY_CHANNEL,
+    LIBRG_NETWORK_MESSAGE_CHANNEL,
+    LIBRG_NETWORK_UPDATE_BUFFER_DELAY,
 
-    #define librg_entity_id u32
+    LIBRG_MAX_ENTITIES_PER_BRANCH,
+    LIBRG_MAX_THREADS_PER_UPDATE,
 
-    typedef struct {
-        usize capacity;
-        usize read_pos;
-        usize write_pos;
+    LIBRG_OPTIONS_SIZE,
+};
 
-        void *rawptr;
+/**
+ * Get global cross-instance option for librg
+ */
+LIBRG_API u32 librg_option_get(u32 option);
+/**
+ * Set global cross-instance option for librg
+ */
+LIBRG_API void librg_option_set(u32 option, u32 value);
 
-        zpl_allocator_t allocator;
-    } librg_data_t;
+// =======================================================================//
+// !
+// ! Entities
+// !
+// =======================================================================//
 
-    /**
-     * Simple host address
-     * used to configure network on start
-     */
-    typedef struct {
-        i32 port;
-        char *host;
-    } librg_address_t;
+#define librg_entity_id u32
 
-    /**
-     * Entity flags
-     */
-    enum {
-        LIBRG_ENTITY_NONE       = 0, /* general flag, all destroyed/non-created entities have it */
-        LIBRG_ENTITY_ALIVE      = (1 << 0), /* general flag, all created entities have it */
-        LIBRG_ENTITY_CLIENT     = (1 << 1), /* flag describing entities created for client peer */
-        LIBRG_ENTITY_IGNORING   = (1 << 2), /* flag showing that entity has ignore overrides */
-        LIBRG_ENTITY_QUERIED    = (1 << 3), /* flag showing that entity has a cached culler query */
-        LIBRG_ENTITY_CONTROLLED = (1 << 4), /* flag showing if the entity is controlled(streamed) by some peer */
-        LIBRG_ENTITY_UNUSED     = (1 << 5), /* flag showing whether the entity's space is unused */
-    };
+enum librg_entity_flag {
+    LIBRG_ENTITY_NONE       = 0, /* general flag, all destroyed/non-created entities have it */
+    LIBRG_ENTITY_ALIVE      = (1 << 0), /* general flag, all created entities have it */
+    LIBRG_ENTITY_CLIENT     = (1 << 1), /* flag describing entities created for client peer */
+    LIBRG_ENTITY_IGNORING   = (1 << 2), /* flag showing that entity has ignore overrides */
+    LIBRG_ENTITY_QUERIED    = (1 << 3), /* flag showing that entity has a cached culler query */
+    LIBRG_ENTITY_CONTROLLED = (1 << 4), /* flag showing if the entity is controlled(streamed) by some peer */
+    LIBRG_ENTITY_UNUSED     = (1 << 5), /* flag showing whether the entity's space is unused */
+};
 
-    typedef enum librg_pointer_type {
-        LIBRG_POINTER_CTX,
-        LIBRG_POINTER_DATA,
-        LIBRG_POINTER_EVENT,
-    } librg_pointer_type;
+typedef struct librg_entity_t {
+    u32 id;
+    u32 type;
+    u64 flags;
 
-    /**
-     * Entity blob
-     */
-    typedef struct librg_entity_t {
-        u32 id;
-        u32 type;
-        u64 flags;
+    zplm_vec3 position;
+    f32 stream_range;
 
-        zplm_vec3 position;
-        f32 stream_range;
+    void *user_data;
+    struct librg_space_t *stream_branch;
 
-        void *user_data;
-        struct librg_space_t *stream_branch;
+    librg_table_t ignored;
+    librg_table_t last_snapshot;
 
-        librg_table_t ignored;
-        librg_table_t last_snapshot;
+    librg_peer_t *client_peer;
+    librg_peer_t *control_peer;
 
-        librg_peer_t *client_peer;
-        librg_peer_t *control_peer;
+    zpl_array(librg_entity_id) last_query;
+} librg_entity_t;
 
-        zpl_array(librg_entity_id) last_query;
-    } librg_entity_t;
+/**
+ * Create entity and return handle
+ */
+LIBRG_API struct librg_entity_t *librg_entity_create(struct librg_ctx_t *ctx, u32 type);
+/**
+ * Try to find an existing entity by a provided id, or NULL
+ */
+LIBRG_API struct librg_entity_t *librg_entity_fetch(struct librg_ctx_t *ctx, librg_entity_id entity_id);
+/**
+ * Reuqest an entity destruction (will be marked as destroyed, and send to be destroyed on clients on the next tick)
+ */
+LIBRG_API void librg_entity_destroy(struct librg_ctx_t *ctx, librg_entity_id entity_id);
+/**
+ * Query for entities that are in stream zone
+ * for current entity, and are visible to this entity
+ * an uninitialized pointer to the pointer of librg_entity_id should be provided:
+ *
+ * EXAMPLE:
+ * librg_entity_id *result;
+ * usize amount = librg_entity_query(&ctx, 15, &result);
+ */
+LIBRG_API usize librg_entity_query(struct librg_ctx_t *ctx, librg_entity_id entity_id, librg_entity_id **result);
+/**
+ * Check if provided entity is a valid entity
+ */
+LIBRG_API b32 librg_entity_valid(struct librg_ctx_t *ctx, librg_entity_id id);
+/**
+ * Try to find an entity that is assossiated with a particular peer, or NULL
+ */
+LIBRG_API struct librg_entity_t *librg_entity_find(struct librg_ctx_t *ctx, librg_peer_t *peer);
+/**
+ * Set particular entity visible or invisible
+ * for other entities in stream zone
+ */
+LIBRG_API void librg_entity_visibility_set(struct librg_ctx_t *ctx, librg_entity_id entity_id, b32 state);
+/**
+ * Set particular entity visible or invisible
+ * for other particular entity
+ */
+LIBRG_API void librg_entity_visibility_set_for(struct librg_ctx_t *ctx, librg_entity_id entity_id, librg_entity_id target, b32 state);
+/**
+ * Get particular entity visible or invisible
+ * for other entities in stream zone
+ */
+LIBRG_API b32 librg_entity_visibility_get(struct librg_ctx_t *ctx, librg_entity_id entity_id);
+/**
+ * Get particular entity visible or invisible
+ * for other particular entity
+ */
+LIBRG_API b32 librg_entity_visibility_get_for(struct librg_ctx_t *ctx, librg_entity_id entity_id, librg_entity_id target);
+/**
+ * Set some entity as client streamable
+ * Which means, that client will become responsive for sending
+ * updates about this entity
+ *
+ * And this entity wont be sent to the client, until he stops being the streamer
+ *
+ * Setting other client as streamer, will remove previous streamer from entity
+ */
+LIBRG_API void librg_entity_control_set(struct librg_ctx_t *ctx, librg_entity_id entity_id, librg_peer_t *peer);
+/**
+ * Get controller of the entity
+ */
+LIBRG_API librg_peer_t *librg_entity_control_get(struct librg_ctx_t *ctx, librg_entity_id entity_id);
+/**
+ * Remove some entity from stream ownership of the client
+ */
+LIBRG_API void librg_entity_control_remove(struct librg_ctx_t *ctx, librg_entity_id entity_id);
+/**
+ * Iterate over all the entities with a flag
+ */
+LIBRG_API void librg_entity_iterate(struct librg_ctx_t *ctx, u64 flags, librg_entity_cb callback);
+/**
+ * C based entity iteration macro
+ */
+#define librg_entity_iteratex(ctx, cflags, cname, code) do { \
+    for (int _ent = 0, _valid = 0; _ent < ctx->max_entities && _valid < ctx->entity.count; ++_ent) { \
+        if ((ctx->entity.list[_ent].flags & (LIBRG_ENTITY_ALIVE | cflags)) == (LIBRG_ENTITY_ALIVE | cflags)) { \
+            _valid++; librg_entity_id cname = _ent; code; \
+        } \
+    } \
+} while (0);
+/**
+ * Return entity type
+ * @deprecated
+ */
+LIBRG_API u32 librg_entity_type(struct librg_ctx_t *ctx, librg_entity_id entity_id);
 
-    /**
-     * World space structure
-     */
-    typedef struct librg_space_t {
-        zpl_allocator_t allocator;
-        u32 max_nodes;
-        isize dimensions;
-        zplm_aabb3 boundary;
-        zplm_vec3 min_bounds;
-        b32 use_min_bounds;
-        zpl_array(usize) free_nodes;
-        zpl_array(struct librg_space_t) spaces;
-        zpl_array(struct librg_space_node_t) nodes;
-    } librg_space_t;
+// =======================================================================//
+// !
+// ! Events
+// !
+// =======================================================================//
 
-    typedef struct librg_space_node_t {
-        librg_entity_t *blob;
-        b32 unused;
-    } librg_space_node_t;
+/**
+ * Default built-in events
+ * define your events likes this:
+ *     enum {
+ *         MY_NEW_EVENT_1 = LIBRG_LAST_EVENT,
+ *         MY_NEW_EVENT_2,
+ *         MY_NEW_EVENT_3,
+ *     };
+ */
+enum librg_events {
+    LIBRG_CONNECTION_INIT,
+    LIBRG_CONNECTION_REQUEST,
+    LIBRG_CONNECTION_REFUSE,
+    LIBRG_CONNECTION_ACCEPT,
+    LIBRG_CONNECTION_DISCONNECT,
 
-    /**
-     * Message structure
-     * created inside network handler
-     * and injected to each incoming message
-     */
-    typedef struct {
-        struct librg_ctx_t  *ctx;
+    LIBRG_ENTITY_CREATE,
+    LIBRG_ENTITY_UPDATE,
+    LIBRG_ENTITY_REMOVE,
+    LIBRG_CLIENT_STREAMER_ADD,
+    LIBRG_CLIENT_STREAMER_REMOVE,
+    LIBRG_CLIENT_STREAMER_UPDATE,
 
-        librg_data_t        *data;
-        librg_peer_t        *peer;
-        librg_packet_t      *packet;
+    LIBRG_EVENT_LAST,
+};
 
-        void *user_data; /* optional: user information */
-    } librg_message_t;
+enum librg_event_flags {
+    LIBRG_EVENT_NONE        = 0,        /* default empty user-created event */
+    LIBRG_EVENT_REJECTED    = (1 << 0), /* whether or not this event was rejected */
+    LIBRG_EVENT_REJECTABLE  = (1 << 1), /* can this event be rejected by user */
+    LIBRG_EVENT_REMOTE      = (1 << 2), /* event was based on network message */
+    LIBRG_EVENT_LOCAL       = (1 << 3), /* event was created locally */
+};
 
-    enum {
-        LIBRG_EVENT_NONE        = 0,        /* default empty user-created event */
-        LIBRG_EVENT_REJECTED    = (1 << 0), /* whether or not this event was rejected */
-        LIBRG_EVENT_REJECTABLE  = (1 << 1), /* can this event be rejected by user */
-        LIBRG_EVENT_REMOTE      = (1 << 2), /* event was based on network message */
-        LIBRG_EVENT_LOCAL       = (1 << 3), /* event was created locally */
-    };
+typedef struct librg_event_t {
+    struct librg_ctx_t *ctx;   /* librg context where event has been called */
+    struct librg_data_t *data;  /* optional: data is used for built-in events */
+    struct librg_entity_t *entity; /* optional: entity is used for built-in events */
 
-    /**
-     * Event structure
-     * usually created in various
-     */
-    typedef struct {
-        struct librg_ctx_t  *ctx;   /* librg context where event has been called */
+    librg_peer_t *peer;  /* optional: peer is used for built-in events */
 
-        librg_data_t        *data;  /* optional: data is used for built-in events */
-        librg_peer_t        *peer;  /* optional: peer is used for built-in events */
-        librg_entity_t      *entity; /* optional: entity is used for built-in events */
+    u64 flags;  /* flags for that event */
+    void *user_data; /* optional: user information */
+} librg_event_t;
 
-        u64 flags;  /* flags for that event */
-        void *user_data; /* optional: user information */
-    } librg_event_t;
+/**
+ * Used to attach event handler
+ * You can bind as many event handlers onto
+ * single event, as you want
+ *
+ * In the callback you will need to cast event
+ * to type of structure that you've triggered this event with
+ *
+ * @param  id usually you define event ids inside enum
+ * @param  callback
+ * @return index of added event, can be used to remove particular event handler
+ */
+LIBRG_API u64 librg_event_add(struct librg_ctx_t *ctx, u64 id, librg_event_cb callback);
+/**
+ * Used to trigger execution of all attached
+ * event handlers for particlar event
+ *
+ * You can provide pointer to any data, which will be
+ * passed inside the event callback
+ *
+ * @param id usually you define event ids inside enum
+ * @param event pointer onto data or NULL
+ */
+LIBRG_API void librg_event_trigger(struct librg_ctx_t *ctx, u64 id, struct librg_event_t *event);
+/**
+ * Used to remove particular callback from
+ * event chain, so it wont be called ever again
+ *
+ * @param id usually you define event ids inside enum
+ * @param index returned by librg_event_add
+ */
+LIBRG_API void librg_event_remove(struct librg_ctx_t *ctx, u64 id, u64 index);
+/**
+ * Used to reject some event from triggering from
+ * inside of executing callback
+ */
+LIBRG_API void librg_event_reject(struct librg_event_t *event);
+/**
+ * Used to check if some event can be rejected
+ */
+LIBRG_API b32 librg_event_rejectable(struct librg_event_t *event);
+/**
+ * Checks if current event was not rejected
+ * inside any of the callbacks
+ */
+LIBRG_API b32 librg_event_succeeded(struct librg_event_t *event);
 
-    /**
-     * Callbacks
-     */
-    typedef void (librg_entity_cb)(struct librg_ctx_t *ctx, librg_entity_t *entity);
-    typedef void (librg_message_cb)(librg_message_t *msg);
-    typedef void (librg_event_cb)(librg_event_t *event);
+// =======================================================================//
+// !
+// ! Binary data (bitstream)
+// !
+// =======================================================================//
 
-    typedef zpl_array(librg_event_cb *) librg_event_block;
-    ZPL_TABLE_DECLARE(static, librg_event_pool, librg_event_pool_, librg_event_block);
+typedef struct librg_data_t {
+    usize capacity;
+    usize read_pos;
+    usize write_pos;
 
-    /**
-     * Multithreading stuff
-     */
-    enum {
-        librg_thread_idle,
-        librg_thread_work,
-        librg_thread_exit,
-    };
+    void *rawptr;
 
-    typedef struct {
-        usize id;
-        usize offset;
-        usize count;
-        struct librg_ctx_t *ctx;
-    } librg_update_worker_si_t;
+    zpl_allocator_t allocator;
+} librg_data_t;
 
-    typedef struct librg__snapshot_t {
-        f64 time;
+/**
+ * Initialize new bitstream with default mem size
+ */
+LIBRG_API void librg_data_init(struct librg_data_t *data);
+/**
+ * Initialize new bitstream with custom mem size
+ */
+LIBRG_API void librg_data_init_size(struct librg_data_t *data, usize size);
+/**
+ * Initialize new bitstream with custom mem size (bindings stuff)
+ */
+LIBRG_API struct librg_data_t *librg_data_init_new();
+/**
+ * Free initialized bitstream
+ */
+LIBRG_API void librg_data_free(struct librg_data_t *data);
+/**
+ * Reset initialized bitstream
+ * NOTE: doesnt remove any data, just resets read and write pos to 0
+ */
+LIBRG_API void librg_data_reset(struct librg_data_t *data);
+/**
+ * Increase size of bitstream
+ */
+LIBRG_API void librg_data_grow(struct librg_data_t *data, usize min_size);
+/**
+ * Methods for getting various parameters of bitstream
+ */
+LIBRG_API usize librg_data_capacity(struct librg_data_t *data);
+LIBRG_API usize librg_data_get_rpos(struct librg_data_t *data);
+LIBRG_API usize librg_data_get_wpos(struct librg_data_t *data);
+LIBRG_API void  librg_data_set_rpos(struct librg_data_t *data, usize position);
+LIBRG_API void  librg_data_set_wpos(struct librg_data_t *data, usize position);
+/**
+ * Read and write methods for custom sized data
+ */
+LIBRG_API void librg_data_rptr(struct librg_data_t *data, void *ptr, usize size);
+LIBRG_API void librg_data_wptr(struct librg_data_t *data, void *ptr, usize size);
+/**
+ * Read and write methods for custom sized data
+ * at particular position in memory
+ */
+LIBRG_API void librg_data_rptr_at(struct librg_data_t *data, void *ptr, usize size, isize position);
+LIBRG_API void librg_data_wptr_at(struct librg_data_t *data, void *ptr, usize size, isize position);
+/**
+ * A helprer macro for onliner methods
+ */
+#define LIBRG_GEN_DATA_READWRITE(TYPE) \
+    LIBRG_API TYPE ZPL_JOIN2(librg_data_r,TYPE)(struct librg_data_t *data); \
+    LIBRG_API void ZPL_JOIN2(librg_data_w,TYPE)(struct librg_data_t *data, TYPE value); \
+    LIBRG_API TYPE ZPL_JOIN3(librg_data_r,TYPE,_at)(struct librg_data_t *data, isize position); \
+    LIBRG_API void ZPL_JOIN3(librg_data_w,TYPE,_at)(struct librg_data_t *data, TYPE value, isize position);
+/**
+ * General one-line methods for reading/writing different types
+ */
+LIBRG_GEN_DATA_READWRITE( i8);
+LIBRG_GEN_DATA_READWRITE( u8);
+LIBRG_GEN_DATA_READWRITE(i16);
+LIBRG_GEN_DATA_READWRITE(u16);
+LIBRG_GEN_DATA_READWRITE(i32);
+LIBRG_GEN_DATA_READWRITE(u32);
+LIBRG_GEN_DATA_READWRITE(i64);
+LIBRG_GEN_DATA_READWRITE(u64);
+LIBRG_GEN_DATA_READWRITE(f32);
+LIBRG_GEN_DATA_READWRITE(f64);
+LIBRG_GEN_DATA_READWRITE( b8);
+LIBRG_GEN_DATA_READWRITE(b16);
+LIBRG_GEN_DATA_READWRITE(b32);
+#undef LIBRG_GEN_DATA_READWRITE
+/**
+ * Read/write methods for entity (aliases for u32)
+ */
+#define librg_data_went ZPL_JOIN2(librg_data_w, librg_entity_id)
+#define librg_data_rent ZPL_JOIN2(librg_data_r, librg_entity_id)
+#define librg_data_wmid ZPL_JOIN2(librg_data_w, LIBRG_MESSAGE_ID)
+#define librg_data_rmid ZPL_JOIN2(librg_data_r, LIBRG_MESSAGE_ID)
+
+// =======================================================================//
+// !
+// ! Network
+// !
+// =======================================================================//
+
+/**
+ * Message structure
+ * created inside network handler
+ * and injected to each incoming message
+ */
+typedef struct librg_message_t {
+    struct librg_ctx_t  *ctx;
+    struct librg_data_t *data;
+
+    librg_peer_t *peer;
+    librg_packet_t *packet;
+
+    void *user_data; /* optional: user information */
+} librg_message_t;
+
+/**
+ * Check are we connected
+ */
+LIBRG_API b32 librg_is_connected(struct librg_ctx_t *ctx);
+/**
+ * Is librg instance is running
+ * in the server mode
+ */
+LIBRG_API b32 librg_is_server(struct librg_ctx_t *ctx);
+/**
+ * Is librg instance is running
+ * in the client mode
+ */
+LIBRG_API b32 librg_is_client(struct librg_ctx_t *ctx);
+/**
+ * Starts network connection
+ * Requires you to provide .port (if running as server)
+ * or both .port and .host (if running as client)
+ *
+ * For server mode - starts server
+ * For client mode - starts client, and connects to provided host & port
+ */
+LIBRG_API void librg_network_start(struct librg_ctx_t *ctx, librg_address_t address);
+/**
+ * Disconnects (if connected), stops network
+ * and releases resources
+ */
+LIBRG_API void librg_network_stop(struct librg_ctx_t *ctx);
+/**
+ * Forces disconnection for provided peer
+ * @param ctx
+ * @param peer
+ */
+LIBRG_API void librg_network_kick(struct librg_ctx_t *ctx, librg_peer_t *peer);
+/**
+ * Can be used to add handler
+ * to a particular message id
+ */
+LIBRG_API void librg_network_add(struct librg_ctx_t *ctx, LIBRG_MESSAGE_ID id, librg_message_cb callback);
+/**
+ * Can be used to remove a handler
+ * from particular message id
+ */
+LIBRG_API void librg_network_remove(struct librg_ctx_t *ctx, LIBRG_MESSAGE_ID id);
+/**
+ * Part of message API
+ * Takes in initialized void of size pointer with written packet id
+ * and sends data to all connected peers ( or to server if its client )
+ */
+LIBRG_API void librg_message_send_all(struct librg_ctx_t *ctx, LIBRG_MESSAGE_ID id, void *data, usize size);
+/**
+ * Part of message API
+ * Applies all from previous mehod
+ * But data will be sent only to particular provided peer
+ */
+LIBRG_API void librg_message_send_to(struct librg_ctx_t *ctx, LIBRG_MESSAGE_ID id, librg_peer_t *peer, void *data, usize size);
+/**
+ * Part of message API
+ * Applies all from previous mehod
+ * But data will be sent to all except provided peer
+ */
+LIBRG_API void librg_message_send_except(struct librg_ctx_t *ctx, LIBRG_MESSAGE_ID id, librg_peer_t *peer, void *data, usize size);
+/**
+ * Part of message API
+ * Applies all from previous mehod
+ * Data will be sent only to entities, which are inside streamzone
+ * for provided entity
+ */
+LIBRG_API void librg_message_send_instream(struct librg_ctx_t *ctx, LIBRG_MESSAGE_ID id, librg_entity_id entity_id, void *data, usize size);
+/**
+ * Part of message API
+ * Applies all from previous mehod
+ * Data will be sent only to entities, which are inside streamzone
+ * for provided entity except peer
+ */
+LIBRG_API void librg_message_send_instream_except(struct librg_ctx_t *ctx, LIBRG_MESSAGE_ID id, librg_entity_id entity_id, librg_peer_t *peer, void *data, usize size);
+
+// =======================================================================//
+// !
+// ! Extensions
+// !
+// =======================================================================//
+
+/**
+ * World space structure
+ */
+typedef struct librg_space_t {
+    zpl_allocator_t allocator;
+    u32 max_nodes;
+    isize dimensions;
+    zplm_aabb3 boundary;
+    zplm_vec3 min_bounds;
+    b32 use_min_bounds;
+    zpl_array(usize) free_nodes;
+    zpl_array(struct librg_space_t) spaces;
+    zpl_array(struct librg_space_node_t) nodes;
+} librg_space_t;
+
+typedef struct librg_space_node_t {
+    struct librg_entity_t *blob;
+    b32 unused;
+} librg_space_node_t;
+
+typedef zpl_array(librg_event_cb *) librg_event_block;
+ZPL_TABLE_DECLARE(static, librg_event_pool, librg_event_pool_, librg_event_block);
+
+/**
+ * Multithreading stuff
+ */
+enum librg_thread_state {
+    librg_thread_idle,
+    librg_thread_work,
+    librg_thread_exit,
+};
+
+typedef struct {
+    usize id;
+    usize offset;
+    usize count;
+    struct librg_ctx_t *ctx;
+} librg_update_worker_si_t;
+
+/**
+ * Context + config struct
+ */
+typedef struct librg_ctx_t {
+    // core
+    u16 mode;
+    u16 tick_delay;
+
+    // configuration
+    u16 max_connections;
+    u32 max_entities;
+
+    zplm_vec3 world_size;
+    zplm_vec3 min_branch_size;
+
+    f64 last_update;
+    void *user_data;
+
+    struct {
         librg_peer_t *peer;
-        librg_data_t data;
-    } librg__snapshot_t;
+        librg_host_t *host;
+        librg_table_t connected_peers;
+        librg_address_t last_address;
+    } network;
 
-    /**
-     * Context + config struct
-     */
-    typedef struct librg_ctx_t {
-        // core
-        u16 mode;
-        u16 tick_delay;
+    struct {
+        u32 count;
+        u32 cursor;
+        librg_table_t ignored;
+        struct librg_entity_t *list;
+        zpl_array(librg_entity_id) remove_queue;
+        zpl_array(librg_message_t *) add_control_queue;
+    } entity;
 
-        // configuration
-        u16 max_connections;
-        u32 max_entities;
-
-        zplm_vec3 world_size;
-        zplm_vec3 min_branch_size;
-
-        f64 last_update;
-        void *user_data;
-
+    union {
         struct {
-            librg_peer_t *peer;
-            librg_host_t *host;
-            librg_table_t connected_peers;
-            librg_address_t last_address;
-        } network;
-
-        struct {
-            u32 count;
-            u32 cursor;
-            librg_table_t ignored;
-            struct librg_entity_t *list;
-            zpl_array(librg_entity_id) remove_queue;
-            zpl_array(librg_message_t *) add_control_queue;
-        } entity;
-
-        union {
-            struct {
-                librg_data_t stream_input;
-                librg_data_t stream_output;
-                librg_data_t stream_upd_reliable;
-                librg_data_t stream_upd_unreliable;
-            };
-
-            librg_data_t streams[LIBRG_DATA_STREAMS_AMOUNT];
+            librg_data_t stream_input;
+            librg_data_t stream_output;
+            librg_data_t stream_upd_reliable;
+            librg_data_t stream_upd_unreliable;
         };
 
-        #ifdef LIBRG_MULTITHREADED
-        struct {
-            zpl_atomic32_t signal;
-            zpl_atomic32_t work_count;
-            zpl_thread_t   *update_workers;
-            zpl_mutex_t    *send_lock;
-        } threading;
-        #endif
-
-        zpl_buffer_t(librg_message_cb *) messages;
-
-        zpl_allocator_t     allocator;
-        zpl_timer_pool      timers;
-        librg_event_pool    events;
-        librg_space_t       world;
-
-    } librg_ctx_t;
-
-    // =======================================================================//
-    // !
-    // ! Core methods
-    // !
-    // =======================================================================//
-
-    /**
-     * Set global cross-instance option for librg
-     */
-    LIBRG_API void librg_option_set(u32 option, u32 value);
-
-    /**
-     * Get global cross-instance option for librg
-     */
-    LIBRG_API u32 librg_option_get(u32 option);
-
-    /**
-     * Main initialization method
-     * MUST BE called in the begging of your application
-     */
-    LIBRG_API void librg_init(librg_ctx_t *ctx);
-
-    /**
-     * Main tick method
-     * MUST BE called in your loop
-     * preferably w/o delays
-     */
-    LIBRG_API void librg_tick(librg_ctx_t *ctx);
-
-    /**
-     * Should be called at the end of
-     * execution of the program
-     */
-    LIBRG_API void librg_free(librg_ctx_t *ctx);
-
-    /**
-     * Is librg instance is running
-     * in the server mode
-     */
-    LIBRG_API b32 librg_is_server(librg_ctx_t *ctx);
-
-    /**
-     * Is librg instance is running
-     * in the client mode
-     */
-    LIBRG_API b32 librg_is_client(librg_ctx_t *ctx);
-
-    /**
-     * Allocate librg ctx
-     * (to be used inside bindings)
-     */
-    LIBRG_API void *librg_allocate_ptr(librg_pointer_type pointer_type);
-
-    /**
-     * Frees a pointer allocated by library
-     * usually used in bindings.
-     */
-    LIBRG_API void librg_release_ptr(void *ptr);
-
-    // =======================================================================//
-    // !
-    // ! Entities
-    // !
-    // =======================================================================//
-
-    /**
-     * Create entity and return handle
-     */
-    LIBRG_API librg_entity_t *librg_entity_create(librg_ctx_t *ctx, u32 type);
-
-    /**
-     * Check if provided entity is a valid entity
-     */
-    LIBRG_API b32 librg_entity_valid(librg_ctx_t *ctx, librg_entity_id id);
-
-    /**
-     * Return entity type
-     */
-    LIBRG_API u32 librg_entity_type(librg_ctx_t *ctx, librg_entity_id entity_id);
-
-    /**
-     * Return entity blob pointer
-     */
-    LIBRG_API librg_entity_t *librg_entity_fetch(librg_ctx_t *ctx, librg_entity_id entity_id);
-
-    /**
-     * Destroy entity
-     */
-    LIBRG_API void librg_entity_destroy(librg_ctx_t *ctx, librg_entity_id entity_id);
-
-    /**
-     * Query for entities that are in stream zone
-     * for current entity, and are visible to this entity
-     */
-    LIBRG_API usize librg_entity_query(librg_ctx_t *ctx, librg_entity_id entity_id, librg_entity_id **result);
-
-    /**
-     * Get entity by peer
-     */
-    LIBRG_API librg_entity_t *librg_entity_find(librg_ctx_t *ctx, librg_peer_t *peer);
-
-    /**
-     * Set particular entity visible or invisible
-     * for other entities in stream zone
-     */
-    LIBRG_API void librg_entity_visibility_set(librg_ctx_t *ctx, librg_entity_id entity_id, b32 state);
-
-    /**
-     * Set particular entity visible or invisible
-     * for other particular entity
-     */
-    LIBRG_API void librg_entity_visibility_set_for(librg_ctx_t *ctx, librg_entity_id entity_id, librg_entity_id target, b32 state);
-
-    /**
-     * Get particular entity visible or invisible
-     * for other entities in stream zone
-     */
-    LIBRG_API b32 librg_entity_visibility_get(librg_ctx_t *ctx, librg_entity_id entity_id);
-
-    /**
-     * Get particular entity visible or invisible
-     * for other particular entity
-     */
-    LIBRG_API b32 librg_entity_visibility_get_for(librg_ctx_t *ctx, librg_entity_id entity_id, librg_entity_id target);
-
-    /**
-     * Set some entity as client streamable
-     * Which means, that client will become responsive for sending
-     * updates about this entity
-     *
-     * And this entity wont be sent to the client, until he stops being the streamer
-     *
-     * Setting other client as streamer, will remove previous streamer from entity
-     */
-    LIBRG_API void librg_entity_control_set(librg_ctx_t *ctx, librg_entity_id entity_id, librg_peer_t *peer);
-
-    /**
-     * Get controller of the entity
-     */
-    LIBRG_API librg_peer_t *librg_entity_control_get(librg_ctx_t *ctx, librg_entity_id entity_id);
-
-    /**
-     * Remove some entity from stream ownership of the client
-     */
-    LIBRG_API void librg_entity_control_remove(librg_ctx_t *ctx, librg_entity_id entity_id);
-
-    /**
-     * Iterate over all the entities with a flag
-     */
-    LIBRG_API void librg_entity_iterate(librg_ctx_t *ctx, u64 flags, librg_entity_cb callback);
-
-
-    #define librg_entity_iteratex(ctx, cflags, cname, code) do { \
-        for (int _ent = 0, _valid = 0; _ent < ctx->max_entities && _valid < ctx->entity.count; ++_ent) { \
-            if ((ctx->entity.list[_ent].flags & (LIBRG_ENTITY_ALIVE | cflags)) == (LIBRG_ENTITY_ALIVE | cflags)) { \
-                _valid++; librg_entity_id cname = _ent; code; \
-            } \
-        } \
-    } while (0);
-
-    // =======================================================================//
-    // !
-    // ! Events
-    // !
-    // =======================================================================//
-
-    /**
-     * Used to attach event handler
-     * You can bind as many event handlers onto
-     * single event, as you want
-     *
-     * In the callback you will need to cast event
-     * to type of structure that you've triggered this event with
-     *
-     * @param  id usually you define event ids inside enum
-     * @param  callback
-     * @return index of added event, can be used to remove particular event handler
-     */
-    LIBRG_API u64 librg_event_add(librg_ctx_t *ctx, u64 id, librg_event_cb callback);
-
-    /**
-     * Used to trigger execution of all attached
-     * event handlers for particlar event
-     *
-     * You can provide pointer to any data, which will be
-     * passed inside the event callback
-     *
-     * @param id usually you define event ids inside enum
-     * @param event pointer onto data or NULL
-     */
-    LIBRG_API void librg_event_trigger(librg_ctx_t *ctx, u64 id, librg_event_t *event);
-
-    /**
-     * Used to remove particular callback from
-     * event chain, so it wont be called ever again
-     *
-     * @param id usually you define event ids inside enum
-     * @param index returned by librg_event_add
-     */
-    LIBRG_API void librg_event_remove(librg_ctx_t *ctx, u64 id, u64 index);
-
-    /**
-     * Used to reject some event from triggering from
-     * inside of executing callback
-     */
-    LIBRG_API void librg_event_reject(librg_event_t *event);
-
-    /**
-     * Used to check if some event can be rejected
-     */
-    LIBRG_API b32 librg_event_rejectable(librg_event_t *event);
-
-    /**
-     * Checks if current event was not rejected
-     * inside any of the callbacks
-     */
-    LIBRG_API b32 librg_event_succeeded(librg_event_t *event);
-
-    // =======================================================================//
-    // !
-    // ! Binary data (bitstream)
-    // !
-    // =======================================================================//
-
-    /**
-     * Initialize new bitstream with default mem size
-     */
-    LIBRG_API void librg_data_init(librg_data_t *data);
-
-    /**
-     * Initialize new bitstream with custom mem size
-     */
-    LIBRG_API void librg_data_init_size(librg_data_t *data, usize size);
-
-    /**
-     * Initialize new bitstream with custom mem size (bindings stuff)
-     */
-    LIBRG_API librg_data_t *librg_data_init_new();
-
-    /**
-     * Free initialized bitstream
-     */
-    LIBRG_API void librg_data_free(librg_data_t *data);
-
-    /**
-     * Reset initialized bitstream
-     * NOTE: doesnt remove any data, just resets read and write pos to 0
-     */
-    LIBRG_API void librg_data_reset(librg_data_t *data);
-
-    /**
-     * Increase size of bitstream
-     */
-    LIBRG_API void librg_data_grow(librg_data_t *data, usize min_size);
-
-    /**
-     * Methods for getting various parameters of bitstream
-     */
-    LIBRG_API usize librg_data_capacity(librg_data_t *data);
-    LIBRG_API usize librg_data_get_rpos(librg_data_t *data);
-    LIBRG_API usize librg_data_get_wpos(librg_data_t *data);
-    LIBRG_API void  librg_data_set_rpos(librg_data_t *data, usize position);
-    LIBRG_API void  librg_data_set_wpos(librg_data_t *data, usize position);
-
-    /**
-     * Read and write methods for custom sized data
-     */
-    LIBRG_API void librg_data_rptr(librg_data_t *data, void *ptr, usize size);
-    LIBRG_API void librg_data_wptr(librg_data_t *data, void *ptr, usize size);
-
-    /**
-     * Read and write methods for custom sized data
-     * at particular position in memory
-     */
-    LIBRG_API void librg_data_rptr_at(librg_data_t *data, void *ptr, usize size, isize position);
-    LIBRG_API void librg_data_wptr_at(librg_data_t *data, void *ptr, usize size, isize position);
-
-    /**
-     * General one-line methods for reading/writing different types
-     */
-    #define LIBRG_GEN_DATA_READWRITE(TYPE) \
-        LIBRG_API TYPE ZPL_JOIN2(librg_data_r,TYPE)(librg_data_t *data); \
-        LIBRG_API void ZPL_JOIN2(librg_data_w,TYPE)(librg_data_t *data, TYPE value); \
-        LIBRG_API TYPE ZPL_JOIN3(librg_data_r,TYPE,_at)(librg_data_t *data, isize position); \
-        LIBRG_API void ZPL_JOIN3(librg_data_w,TYPE,_at)(librg_data_t *data, TYPE value, isize position); \
-
-        LIBRG_GEN_DATA_READWRITE( i8);
-        LIBRG_GEN_DATA_READWRITE( u8);
-        LIBRG_GEN_DATA_READWRITE(i16);
-        LIBRG_GEN_DATA_READWRITE(u16);
-        LIBRG_GEN_DATA_READWRITE(i32);
-        LIBRG_GEN_DATA_READWRITE(u32);
-        LIBRG_GEN_DATA_READWRITE(i64);
-        LIBRG_GEN_DATA_READWRITE(u64);
-        LIBRG_GEN_DATA_READWRITE(f32);
-        LIBRG_GEN_DATA_READWRITE(f64);
-        LIBRG_GEN_DATA_READWRITE( b8);
-        LIBRG_GEN_DATA_READWRITE(b16);
-        LIBRG_GEN_DATA_READWRITE(b32);
-
-    #undef LIBRG_GEN_DATA_READWRITE
-
-    /**
-     * Read/write methods for entity (aliases for u32)
-     */
-    #define librg_data_went ZPL_JOIN2(librg_data_w, librg_entity_id)
-    #define librg_data_rent ZPL_JOIN2(librg_data_r, librg_entity_id)
-
-    #define librg_data_wmid ZPL_JOIN2(librg_data_w, LIBRG_MESSAGE_ID)
-    #define librg_data_rmid ZPL_JOIN2(librg_data_r, LIBRG_MESSAGE_ID)
-
-    // =======================================================================//
-    // !
-    // ! Network
-    // !
-    // =======================================================================//
-
-    /**
-     * Check are we connected
-     */
-    LIBRG_API b32 librg_is_connected(librg_ctx_t *ctx);
-
-    /**
-     * Starts network connection
-     * Requires you to provide .port (if running as server)
-     * or both .port and .host (if running as client)
-     *
-     * For server mode - starts server
-     * For client mode - starts client, and connects to provided host & port
-     */
-    LIBRG_API void librg_network_start(librg_ctx_t *ctx, librg_address_t address);
-
-    /**
-     * Disconnects (if connected), stops network
-     * and releases resources
-     */
-    LIBRG_API void librg_network_stop(librg_ctx_t *ctx);
-
-    /**
-     * Forces disconnection for provided peer
-     * @param ctx
-     * @param peer
-     */
-    LIBRG_API void librg_network_kick(librg_ctx_t *ctx, librg_peer_t *peer);
-
-    /**
-     * Can be used to add handler
-     * to a particular message id
-     */
-    LIBRG_API void librg_network_add(librg_ctx_t *ctx, LIBRG_MESSAGE_ID id, librg_message_cb callback);
-
-    /**
-     * Can be used to remove a handler
-     * from particular message id
-     */
-    LIBRG_API void librg_network_remove(librg_ctx_t *ctx, LIBRG_MESSAGE_ID id);
-
-    /**
-     * Part of message API
-     * Takes in initialized void of size pointer with written packet id
-     * and sends data to all connected peers ( or to server if its client )
-     */
-    LIBRG_API void librg_message_send_all(librg_ctx_t *ctx, LIBRG_MESSAGE_ID id, void *data, usize size);
-
-    /**
-     * Part of message API
-     * Applies all from previous mehod
-     * But data will be sent only to particular provided peer
-     */
-    LIBRG_API void librg_message_send_to(librg_ctx_t *ctx, LIBRG_MESSAGE_ID id, librg_peer_t *peer, void *data, usize size);
-
-    /**
-     * Part of message API
-     * Applies all from previous mehod
-     * But data will be sent to all except provided peer
-     */
-    LIBRG_API void librg_message_send_except(librg_ctx_t *ctx, LIBRG_MESSAGE_ID id, librg_peer_t *peer, void *data, usize size);
-
-    /**
-     * Part of message API
-     * Applies all from previous mehod
-     * Data will be sent only to entities, which are inside streamzone
-     * for provided entity
-     */
-    LIBRG_API void librg_message_send_instream(librg_ctx_t *ctx, LIBRG_MESSAGE_ID id, librg_entity_id entity_id, void *data, usize size);
-
-    /**
-     * Part of message API
-     * Applies all from previous mehod
-     * Data will be sent only to entities, which are inside streamzone
-     * for provided entity except peer
-     */
-    LIBRG_API void librg_message_send_instream_except(librg_ctx_t *ctx, LIBRG_MESSAGE_ID id, librg_entity_id entity_id, librg_peer_t *peer, void *data, usize size);
-
-    // =======================================================================//
-    // !
-    // ! Extensions
-    // !
-    // =======================================================================//
-
-    #define librg__send_internal(CTX, ID, NAME, CALLBACK_CODE, SEND_CODE) \
-        librg_data_t NAME; \
-        librg_data_init(&NAME); \
-        CALLBACK_CODE; SEND_CODE; \
-        librg_data_free(&NAME);
-
-    #define librg_send_all(CTX, ID, NAME, CALLBACK_CODE) do { \
-        librg__send_internal(CTX, ID, NAME, CALLBACK_CODE, { \
-            librg_message_send_all(CTX, ID, NAME.rawptr, librg_data_get_wpos(&NAME)); \
-        }); \
-    } while(0);
-
-    #define librg_send_to(CTX, ID, PEER, NAME, CALLBACK_CODE) do { \
-        librg__send_internal(CTX, ID, NAME, CALLBACK_CODE, { \
-            librg_message_send_to(CTX, ID, PEER, NAME.rawptr, librg_data_get_wpos(&NAME)); \
-        }); \
-    } while(0);
-
-    #define librg_send_except(CTX, ID, PEER, NAME, CALLBACK_CODE) do { \
-        librg__send_internal(CTX, ID, NAME, CALLBACK_CODE, { \
-            librg_message_send_except(CTX, ID, PEER, NAME.rawptr, librg_data_get_wpos(&NAME)); \
-        }); \
-    } while(0);
-
-    #define librg_send_instream(CTX, ID, ENTITY, NAME, CALLBACK_CODE) do { \
-        librg__send_internal(CTX, ID, NAME, CALLBACK_CODE, { \
-            librg_message_send_instream(CTX, ID, ENTITY, NAME.rawptr, librg_data_get_wpos(&NAME)); \
-        }); \
-    } while(0);
-
-    #define librg_send_instream_except(CTX, ID, ENTITY, PEER, NAME, CALLBACK_CODE) do { \
-        librg__send_internal(CTX, ID, NAME, CALLBACK_CODE, { \
-            librg_message_send_instream(CTX, ID, ENTITY, PEER, NAME.rawptr, librg_data_get_wpos(&NAME)); \
-        }); \
-    } while(0);
-
-    #define librg_send librg_send_all
-
+        librg_data_t streams[LIBRG_DATA_STREAMS_AMOUNT];
+    };
+
+    #ifdef LIBRG_MULTITHREADED
+    struct {
+        zpl_atomic32_t signal;
+        zpl_atomic32_t work_count;
+        zpl_thread_t   *update_workers;
+        zpl_mutex_t    *send_lock;
+    } threading;
+    #endif
+
+    zpl_buffer_t(librg_message_cb *) messages;
+
+    zpl_allocator_t     allocator;
+    zpl_timer_pool      timers;
+    librg_event_pool    events;
+    librg_space_t       world;
+
+} librg_ctx_t;
+
+// =======================================================================//
+// !
+// ! Extensions
+// !
+// =======================================================================//
+
+#define librg__send_internal(CTX, ID, NAME, CALLBACK_CODE, SEND_CODE) \
+    librg_data_t NAME; \
+    librg_data_init(&NAME); \
+    CALLBACK_CODE; SEND_CODE; \
+    librg_data_free(&NAME);
+
+#define librg_send_all(CTX, ID, NAME, CALLBACK_CODE) do { \
+    librg__send_internal(CTX, ID, NAME, CALLBACK_CODE, { \
+        librg_message_send_all(CTX, ID, NAME.rawptr, librg_data_get_wpos(&NAME)); \
+    }); \
+} while(0);
+
+#define librg_send_to(CTX, ID, PEER, NAME, CALLBACK_CODE) do { \
+    librg__send_internal(CTX, ID, NAME, CALLBACK_CODE, { \
+        librg_message_send_to(CTX, ID, PEER, NAME.rawptr, librg_data_get_wpos(&NAME)); \
+    }); \
+} while(0);
+
+#define librg_send_except(CTX, ID, PEER, NAME, CALLBACK_CODE) do { \
+    librg__send_internal(CTX, ID, NAME, CALLBACK_CODE, { \
+        librg_message_send_except(CTX, ID, PEER, NAME.rawptr, librg_data_get_wpos(&NAME)); \
+    }); \
+} while(0);
+
+#define librg_send_instream(CTX, ID, ENTITY, NAME, CALLBACK_CODE) do { \
+    librg__send_internal(CTX, ID, NAME, CALLBACK_CODE, { \
+        librg_message_send_instream(CTX, ID, ENTITY, NAME.rawptr, librg_data_get_wpos(&NAME)); \
+    }); \
+} while(0);
+
+#define librg_send_instream_except(CTX, ID, ENTITY, PEER, NAME, CALLBACK_CODE) do { \
+    librg__send_internal(CTX, ID, NAME, CALLBACK_CODE, { \
+        librg_message_send_instream(CTX, ID, ENTITY, PEER, NAME.rawptr, librg_data_get_wpos(&NAME)); \
+    }); \
+} while(0);
+
+#define librg_send librg_send_all
 
 #ifdef __cplusplus
 }
@@ -2647,7 +2592,7 @@ extern "C" {
         zpl_mfree(ptr);
     }
 
-    void *librg_allocate_ptr(librg_pointer_type type) {
+    void *librg_allocate_ptr(enum librg_pointer_type type) {
         void *ptr = NULL;
 
         switch (type) {
