@@ -180,7 +180,7 @@ int main() {
     f64 s = zpl_time_now();
 
 #if 1
-    for (isize i = 0; i < 100; i++) {
+    for (isize i = 0; i < 10000; i++) {
         librg_entity_t *enemy = librg_entity_create(&ctx, DEMO_TYPE_NPC);
 
         enemy->position.x = (float)(2000 - rand() % 4000);
