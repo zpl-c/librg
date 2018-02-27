@@ -90,8 +90,8 @@
 #define LIBRG_VERSION LIBRG_VERSION_CREATE(LIBRG_VERSION_MAJOR, LIBRG_VERSION_MINOR, LIBRG_VERSION_PATCH)
 
 // disable asserts for release build
-#if !defined(LIBRG_DEBUG)
-    #define ZPL_ASSERT_MSG(cond, msg, ...)
+#if !defined(LIBRG_DEBUG) || defined(LIBRG_NO_ASSERT)
+#define ZPL_ASSERT_MSG(cond, msg, ...)
 #endif
 
 /* include definitions */
@@ -125,21 +125,17 @@
     #endif
 #endif
 
+#define librg_global        zpl_global
+#define librg_inline        zpl_inline
+#define librg_internal      zpl_internal
+#define librg_assert        ZPL_ASSERT
+#define librg_assert_msg    ZPL_ASSERT_MSG
+#define librg_lambda(name)  name
+
 /* default constants/methods used */
 #ifndef LIBRG_DATA_GROW_FORMULA
 #define LIBRG_DATA_GROW_FORMULA(x) (2*(x) + 16)
 #endif
-
-#define LIBRG_MESSAGE_ID            u16
-#define LIBRG_DATA_STREAMS_AMOUNT   4
-
-#define librg_global        zpl_global
-#define librg_inline        zpl_inline
-#define librg_internal      zpl_internal
-
-#define librg_assert        ZPL_ASSERT
-#define librg_assert_msg    ZPL_ASSERT_MSG
-#define librg_lambda(name)  name
 
 #if !defined(librg_log)
 #define librg_log zpl_printf
@@ -565,14 +561,16 @@ LIBRG_GEN_DATA_READWRITE(b32);
  */
 #define librg_data_went ZPL_JOIN2(librg_data_w, librg_entity_id)
 #define librg_data_rent ZPL_JOIN2(librg_data_r, librg_entity_id)
-#define librg_data_wmid ZPL_JOIN2(librg_data_w, LIBRG_MESSAGE_ID)
-#define librg_data_rmid ZPL_JOIN2(librg_data_r, LIBRG_MESSAGE_ID)
 
 // =======================================================================//
 // !
 // ! Network
 // !
 // =======================================================================//
+
+#define LIBRG_MESSAGE_ID u16
+#define librg_data_wmid ZPL_JOIN2(librg_data_w, LIBRG_MESSAGE_ID)
+#define librg_data_rmid ZPL_JOIN2(librg_data_r, LIBRG_MESSAGE_ID)
 
 /**
  * Message structure
@@ -693,6 +691,8 @@ typedef struct librg_space_t {
     zpl_array(struct librg_space_t) spaces;
     zpl_array(struct librg_space_node_t) nodes;
 } librg_space_t;
+
+#define LIBRG_DATA_STREAMS_AMOUNT 4
 
 /**
  * Context + config struct

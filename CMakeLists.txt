@@ -117,7 +117,9 @@ endif()
 # test for travis/etc
 if (LIBRG_TEST)
     add_executable(librg_test test/build-test.c)
+    add_executable(librg_test_cpp test/build-test.cpp)
     target_link_libraries(librg_test librg)
+    target_link_libraries(librg_test_cpp librg)
 endif()
 
 # static library

@@ -1,0 +1,20 @@
+version: '1.0.{build}'
+
+image: Visual Studio 2017
+
+platform:
+  - x64
+
+configuration:
+  - Release
+  - Debug
+
+before_build:
+  - cmake . -G "Visual Studio 15 2017 Win64" -DLIBRG_TEST=1
+
+build:
+  project: $(APPVEYOR_BUILD_FOLDER)\$(APPVEYOR_PROJECT_NAME).sln
+
+test_script:
+  - '%APPVEYOR_BUILD_FOLDER%\%CONFIGURATION%\librg_test.exe'
+  - '%APPVEYOR_BUILD_FOLDER%\%CONFIGURATION%\librg_test_cpp.exe'
