@@ -10,6 +10,7 @@ configuration:
   - Debug
 
 before_build:
+  - npm install
   - cmake . -G "Visual Studio 15 2017 Win64" -DLIBRG_TEST=1
 
 build:
