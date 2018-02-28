@@ -163,7 +163,7 @@ int main() {
 
     librg_ctx_t ctx     = {0};
     ctx.mode            = LIBRG_MODE_SERVER;
-    ctx.tick_delay      = 32;
+    ctx.tick_delay      = 1000;
     ctx.world_size      = zplm_vec3f(50000.0f, 50000.0f, 0.f);
     ctx.max_connections = 128;
     ctx.max_entities    = 16000,
@@ -180,7 +180,7 @@ int main() {
     f64 s = zpl_time_now();
 
 #if 1
-    for (isize i = 0; i < 10000; i++) {
+    for (isize i = 0; i < 1000; i++) {
         librg_entity_t *enemy = librg_entity_create(&ctx, DEMO_TYPE_NPC);
 
         enemy->position.x = (float)(2000 - rand() % 4000);
