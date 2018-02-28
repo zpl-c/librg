@@ -66,7 +66,7 @@ int main() {
 
     librg_ctx_t ctx     = {0};
 
-    ctx.tick_delay      = 32;
+    ctx.tick_delay      = 1000;
     ctx.mode            = LIBRG_MODE_SERVER;
     ctx.world_size      = zplm_vec3f(5000.0f, 5000.0f, 0.f);
     ctx.min_branch_size = zplm_vec3f(-1, -1, -1);
@@ -82,7 +82,7 @@ int main() {
     librg_event_add(&ctx, LIBRG_ENTITY_CREATE, on_entity_create);
     librg_event_add(&ctx, LIBRG_ENTITY_UPDATE, on_entity_update);
 
-    librg_network_start(&ctx, (librg_address_t) { .host = "localhost", .port = 7778 });
+    librg_network_start(&ctx, (librg_address_t) { .port = 7778 });
 
     for (isize i = 0; i < 10000; i++) {
         librg_entity_t *enemy = librg_entity_create(&ctx, 0);

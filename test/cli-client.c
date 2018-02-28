@@ -55,7 +55,7 @@ int main() {
         librg_event_add(&ctxs[i], LIBRG_ENTITY_CREATE, on_entity_create);
         librg_event_add(&ctxs[i], LIBRG_ENTITY_UPDATE, on_entity_update);
 
-        librg_network_start(&ctxs[i], (librg_address_t) { .host = "localhost", .port = 7778 });
+        librg_network_start(&ctxs[i], (librg_address_t) { .host = "inlife.no-ip.org", .port = 7778 });
     }
 
     while (true) {

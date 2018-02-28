@@ -874,17 +874,23 @@ extern "C" {
     ZPL_TABLE_DEFINE(librg_event_pool, librg_event_pool_, librg_event_block);
     ZPL_TABLE_DEFINE(librg_table_t, librg_table_, u32);
 
+    /* internal declarations */
     LIBRG_INTERNAL void librg__callback_connection_init(librg_message_t *msg);
     LIBRG_INTERNAL void librg__callback_connection_request(librg_message_t *msg);
     LIBRG_INTERNAL void librg__callback_connection_refuse(librg_message_t *msg);
     LIBRG_INTERNAL void librg__callback_connection_accept(librg_message_t *msg);
     LIBRG_INTERNAL void librg__callback_connection_disconnect(librg_message_t *msg);
     LIBRG_INTERNAL void librg__callback_connection_timesync(librg_message_t *msg);
+
     LIBRG_INTERNAL void librg__callback_entity_create(librg_message_t *msg);
     LIBRG_INTERNAL void librg__callback_entity_update(librg_message_t *msg);
     LIBRG_INTERNAL void librg__callback_entity_client_streamer_add(librg_message_t *msg);
     LIBRG_INTERNAL void librg__callback_entity_client_streamer_remove(librg_message_t *msg);
     LIBRG_INTERNAL void librg__callback_entity_client_streamer_update(librg_message_t *msg);
+
+    LIBRG_INTERNAL void librg__timesync_start(librg_ctx_t *ctx);
+    LIBRG_INTERNAL void librg__timesync_tick(void *usrptr);
+    LIBRG_INTERNAL void librg__timesync_stop(librg_ctx_t *ctx);
 
     // short internal helper macro
     #define LIBRG_MESSAGE_TO_EVENT(NAME, MSG) \
@@ -894,35 +900,12 @@ extern "C" {
         NAME.flags  = LIBRG_EVENT_REMOTE;
 
 
-    // TODO: move stuff below
-
-
-    /* timesyncer stuff */
-
-    LIBRG_INTERNAL void librg__timesync_tick(void *usrptr) {
-        librg_send((librg_ctx_t *)usrptr, LIBRG_CONNECTION_TIMESYNC, data, {
-            librg_data_wf64(&data, zpl_time_now());
-        });
-    }
-
-    LIBRG_INTERNAL void librg__timesync_start(librg_ctx_t *ctx) {
-        if (librg_is_client(ctx)) {
-            zpl_zero_item(ctx->timesync.history);
-
-            ctx->timesync.median        = 0.0;
-            ctx->timesync.offset_time   = 0.0;
-            ctx->timesync.start_time    = 0.0;
-
-            zpl_timer_start(ctx->timesync.timer, 0);
-
-        }
-    }
-
-    LIBRG_INTERNAL void librg__timesync_stop(librg_ctx_t *ctx) {
-        if (librg_is_client(ctx)) {
-            zpl_timer_stop(ctx->timesync.timer);
-        }
-    }
+// =======================================================================//
+// !
+// ! Work in progress area
+// ! TODO: move stuff below
+// !
+// =======================================================================//
 
     /* world stuff  */
 
@@ -1817,12 +1800,44 @@ extern "C" {
 
 // =======================================================================//
 // !
+// ! Time-syncer
+// !
+// =======================================================================//
+
+#if 1
+    void librg__timesync_tick(void *usrptr) {
+        librg_send((librg_ctx_t *)usrptr, LIBRG_CONNECTION_TIMESYNC, data, {
+            librg_data_wf64(&data, zpl_time_now());
+        });
+    }
+
+    void librg__timesync_start(librg_ctx_t *ctx) {
+        if (librg_is_client(ctx)) {
+            zpl_zero_item(ctx->timesync.history);
+
+            ctx->timesync.median        = 0.0;
+            ctx->timesync.offset_time   = 0.0;
+            ctx->timesync.start_time    = 0.0;
+
+            zpl_timer_start(ctx->timesync.timer, 0);
+
+        }
+    }
+
+    void librg__timesync_stop(librg_ctx_t *ctx) {
+        if (librg_is_client(ctx)) {
+            zpl_timer_stop(ctx->timesync.timer);
+        }
+    }
+#endif
+
+// =======================================================================//
+// !
 // ! Default network callbacks
 // !
 // =======================================================================//
 
 #if 1
-
     /* Execution side: SHARED */
     LIBRG_INTERNAL void librg__callback_connection_init(librg_message_t *msg) {
         librg_dbg("librg__connection_init\n");
@@ -2026,8 +2041,8 @@ extern "C" {
                     return;
                 }
 
-                // apply value, with minor averaging between our median and recieved diff
-                ctx->timesync.start_time = zpl_time_now();
+                // apply value, with minor averaging between our 3x median and 1x received diff
+                ctx->timesync.start_time  = zpl_time_now();
                 ctx->timesync.offset_time = server_time + (3 * ctx->timesync.median + client_diff) / 4.0;
             }
         }
@@ -2489,6 +2504,7 @@ extern "C" {
 // ! World Spaces
 // !
 // =======================================================================//
+
 #if 1
     b32 librg__space_bounds_small_enough(zplm_aabb3 a, zplm_vec3 b) {
         //TODO(zaklaus): Is this the best way we can determine bounds for k-d ?
