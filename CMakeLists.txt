@@ -80,7 +80,7 @@ endif()
 
 # proxy our includes to outside world
 target_include_directories(librg INTERFACE include
-    ${LIBRG_VENDOR_FOLDER}/zpl${LIBRG_POSTFIX}/include
+    ${LIBRG_VENDOR_FOLDER}/zpl${LIBRG_POSTFIX}/code
     ${LIBRG_VENDOR_FOLDER}/enet${LIBRG_POSTFIX}/include)
 
 # link all the deps

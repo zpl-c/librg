@@ -796,6 +796,8 @@ typedef struct librg_ctx_t {
         f64 median;
         f64 history[LIBRG_TIMESYNC_SIZE];
 
+        f32 server_delay;
+
         zpl_timer_t *timer;
     } timesync;
 
@@ -1175,7 +1177,7 @@ extern "C" {
 
                     if (id == LIBRG_ENTITY_UPDATE) {
                         server_time = librg_data_rf64(&data);
-                        librg_log("server_time: %f, client_predicted: %f\n", server_time, librg_time_now(ctx));
+                        // librg_log("server_time: %f, client_predicted: %f\n", server_time, librg_time_now(ctx));
                         // TODO: apply time to updates
                     }
 
@@ -1921,6 +1923,8 @@ extern "C" {
             // send accept
             librg_send_to(msg->ctx, LIBRG_CONNECTION_ACCEPT, msg->peer, librg_lambda(data), {
                 librg_data_wf32(&data, msg->ctx->tick_delay / 1000.0f);
+                librg_data_wf64(&data, client_time);
+                librg_data_wf64(&data, zpl_time_now());
                 librg_data_went(&data, entity->id);
             });
 
@@ -1954,6 +1958,8 @@ extern "C" {
         librg_table_init(&msg->ctx->network.connected_peers, msg->ctx->allocator);
 
         f32 server_delay = librg_data_rf32(msg->data);
+        f64 client_diff  = (zpl_time_now() - librg_data_rf64(msg->data)) / 2.0;
+        f64 server_time  = librg_data_rf64(msg->data);
 
         librg_entity_id entity = librg_data_rent(msg->data);
         librg_entity_t *blob = &msg->ctx->entity.list[entity];
@@ -1970,7 +1976,11 @@ extern "C" {
         // trigger damn events!
         LIBRG_MESSAGE_TO_EVENT(event, msg); event.entity = blob;
         librg_event_trigger(msg->ctx, LIBRG_CONNECTION_ACCEPT, &event);
+
         librg__timesync_start(msg->ctx);
+        msg->ctx->timesync.start_time   = zpl_time_now();
+        msg->ctx->timesync.offset_time  = server_time + client_diff;
+        msg->ctx->timesync.server_delay = server_delay;
     }
 
     /* Execution side: SHARED */
@@ -2501,7 +2511,7 @@ extern "C" {
 
 // =======================================================================//
 // !
-// ! World Spaces
+// ! World Spaces (TODO)
 // !
 // =======================================================================//
 
