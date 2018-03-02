@@ -1065,8 +1065,6 @@ extern "C" {
         }
         #endif
 
-
-
         // events
         librg_event_pool_init(&ctx->events, ctx->allocator);
         zpl_buffer_init(ctx->messages, ctx->allocator, librg_option_get(LIBRG_NETWORK_CAPACITY));
