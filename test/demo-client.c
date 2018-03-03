@@ -144,12 +144,13 @@ void interpolate_npcs(librg_ctx_t *ctx) {
         hero_t *hero = (hero_t *)entity->user_data;
         if (!hero) continue;
 
-        hero->delta += (last_delta);
+        hero->delta += 16.666f / (100.0);
 
         zplm_vec3_t delta_pos;
         zplm_vec3_lerp(&delta_pos, hero->last_pos, hero->target_pos, zpl_clamp01(hero->delta));
 
         hero->curr_pos = delta_pos;
+        // hero->curr_pos = entity->position;
     }
 }
 
@@ -281,12 +282,12 @@ int main(int argc, char *argv[]) {
                         "==================================================\n");
 
     librg_ctx_t ctx     = {0};
-    ctx.tick_delay      = 32;
+    ctx.tick_delay      = 100;
     ctx.mode            = LIBRG_MODE_CLIENT;
-    ctx.world_size      = zplm_vec3f(5000.0f, 5000.0f, 0.f);
+    ctx.world_size      = zplm_vec3f(50000.0f, 50000.0f, 0.f);
     ctx.max_entities    = 16000;
 
-    // librg_option_set(LIBRG_NETWORK_UPDATE_BUFFER_DELAY, 200);
+    // librg_option_set(LIBRG_NETWORK_BUFFER_SIZE, 2);
 
     librg_init(&ctx);
 
@@ -304,7 +305,7 @@ int main(int argc, char *argv[]) {
 
     while (loop) {
         f64 curr_time = zpl_utc_time_now();
-        last_delta = (curr_time - last_time) / 1000.f;
+        last_delta = (curr_time - last_time) / 0.1f;
         last_time = curr_time;
 
         SDL_Event event;

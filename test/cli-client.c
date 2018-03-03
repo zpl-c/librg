@@ -35,7 +35,7 @@ int main() {
     librg_option_set(LIBRG_NETWORK_UPDATE_BUFFER_DELAY, 64);
 
     librg_ctx_t original     = {0};
-    original.tick_delay      = 1000;
+    original.tick_delay      = 100;
     original.mode            = LIBRG_MODE_CLIENT;
     original.world_size      = zplm_vec3f(5000.0f, 5000.0f, 0.f);
     original.max_entities    = 60000;
