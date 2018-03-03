@@ -747,7 +747,7 @@ typedef struct librg_space_t {
 typedef struct librg_ctx_t {
     // core
     u16 mode;
-    u16 tick_delay;
+    f64 tick_delay;
 
     // configuration
     u16 max_connections;
@@ -1002,7 +1002,7 @@ extern "C" {
         #define librg_set_default(expr, value) if (!expr) expr = value
 
         // apply default settings (if no user provided)
-        librg_set_default(ctx->tick_delay, 32);
+        librg_set_default(ctx->tick_delay, 32.0);
         librg_set_default(ctx->max_connections, 16);
         librg_set_default(ctx->max_entities, 8192);
         librg_set_default(ctx->world_size.x, 5000.0f);
@@ -1914,6 +1914,11 @@ extern "C" {
         // TODO: copy not all the stuff but only needed (skiping those two)
         librg_data_set_rpos(&data, sizeof(librg_message_id) + sizeof(f64));
 
+        static f64 last_update = 0;
+        f64 diff = zpl_time_now() - last_update;
+        librg_log("diff since last update: %f\n", diff);
+        last_update = zpl_time_now();
+
         librg_message_t msg = {0}; {
             msg.ctx     = ctx;
             msg.data    = &data;
@@ -2132,7 +2137,7 @@ extern "C" {
 
             // our first time sync packet, apply the value directly
             if (ctx->timesync.history[LIBRG_TIMESYNC_SIZE - 1] == 0.0) {
-                ctx->timesync.start_time = zpl_time_now();
+                ctx->timesync.start_time  = zpl_time_now();
                 ctx->timesync.offset_time = server_time + client_diff;
             }
 
@@ -2144,6 +2149,7 @@ extern "C" {
                 // we just finished collecting, this is our median
                 if (ctx->timesync.median == 0.0) {
                     ctx->timesync.median = ctx->timesync.history[LIBRG_TIMESYNC_SIZE / 2];
+                    ctx->timesync.timer->duration = 60.0; /* slower our time update rate to 1 per minute */
                 }
 
                 // samples above approximately 1 standard-deviation from the median are discarded
@@ -2154,7 +2160,7 @@ extern "C" {
 
                 // apply value, with minor averaging between our 3x median and 1x received diff
                 ctx->timesync.start_time  = zpl_time_now();
-                ctx->timesync.offset_time = server_time + (3 * ctx->timesync.median + client_diff) / 4.0;
+                ctx->timesync.offset_time = server_time + ctx->timesync.median;
             }
         }
     }

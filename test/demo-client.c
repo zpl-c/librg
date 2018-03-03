@@ -144,7 +144,7 @@ void interpolate_npcs(librg_ctx_t *ctx) {
         hero_t *hero = (hero_t *)entity->user_data;
         if (!hero) continue;
 
-        hero->delta += 16.666f / (100.0);
+        hero->delta += 16.666f / (ctx->timesync.server_delay / 0.001f);
 
         zplm_vec3_t delta_pos;
         zplm_vec3_lerp(&delta_pos, hero->last_pos, hero->target_pos, zpl_clamp01(hero->delta));
@@ -282,13 +282,12 @@ int main(int argc, char *argv[]) {
                         "==================================================\n");
 
     librg_ctx_t ctx     = {0};
-    ctx.tick_delay      = 100;
+    ctx.tick_delay      = 16.66666666666 * 4;
     ctx.mode            = LIBRG_MODE_CLIENT;
     ctx.world_size      = zplm_vec3f(50000.0f, 50000.0f, 0.f);
     ctx.max_entities    = 16000;
 
-    // librg_option_set(LIBRG_NETWORK_BUFFER_SIZE, 2);
-
+    librg_option_set(LIBRG_NETWORK_BUFFER_SIZE, 2);
     librg_init(&ctx);
 
     librg_event_add(&ctx, LIBRG_CONNECTION_REQUEST, on_connect_request);
