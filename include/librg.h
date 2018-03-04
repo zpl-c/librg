@@ -22,8 +22,13 @@
  * Version History:
  * 3.2.0
  * - Fixed minor memory client-side memory leak with empty control list
- * - Added method for allocating the librg_ctx_t for the bindings
- * - Added method for allocating the librg_data_t for the bindings
+ * - Fixed issue with client stream update and removed entity on server
+ * - Updated zpl to new major version, watch out for possible incompatibilities
+ * - Added method for alloc/dealloc the librg_ctx_t, librg_data_t, librg_event_t for the bindings
+ * - Added experimental support for update buffering, disabled by default, and not recommended to use
+ * - Added built-in timesyncer, working on top of monotonic time, syncing client clock to server one
+ * - Added helper methods: librg_time_now, librg_standard_deviation
+ * - Changed ctx->tick_delay from u16 to f64 (slightly more precision)
  *
  * Version History:
  * 3.1.0
@@ -53,8 +58,9 @@
  * 2.0.0 - Initial C version rewrite
  *
  * Things TODO:
- * v3.2.0?
- * - DEBUG packet size validation (FEATURE)
+ * v3.3.0?
+ * - Add method to check if entity is in stream of other entity
+ * - Add DEBUG packet size validation (FEATURE)
  * - refactoring librg_table_t (FEATURE)
  * - remove entity ignore for target entity that was disconnected/deleted (BUG)
  * - remove controller peer for entity, on owner disconnect (BUG)
@@ -1189,7 +1195,7 @@ extern "C" {
 
                     if (id == LIBRG_ENTITY_UPDATE) {
                         server_time = librg_data_rf64(&data);
-                        // librg_log("server_time: %f, client_predicted: %f\n", server_time, librg_time_now(ctx));
+                        // librg_log("server_time: %f, client_predicted: %f, diff: %f\n", server_time, librg_time_now(ctx), librg_time_now(ctx) - server_time);
 
                         if (librg_option_get(LIBRG_NETWORK_BUFFER_SIZE) > 1) {
                             librg__buffer_push(ctx, server_time, event.peer, data.rawptr, data.capacity);
@@ -2158,7 +2164,6 @@ extern "C" {
                     return;
                 }
 
-                // apply value, with minor averaging between our 3x median and 1x received diff
                 ctx->timesync.start_time  = zpl_time_now();
                 ctx->timesync.offset_time = server_time + ctx->timesync.median;
             }

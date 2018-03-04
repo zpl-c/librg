@@ -1,7 +1,6 @@
 #define LIBRG_DEBUG
 #define LIBRG_IMPLEMENTATION
 #include <librg.h>
-#include <librg_limiter.h>
 #include <SDL.h>
 
 #define DEMO_CLIENT
@@ -27,7 +26,6 @@ typedef struct {
         f32 cooldown;
         i32 max_hp;
         i32 cur_hp;
-        librg_limiter_t limiter;
     } stream;
 
 #ifdef DEMO_CLIENT

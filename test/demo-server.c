@@ -1,8 +1,6 @@
 #define LIBRG_DEBUG
 #define LIBRG_IMPLEMENTATION
-#define LIBRG_LIMITER_IMPLEMENTATION
 #include <librg.h>
-#include <librg_limiter.h>
 
 #define DEMO_SERVER
 
@@ -27,7 +25,6 @@ typedef struct hero_t {
         f32 cooldown;
         i32 max_hp;
         i32 cur_hp;
-        librg_limiter_t limiter;
     } stream;
 
 #ifdef DEMO_CLIENT
@@ -232,7 +229,6 @@ int main() {
 
         enemy->user_data = zpl_malloc(sizeof(hero_));
         *(hero_t *)enemy->user_data = hero_;
-        librg_limiter_init(&((hero_t *)enemy->user_data)->stream.limiter);
     }
 #endif
 
