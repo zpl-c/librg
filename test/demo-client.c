@@ -287,7 +287,7 @@ int main(int argc, char *argv[]) {
     ctx.world_size      = zplm_vec3f(50000.0f, 50000.0f, 0.f);
     ctx.max_entities    = 16000;
 
-    librg_option_set(LIBRG_NETWORK_BUFFER_SIZE, 2);
+    // librg_option_set(LIBRG_NETWORK_BUFFER_SIZE, 2);
     librg_init(&ctx);
 
     librg_event_add(&ctx, LIBRG_CONNECTION_REQUEST, on_connect_request);
@@ -298,7 +298,8 @@ int main(int argc, char *argv[]) {
     librg_event_add(&ctx, LIBRG_ENTITY_REMOVE, on_entity_remove);
     librg_event_add(&ctx, LIBRG_CLIENT_STREAMER_UPDATE, on_client_entity_update);
 
-    librg_network_start(&ctx, (librg_address_t) { .host = "localhost", .port = 7777 });
+    // librg_network_start(&ctx, (librg_address_t) { .host = "139.59.142.46", .port = 17777 });
+    librg_network_start(&ctx, (librg_address_t) { .host = "localhost", .port = 17777 });
 
     bool loop = true;
 

@@ -199,7 +199,7 @@ int main() {
 
     librg_ctx_t ctx     = {0};
     ctx.mode            = LIBRG_MODE_SERVER;
-    ctx.tick_delay      = 16.666666 * 8;
+    ctx.tick_delay      = 16.66666666666 * 4;
     ctx.world_size      = zplm_vec3f(50000.0f, 50000.0f, 0.f);
     ctx.max_connections = 128;
     ctx.max_entities    = 16000,
@@ -212,7 +212,7 @@ int main() {
     librg_event_add(&ctx, LIBRG_ENTITY_UPDATE, on_entity_update_forplayer);
     librg_event_add(&ctx, LIBRG_CLIENT_STREAMER_UPDATE, on_client_entity_update);
 
-    librg_network_start(&ctx, (librg_address_t) { .port = 7777 });
+    librg_network_start(&ctx, (librg_address_t) { .port = 17777 });
 
     f64 s = zpl_time_now();
 

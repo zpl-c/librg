@@ -2261,7 +2261,6 @@ extern "C" {
             if (!librg_entity_valid(msg->ctx, entity)) {
                 librg_dbg("invalid entity on client streamer update\n");
                 librg_data_set_rpos(msg->data, librg_data_get_rpos(msg->data) + size);
-                librg_assert(false);
                 continue;
             }
 
