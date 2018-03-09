@@ -1901,15 +1901,15 @@ extern "C" {
         }
 
         librg_snapshot *snap = zpl_ring_librg_snapshot_get(&ctx->buffer);
-        f64 time_diff = (ctx->buffer_size * ctx->timesync.server_delay);
+        f64 time_diff = ((ctx->buffer_size + 1) * ctx->timesync.server_delay);
 
         // if current update if too old, just skip it, and call next one
-        // if (snap->time < (librg_time_now(ctx) - time_diff)) {
-        //     librg_dbg("librg__buffer_tick: dropping old update packet\n");
-        //     zpl_mfree(snap->data);
-        //     librg__buffer_tick((void *)ctx);
-        //     return;
-        // }
+        if (snap->time < (librg_time_now(ctx) - time_diff)) {
+            librg_dbg("librg__buffer_tick: dropping old update packet\n");
+            zpl_mfree(snap->data);
+            librg__buffer_tick((void *)ctx);
+            return;
+        }
 
         librg_data_t data = {0}; {
             data.rawptr   = snap->data;

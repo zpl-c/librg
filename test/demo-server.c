@@ -210,7 +210,7 @@ int main() {
     librg_event_add(&ctx, LIBRG_ENTITY_UPDATE, on_entity_update_forplayer);
     librg_event_add(&ctx, LIBRG_CLIENT_STREAMER_UPDATE, on_client_entity_update);
 
-    librg_network_start(&ctx, (librg_address_t) { .port = 17777 });
+    librg_network_start(&ctx, (librg_address_t) { .port = 7777 });
 
     f64 s = zpl_time_now();
 
