@@ -1896,7 +1896,7 @@ extern "C" {
 
     void librg__buffer_tick(void *usrptr) {
         librg_ctx_t *ctx = (librg_ctx_t *)usrptr;
-        if (zpl_ring_librg_snapshot_empty(&ctx->buffer)) {
+        if (!zpl_ring_librg_snapshot_full(&ctx->buffer)) {
             return;
         }
 
@@ -1904,12 +1904,12 @@ extern "C" {
         f64 time_diff = (ctx->buffer_size * ctx->timesync.server_delay);
 
         // if current update if too old, just skip it, and call next one
-        if (snap->time < (librg_time_now(ctx) - time_diff)) {
-            librg_dbg("librg__buffer_tick: dropping old update packet\n");
-            zpl_mfree(snap->data);
-            librg__buffer_tick((void *)ctx);
-            return;
-        }
+        // if (snap->time < (librg_time_now(ctx) - time_diff)) {
+        //     librg_dbg("librg__buffer_tick: dropping old update packet\n");
+        //     zpl_mfree(snap->data);
+        //     librg__buffer_tick((void *)ctx);
+        //     return;
+        // }
 
         librg_data_t data = {0}; {
             data.rawptr   = snap->data;
@@ -1919,11 +1919,6 @@ extern "C" {
         // skip our message id length and timestamp lenth
         // TODO: copy not all the stuff but only needed (skiping those two)
         librg_data_set_rpos(&data, sizeof(librg_message_id) + sizeof(f64));
-
-        static f64 last_update = 0;
-        f64 diff = zpl_time_now() - last_update;
-        librg_log("diff since last update: %f\n", diff);
-        last_update = zpl_time_now();
 
         librg_message_t msg = {0}; {
             msg.ctx     = ctx;

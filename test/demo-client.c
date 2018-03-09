@@ -281,11 +281,12 @@ int main(int argc, char *argv[]) {
 
     librg_ctx_t ctx     = {0};
     ctx.tick_delay      = 16.66666666666 * 4;
+    // ctx.tick_delay      = 250;
     ctx.mode            = LIBRG_MODE_CLIENT;
     ctx.world_size      = zplm_vec3f(50000.0f, 50000.0f, 0.f);
     ctx.max_entities    = 16000;
 
-    // librg_option_set(LIBRG_NETWORK_BUFFER_SIZE, 2);
+    librg_option_set(LIBRG_NETWORK_BUFFER_SIZE, 30);
     librg_init(&ctx);
 
     librg_event_add(&ctx, LIBRG_CONNECTION_REQUEST, on_connect_request);

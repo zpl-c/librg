@@ -32,7 +32,7 @@ int main() {
                  "==================================================\n";
     librg_log("%s\n\n", test);
 
-    librg_option_set(LIBRG_NETWORK_UPDATE_BUFFER_DELAY, 64);
+    librg_option_set(LIBRG_NETWORK_BUFFER_SIZE, 2);
 
     librg_ctx_t original     = {0};
     original.tick_delay      = 100;
