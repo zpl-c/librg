@@ -1382,10 +1382,10 @@ extern "C" {
     }
 
     librg_peer_t *librg_entity_control_get(librg_ctx_t *ctx, librg_entity_id entity) {
-        librg_assert(ctx && librg_entity_valid(ctx, entity));
+        librg_assert(ctx);
         librg_assert(librg_is_server(ctx));
         librg_entity_t *blob = librg_entity_fetch(ctx, entity);
-        return (blob->flags & LIBRG_ENTITY_CONTROLLED) ? blob->control_peer : NULL;
+        return (blob && blob->flags & LIBRG_ENTITY_CONTROLLED) ? blob->control_peer : NULL;
     }
 
     void librg_entity_control_remove(librg_ctx_t *ctx, librg_entity_id entity) {
