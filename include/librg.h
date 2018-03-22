@@ -2046,7 +2046,7 @@ extern "C" {
 
     /* Execution side: CLIENT */
     LIBRG_INTERNAL void librg__callback_connection_refuse(librg_message_t *msg) {
-        librg_dbg("librg__connection_refuse/n");
+        librg_dbg("librg__connection_refuse\n");
         LIBRG_MESSAGE_TO_EVENT(event, msg);
         librg_event_trigger(msg->ctx, LIBRG_CONNECTION_REFUSE, &event);
     }
@@ -2089,6 +2089,17 @@ extern "C" {
     /* Execution side: SHARED */
     LIBRG_INTERNAL void librg__callback_connection_disconnect(librg_message_t *msg) {
         librg_dbg("librg__connection_disconnect\n");
+        if (!msg->ctx->network.connected_peers.hashes) {
+            librg_event_t event = {0}; {
+                event.peer      = msg->peer;
+                event.data      = NULL;
+                event.entity    = NULL;
+                event.flags     = (LIBRG_EVENT_REJECTABLE);
+            }
+
+            librg_event_trigger(msg->ctx, LIBRG_CONNECTION_DISCONNECT, &event);
+            return;
+        }
 
         librg_entity_id *entity = librg_table_get(&msg->ctx->network.connected_peers, cast(u64)msg->peer);
         if (entity && librg_entity_valid(msg->ctx, *entity)) {
