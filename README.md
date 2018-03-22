@@ -4,6 +4,7 @@
 
 <div align="center">
     <a href="https://travis-ci.org/librg/librg"><img src="https://travis-ci.org/librg/librg.svg?branch=master" alt="Build status" /></a>
+    <a href="https://ci.appveyor.com/project/inlife/librg"><img src="https://ci.appveyor.com/api/projects/status/5axr8wa5iyc5xkn8?svg=true" alt="Build status" /></a>
     <a href="https://www.npmjs.com/package/librg.c"><img src="https://img.shields.io/npm/v/librg.c.svg?maxAge=3600" alt="NPM version" /></a>
     <a href="https://david-dm.org/librg/librg"><img src="https://img.shields.io/david/librg/librg.svg?maxAge=3600" alt="Dependencies" /></a>
     <a href="https://kiwiirc.com/client/irc.handmade.network:+7777/?nick=guest|?#librg"><img src="https://img.shields.io/badge/IRC-%23librg-blue.svg" alt="IRC server"/></a>
@@ -199,6 +200,20 @@ void mygame_client_stream(librg_event_t *event) {
 ```
 
 Now on the server side, you pretty much do the same, it is very similar to what we did for entity update, with only difference being that we use `LIBRG_CLIENT_STREAMER_UPDATE` event id.
+
+#### Querying
+
+Sometimes when you need loop over entities visible (streamed) for a particlar entity on the server, you will need to do a query:
+
+```c
+    librg_entity_id *results;
+    int amount = librg_entity_query(&ctx, my_entity_id, &results);
+
+    for (int i = 0; i < amount; ++i) {
+        librg_entity_t *entity = librg_entity_fetch(&ctx, results[i]);
+        // do stuff with entity
+    }
+```
 
 #### Additional
 

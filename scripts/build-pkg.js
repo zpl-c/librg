@@ -3,9 +3,7 @@ const fs = require('fs')
 const libs = [
     [ "enet.c", "enet.h" ],
     [ "zpl.c", "zpl.h" ],
-    [ "zpl_cull.c", "zpl_cull.h" ],
-    [ "zpl_event.c", "zpl_event.h" ],
-    [ "zpl_math.c", "zpl_math.h" ],
+    [ "zpl.c", "zpl_math.h" ],
 ]
 
 const files = [

@@ -1,8 +1,6 @@
 #define LIBRG_DEBUG
 #define LIBRG_IMPLEMENTATION
-#define LIBRG_LIMITER_IMPLEMENTATION
 #include <librg.h>
-#include <librg_limiter.h>
 
 #define DEMO_SERVER
 
@@ -19,7 +17,7 @@ enum {
 //     component_hero = librg_component_last,
 // };
 
-typedef struct {
+typedef struct hero_t {
 
     struct {
         zplm_vec3_t accel;
@@ -27,7 +25,6 @@ typedef struct {
         f32 cooldown;
         i32 max_hp;
         i32 cur_hp;
-        librg_limiter_t limiter;
     } stream;
 
 #ifdef DEMO_CLIENT
@@ -35,6 +32,10 @@ typedef struct {
     f32 delta;
     zplm_vec3_t curr_pos, last_pos, target_pos;
 #endif
+
+    librg_entity_t *follower1;
+    librg_entity_t *follower2;
+    librg_entity_t *follower3;
 } hero_t;
 
 // generate methods for components
@@ -60,13 +61,56 @@ void on_connect_accepted(librg_event_t *event) {
         event->entity->position.z
     );
 
+    event->entity->stream_range = 1000.0f;
+
+    hero_t hero_ = {0};
+    hero_.stream.max_hp = 100;
+    hero_.stream.cur_hp = 40;
+
+    hero_.stream.accel.x = (rand() % 3 - 1.0);
+    hero_.stream.accel.y = (rand() % 3 - 1.0);
+
+    hero_t *subhero1 = zpl_malloc(sizeof(hero_));
+    *subhero1 = hero_;
+
+    hero_.follower1 = librg_entity_create(event->ctx, DEMO_TYPE_PLAYER);
+    hero_.follower1->user_data = subhero1;
+
+    hero_t *subhero2 = zpl_malloc(sizeof(hero_));
+    *subhero2 = hero_;
+
+    hero_.follower2 = librg_entity_create(event->ctx, DEMO_TYPE_PLAYER);
+    hero_.follower2->user_data = subhero2;
+
+    hero_t *subhero3 = zpl_malloc(sizeof(hero_));
+    *subhero3 = hero_;
+
+    hero_.follower3 = librg_entity_create(event->ctx, DEMO_TYPE_PLAYER);
+    hero_.follower3->user_data = subhero3;
+
+    event->entity->user_data = zpl_malloc(sizeof(hero_));
+    *(hero_t *)event->entity->user_data = hero_;
+
+
     librg_entity_control_set(event->ctx, event->entity->id, event->entity->client_peer);
+}
+
+void on_client_entity_update(librg_event_t *event) {
+    librg_entity_t *follower1 = ((hero_t *)event->entity->user_data)->follower1;
+    librg_entity_t *follower2 = ((hero_t *)event->entity->user_data)->follower2;
+    librg_entity_t *follower3 = ((hero_t *)event->entity->user_data)->follower3;
+
+    follower1->position.x = event->entity->position.x + 15;
+    follower1->position.y = event->entity->position.y + 30;
+    follower2->position.x = event->entity->position.x - 15;
+    follower2->position.y = event->entity->position.y - 100;
+    follower3->position.x = event->entity->position.x - 0;
+    follower3->position.y = event->entity->position.y + 100;
 }
 
 void on_entity_create_forplayer(librg_event_t *event) {
      switch (event->entity->type) {
          case DEMO_TYPE_PLAYER:
-             break;
          case DEMO_TYPE_NPC: {
             hero_t *hero = (hero_t *)event->entity->user_data;
             librg_data_wptr(event->data, event->entity->user_data, sizeof(hero->stream));
@@ -75,7 +119,6 @@ void on_entity_create_forplayer(librg_event_t *event) {
 }
 
 void on_entity_update_forplayer(librg_event_t *event) {
-    // ..
 }
 
 
@@ -153,10 +196,11 @@ int main() {
 
     librg_ctx_t ctx     = {0};
     ctx.mode            = LIBRG_MODE_SERVER;
-    ctx.tick_delay      = 64;
-    ctx.world_size      = zplm_vec3(5000.0f, 5000.0f, 0.f);
+    ctx.tick_delay      = 16.66666666666 * 4;
+    // ctx.tick_delay      = 1000;
+    ctx.world_size      = zplm_vec3f(50000.0f, 50000.0f, 0.f);
     ctx.max_connections = 128;
-    ctx.max_entities    = 2000,
+    ctx.max_entities    = 16000,
 
     librg_init(&ctx);
 
@@ -164,11 +208,14 @@ int main() {
     librg_event_add(&ctx, LIBRG_CONNECTION_ACCEPT, on_connect_accepted);
     librg_event_add(&ctx, LIBRG_ENTITY_CREATE, on_entity_create_forplayer);
     librg_event_add(&ctx, LIBRG_ENTITY_UPDATE, on_entity_update_forplayer);
+    librg_event_add(&ctx, LIBRG_CLIENT_STREAMER_UPDATE, on_client_entity_update);
 
     librg_network_start(&ctx, (librg_address_t) { .port = 7777 });
 
+    f64 s = zpl_time_now();
+
 #if 1
-    for (isize i = 0; i < 1200; i++) {
+    for (isize i = 0; i < 100; i++) {
         librg_entity_t *enemy = librg_entity_create(&ctx, DEMO_TYPE_NPC);
 
         enemy->position.x = (float)(2000 - rand() % 4000);
@@ -183,14 +230,15 @@ int main() {
 
         enemy->user_data = zpl_malloc(sizeof(hero_));
         *(hero_t *)enemy->user_data = hero_;
-        librg_limiter_init(&((hero_t *)enemy->user_data)->stream.limiter);
     }
 #endif
 
+    librg_log("took %f\n", zpl_time_now() - s);
+
     zpl_timer_t *tick_timer = zpl_timer_add(ctx.timers);
     tick_timer->user_data = (void *)&ctx; /* provide ctx as a argument to timer */
-    zpl_timer_set(tick_timer, 1000 * 1000, -1, measure);
-    zpl_timer_start(tick_timer, 1000);
+    zpl_timer_set(tick_timer, 1.0f, -1, measure);
+    zpl_timer_start(tick_timer, 0.01f);
 
     while (true) {
         librg_tick(&ctx);

@@ -1,7 +1,6 @@
 #define LIBRG_DEBUG
 #define LIBRG_IMPLEMENTATION
 #include <librg.h>
-#include <librg_limiter.h>
 #include <SDL.h>
 
 #define DEMO_CLIENT
@@ -27,7 +26,6 @@ typedef struct {
         f32 cooldown;
         i32 max_hp;
         i32 cur_hp;
-        librg_limiter_t limiter;
     } stream;
 
 #ifdef DEMO_CLIENT
@@ -41,7 +39,7 @@ typedef struct {
 // librg_component(hero, component_hero, hero_t);
 
 
-#define SIZE_X 800
+#define SIZE_X 1600
 #define SIZE_Y 600
 
 zpl_global f64 last_delta;
@@ -111,7 +109,6 @@ void on_connect_refused(librg_event_t *event) {
 void on_entity_create(librg_event_t *event) {
     switch (librg_entity_type(event->ctx, event->entity->id)) {
         case DEMO_TYPE_PLAYER:
-            break;
         case DEMO_TYPE_NPC: {
             event->entity->user_data = zpl_malloc(sizeof(hero_t));
             hero_t *hero = (hero_t *)event->entity->user_data;
@@ -134,8 +131,28 @@ void on_entity_update(librg_event_t *event) {
     hero->delta = .0f;
 }
 
+void interpolate_npcs(librg_ctx_t *ctx) {
+    for (u32 i = 0; i < ctx->max_entities; i++) {
+        if (i == player) continue;
+
+        librg_entity_t *entity = librg_entity_fetch(ctx, i);
+
+        if (!entity) continue;
+
+        hero_t *hero = (hero_t *)entity->user_data;
+        if (!hero) continue;
+
+        hero->delta += 16.666f / (ctx->timesync.server_delay / 0.001f);
+
+        zplm_vec3_t delta_pos;
+        zplm_vec3_lerp(&delta_pos, hero->last_pos, hero->target_pos, zpl_clamp01(hero->delta));
+
+        hero->curr_pos = delta_pos;
+        // hero->curr_pos = entity->position;
+    }
+}
+
 void on_client_entity_update(librg_event_t *event) {
-    // ..
 }
 
 /**
@@ -232,31 +249,10 @@ void render(librg_ctx_t *ctx)
 }
 
 void on_entity_remove(librg_event_t *event) {
-    if (event->entity->type == DEMO_TYPE_NPC) {
+    // if (event->entity->type == DEMO_TYPE_NPC) {
         zpl_mfree(event->entity->user_data);
-    }
+    // }
 }
-
-void interpolate_npcs(librg_ctx_t *ctx) {
-    for (u32 i = 0; i < ctx->max_entities; i++) {
-        if (i == player) continue;
-
-        librg_entity_t *entity = librg_entity_fetch(ctx, i);
-
-        if (!entity) continue;
-
-        hero_t *hero = (hero_t *)entity->user_data;
-        if (!hero) continue;
-
-        hero->delta += (last_delta /(f32) (ctx->tick_delay));
-
-        zplm_vec3_t delta_pos;
-        zplm_vec3_lerp(&delta_pos, hero->last_pos, hero->target_pos, zpl_clamp01(hero->delta));
-
-        hero->curr_pos = delta_pos;
-    }
-}
-
 
 bool shooting = false;
 bool keys_held[323] = { false };
@@ -284,11 +280,13 @@ int main(int argc, char *argv[]) {
                         "==================================================\n");
 
     librg_ctx_t ctx     = {0};
-    ctx.tick_delay      = 64;
+    ctx.tick_delay      = 16.66666666666 * 4;
+    // ctx.tick_delay      = 250;
     ctx.mode            = LIBRG_MODE_CLIENT;
-    ctx.world_size      = zplm_vec3(5000.0f, 5000.0f, 0.f);
-    ctx.max_entities    = 2000;
+    ctx.world_size      = zplm_vec3f(50000.0f, 50000.0f, 0.f);
+    ctx.max_entities    = 16000;
 
+    librg_option_set(LIBRG_NETWORK_BUFFER_SIZE, 2);
     librg_init(&ctx);
 
     librg_event_add(&ctx, LIBRG_CONNECTION_REQUEST, on_connect_request);
@@ -299,13 +297,14 @@ int main(int argc, char *argv[]) {
     librg_event_add(&ctx, LIBRG_ENTITY_REMOVE, on_entity_remove);
     librg_event_add(&ctx, LIBRG_CLIENT_STREAMER_UPDATE, on_client_entity_update);
 
-    librg_network_start(&ctx, (librg_address_t) { .host = "localhost", .port = 7777 });
+    // librg_network_start(&ctx, (librg_address_t) { .host = "139.59.142.46", .port = 17777 });
+    librg_network_start(&ctx, (librg_address_t) { .host = "inlife.no-ip.org", .port = 7777 });
 
     bool loop = true;
 
     while (loop) {
         f64 curr_time = zpl_utc_time_now();
-        last_delta = (curr_time - last_time) / 1000.f;
+        last_delta = (curr_time - last_time) / 0.1f;
         last_time = curr_time;
 
         SDL_Event event;
@@ -328,7 +327,7 @@ int main(int argc, char *argv[]) {
             }
         }
 
-        i32 speed = 5;
+        i32 speed = 25;
 
         if (keys_held[SDLK_a]) {
             camera.x -= speed;

@@ -51,7 +51,7 @@ void measure(void *userptr) {
     lastdl = ctx->network.host->totalReceivedData;
     lastup = ctx->network.host->totalSentData;
 
-    librg_log("librg_update: took %f ms. Current used bandwidth D/U: (%f / %f) mbps. \r", ctx->last_update, dl, up);
+    librg_dbg("librg_update: took %f ms. Current used bandwidth D/U: (%f / %f) mbps. \r", ctx->last_update, dl, up);
 }
 
 int main() {
@@ -66,10 +66,10 @@ int main() {
 
     librg_ctx_t ctx     = {0};
 
-    ctx.tick_delay      = 1000;
+    ctx.tick_delay      = 64;
     ctx.mode            = LIBRG_MODE_SERVER;
-    ctx.world_size      = zplm_vec3(5000.0f, 5000.0f, 0.f);
-    ctx.min_branch_size = zplm_vec3(-1, -1, -1);
+    ctx.world_size      = zplm_vec3f(5000.0f, 5000.0f, 0.f);
+    ctx.min_branch_size = zplm_vec3f(-1, -1, -1);
     ctx.max_entities    = 60000;
     ctx.max_connections = 1200;
 
@@ -82,7 +82,7 @@ int main() {
     librg_event_add(&ctx, LIBRG_ENTITY_CREATE, on_entity_create);
     librg_event_add(&ctx, LIBRG_ENTITY_UPDATE, on_entity_update);
 
-    librg_network_start(&ctx, (librg_address_t) { .host = "localhost", .port = 7777 });
+    librg_network_start(&ctx, (librg_address_t) { .port = 7778 });
 
     for (isize i = 0; i < 10000; i++) {
         librg_entity_t *enemy = librg_entity_create(&ctx, 0);
@@ -94,8 +94,8 @@ int main() {
 
     zpl_timer_t *tick_timer = zpl_timer_add(ctx.timers);
     tick_timer->user_data = (void *)&ctx; /* provide ctx as a argument to timer */
-    zpl_timer_set(tick_timer, 1000 * 1000, -1, measure);
-    zpl_timer_start(tick_timer, 1000);
+    zpl_timer_set(tick_timer, 1.0, -1, measure);
+    zpl_timer_start(tick_timer, 1.0);
 
     while (true) {
         librg_tick(&ctx);

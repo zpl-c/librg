@@ -80,11 +80,7 @@ endif()
 
 # proxy our includes to outside world
 target_include_directories(librg INTERFACE include
-    ${LIBRG_VENDOR_FOLDER}/zpl${LIBRG_POSTFIX}/include
-    ${LIBRG_VENDOR_FOLDER}/zpl_ent${LIBRG_POSTFIX}/include
-    ${LIBRG_VENDOR_FOLDER}/zpl_math${LIBRG_POSTFIX}/include
-    ${LIBRG_VENDOR_FOLDER}/zpl_cull${LIBRG_POSTFIX}/include
-    ${LIBRG_VENDOR_FOLDER}/zpl_event${LIBRG_POSTFIX}/include
+    ${LIBRG_VENDOR_FOLDER}/zpl${LIBRG_POSTFIX}/code
     ${LIBRG_VENDOR_FOLDER}/enet${LIBRG_POSTFIX}/include)
 
 # link all the deps
@@ -121,7 +117,9 @@ endif()
 # test for travis/etc
 if (LIBRG_TEST)
     add_executable(librg_test test/build-test.c)
+    add_executable(librg_test_cpp test/build-test.cpp)
     target_link_libraries(librg_test librg)
+    target_link_libraries(librg_test_cpp librg)
 endif()
 
 # static library
