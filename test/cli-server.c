@@ -82,7 +82,7 @@ int main() {
     librg_event_add(&ctx, LIBRG_ENTITY_CREATE, on_entity_create);
     librg_event_add(&ctx, LIBRG_ENTITY_UPDATE, on_entity_update);
 
-    librg_network_start(&ctx, (librg_address_t) { .port = 7778 });
+    librg_network_start(&ctx, (librg_address_t) { .port = 7779 });
 
     for (isize i = 0; i < 10000; i++) {
         librg_entity_t *enemy = librg_entity_create(&ctx, 0);

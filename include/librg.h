@@ -1639,7 +1639,7 @@ extern "C" {
 
         if (librg_is_server(ctx)) {
             librg_table_init(&ctx->network.connected_peers, ctx->allocator);
-            ENetAddress address;
+            ENetAddress address = {0};
 
             if (addr.host && zpl_strcmp(addr.host, "localhost") == 0) {
                 enet_address_set_host(&address, addr.host);
@@ -1654,7 +1654,11 @@ extern "C" {
             librg_assert_msg(ctx->network.host, "could not start server at provided port");
         }
         else {
-            ENetAddress address;
+            ENetAddress address = {0};
+
+            if (zpl_strcmp(addr.host, "localhost") == 0) {
+                addr.host = "::1";
+            }
 
             address.port = addr.port;
             enet_address_set_host(&address, addr.host);
