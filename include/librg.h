@@ -1217,6 +1217,7 @@ extern "C" {
                 } break;
                 case ENET_EVENT_TYPE_CONNECT:    ctx->messages[LIBRG_CONNECTION_INIT](&msg); break;
                 case ENET_EVENT_TYPE_DISCONNECT: ctx->messages[LIBRG_CONNECTION_DISCONNECT](&msg); break;
+                case ENET_EVENT_TYPE_DISCONNECT_TIMEOUT: ctx->messages[LIBRG_CONNECTION_DISCONNECT](&msg); break;
                 case ENET_EVENT_TYPE_NONE: break;
             }
         }
