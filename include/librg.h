@@ -115,6 +115,12 @@
     #endif
     #include "zpl.h"
     #include "zpl_math.h"
+
+    // temp fix
+    #ifndef typeof
+    #define typeof __typeof__
+    #endif
+
     #include "enet.h"
 #endif
 
