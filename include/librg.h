@@ -114,9 +114,6 @@
     #ifdef ZPL_SYSTEM_WINDOWS
         #define _WINSOCK_DEPRECATED_NO_WARNINGS
     #endif
-    #if defined(ZPL_SYSTEM_UNIX) && !defined(HAS_SOCKLEN_T)
-        #define HAS_SOCKLEN_T
-    #endif
     #ifdef LIBRG_IMPLEMENTATION
         #define ZPL_IMPLEMENTATION
         #define ZPLM_IMPLEMENTATION
@@ -124,12 +121,6 @@
     #endif
     #include "zpl.h"
     #include "zpl_math.h"
-
-    // temp fix
-    #ifndef typeof
-    #define typeof __typeof__
-    #endif
-
     #include "enet.h"
 #endif
 
