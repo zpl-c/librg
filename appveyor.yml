@@ -1,5 +1,3 @@
-version: '3.2.0-{build}'
-
 image: Visual Studio 2017
 
 platform:
@@ -7,11 +5,6 @@ platform:
 
 configuration:
   - Release
-  - Debug
-
-install:
-  - ps: $env:package_version = (Get-Content -Raw -Path package.json | ConvertFrom-Json).version
-  - ps: Update-AppveyorBuild -Version "$env:package_version-$env:APPVEYOR_BUILD_NUMBER"
 
 before_build:
   - npm install
@@ -24,15 +17,16 @@ test_script:
   - '%APPVEYOR_BUILD_FOLDER%\%CONFIGURATION%\librg_test.exe'
   - '%APPVEYOR_BUILD_FOLDER%\%CONFIGURATION%\librg_test_cpp.exe'
 
-# deploy:
-#   release: librg-v$(appveyor_build_version)
-#   description: 'librg dll compiled for windows'
-#   provider: GitHub
-#   auth_token:
-#     secure: tYm5oXMHHaO3oR5xd93zvnG95eqNZWw065Z9Qo6CAN3+2G7IlWbcmbsYlsl2XDFc
-#   artifact: /%APPVEYOR_BUILD_FOLDER%\%CONFIGURATION%\*\.dll/
-#   draft: false
-#   prerelease: false
-#   on:
-#     branch: master
-#     appveyor_repo_tag: true
+artifacts:
+  - path: 'Release\*.dll'
+    name: Releases
+
+deploy:
+  provider: GitHub
+  auth_token:
+    secure: "tYm5oXMHHaO3oR5xd93zvnG95eqNZWw065Z9Qo6CAN3+2G7IlWbcmbsYlsl2XDFc"
+  artifact: /.*\.dll/
+  draft: false
+  prerelease: false
+  on:
+    appveyor_repo_tag: true
