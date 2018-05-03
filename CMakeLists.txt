@@ -18,9 +18,11 @@ add_library(librg INTERFACE)
 
 # add those compile flags badboys
 if (UNIX)
-    target_compile_options(librg INTERFACE -std=gnu99)
+    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -std=gnu99")
+    set(CMAKE_CXX_FLAGS "${CMAKE_C_FLAGS} -std=c++11")
 else()
-    target_compile_options(librg INTERFACE -std=c99)
+    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -std=c99")
+    set(CMAKE_CXX_FLAGS "${CMAKE_C_FLAGS} -std=c++11")
 endif()
 
 # proxy our includes to outside world
