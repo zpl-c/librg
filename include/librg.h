@@ -20,6 +20,12 @@
  * sdl2.h
  *
  * Version History:
+ * 3.3.0
+ * - Added ipv6 support
+ * - Added safe bitstream reads for internal methods
+ * - Updated enet to latest version (2.0.1, ipv6 support)
+ * - Updated zpl to latest version
+ *
  * 3.2.0
  * - Fixed minor memory client-side memory leak with empty control list
  * - Fixed issue with client stream update and removed entity on server
@@ -66,10 +72,13 @@
  * - remove controller peer for entity, on owner disconnect (BUG)
  * - possibly adding stream_range to the query, to make it bi-sided (FEATURE)
  * - tree/space node flattening (FEATURE)
- *                                                                 
- * https://antriel.com/post/online-platformer-5/#server-update-data
- *                                                                 
- * Copyright 2017 Vladyslav Hrytsenko
+ *
+ * Useful links:
+ * - https://antriel.com/post/online-platformer-5/#server-update-data
+ *
+ * License notice:
+ *
+ * Copyright 2017-2018 Vladyslav Hrytsenko
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -543,6 +552,7 @@ LIBRG_GEN_DATA_READWRITE( b8);
 LIBRG_GEN_DATA_READWRITE(b16);
 LIBRG_GEN_DATA_READWRITE(b32);
 #undef LIBRG_GEN_DATA_READWRITE
+
 /**
  * Read/write methods for entity (aliases for u32)
  */
@@ -1620,6 +1630,22 @@ extern "C" {
     LIBRG_GEN_DATA_READWRITE(b16);
     LIBRG_GEN_DATA_READWRITE(b32);
     #undef LIBRG_GEN_DATA_READWRITE
+
+    /**
+     * Special method for internal packet-safe reading
+     * @param  TYPE variable type
+     * @param  VAR  variable name
+     * @param  DATA librg_data_t ptr
+     */
+    #define librg_data_read_safe(TYPE, VAR, DATA) \
+        TYPE VAR = 0; \
+        if ((librg_data_get_rpos(DATA) + sizeof(TYPE)) <= librg_data_capacity(DATA)) { \
+            VAR = ZPL_JOIN2(librg_data_r,TYPE)(DATA); \
+        } else { \
+            librg_dbg("[info] corrupted packet in method (%s::%s) at line: %d\n", _LIBRG_METHOD, "librg_data_r"#TYPE, __LINE__); \
+            return; \
+        }
+
 #endif
 
 // =======================================================================//
@@ -1952,13 +1978,14 @@ extern "C" {
 #if 1
     /* Execution side: SHARED */
     LIBRG_INTERNAL void librg__callback_connection_init(librg_message_t *msg) {
-        librg_dbg("librg__connection_init\n");
+        #define _LIBRG_METHOD "librg__callback_connection_init"
+        librg_dbg("%s\n", _LIBRG_METHOD);
 
         #if defined(LIBRG_DEBUG)
         char my_host[16];
 
         enet_address_get_host_ip(&msg->peer->address, my_host, 16);
-        librg_dbg("librg__connection_init: a new connection attempt at %s:%u.\n", my_host, msg->peer->address.port);
+        librg_dbg("%s: a new connection attempt at %s:%u.\n", _LIBRG_METHOD, my_host, msg->peer->address.port);
         #endif
 
         if (librg_is_client(msg->ctx)) {
@@ -1986,16 +2013,19 @@ extern "C" {
 
             librg_data_free(&data);
         }
+
+        #undef _LIBRG_METHOD
     }
 
     /* Execution side: SERVER */
     LIBRG_INTERNAL void librg__callback_connection_request(librg_message_t *msg) {
-        librg_dbg("librg__connection_request\n");
+        #define _LIBRG_METHOD "librg__callback_connection_request"
+        librg_dbg("%s\n", _LIBRG_METHOD);
 
-        u32 platform_id       = librg_data_ru32(msg->data);
-        u32 platform_build    = librg_data_ru32(msg->data);
-        u32 platform_protocol = librg_data_ru32(msg->data);
-        f64 client_time       = librg_data_rf64(msg->data);
+        librg_data_read_safe(u32, platform_id, msg->data);
+        librg_data_read_safe(u32, platform_build, msg->data);
+        librg_data_read_safe(u32, platform_protocol, msg->data);
+        librg_data_read_safe(f64, client_time, msg->data);
 
         b32 blocked = (platform_id != librg_option_get(LIBRG_PLATFORM_ID) || platform_protocol != librg_option_get(LIBRG_PLATFORM_PROTOCOL));
 
@@ -2053,6 +2083,8 @@ extern "C" {
 
             librg_event_trigger(msg->ctx, LIBRG_CONNECTION_REFUSE, &event);
         }
+
+        #undef _LIBRG_METHOD
     }
 
     /* Execution side: CLIENT */
@@ -2144,8 +2176,10 @@ extern "C" {
     /* Execution side: SHARED */
     /* Based on: http://www.mine-control.com/zack/timesync/timesync.html */
     void librg__callback_connection_timesync(librg_message_t *msg) {
+        #define _LIBRG_METHOD "librg__callback_connection_timesync"
+
         if (librg_is_server(msg->ctx)) {
-            f64 client_time = librg_data_rf64(msg->data);
+            librg_data_read_safe(f64, client_time, msg->data);
             f64 server_time = librg_time_now(msg->ctx);
 
             librg_send_to(msg->ctx, LIBRG_CONNECTION_TIMESYNC, msg->peer, librg_lambda(data), {
@@ -2185,6 +2219,8 @@ extern "C" {
                 ctx->timesync.offset_time = server_time + ctx->timesync.median;
             }
         }
+
+        #undef _LIBRG_METHOD
     }
 
     /* Execution side: CLIENT */
@@ -2274,11 +2310,18 @@ extern "C" {
 
     /* Execution side: SERVER */
     LIBRG_INTERNAL void librg__callback_entity_client_streamer_update(librg_message_t *msg) {
-        u32 amount = librg_data_ru32(msg->data);
+        #define _LIBRG_METHOD "librg__callback_entity_client_streamer_update"
+        librg_data_read_safe(u32, amount, msg->data);
 
         for (usize i = 0; i < amount; i++) {
-            librg_entity_id entity = librg_data_rent(msg->data);
-            u32 size = librg_data_ru32(msg->data);
+            librg_data_read_safe(u32, entity, msg->data);
+            librg_data_read_safe(u32, size, msg->data);
+
+            if (librg_data_capacity(msg->data) < librg_data_get_rpos(msg->data) + size ||
+                librg_data_capacity(msg->data) < librg_data_get_rpos(msg->data) + sizeof(zplm_vec3)) {
+                librg_dbg("invalid packet size on client streamer update\n");
+                return;
+            }
 
             if (!librg_entity_valid(msg->ctx, entity)) {
                 librg_dbg("invalid entity on client streamer update\n");
@@ -2298,6 +2341,8 @@ extern "C" {
             librg_event_trigger(msg->ctx, LIBRG_CLIENT_STREAMER_UPDATE, &event);
             librg_data_rptr(msg->data, &blob->position, sizeof(blob->position));
         }
+
+        #undef _LIBRG_METHOD
     }
 
     /* Execution side: CLIENT */
