@@ -75,6 +75,7 @@
  *
  * Useful links:
  * - https://antriel.com/post/online-platformer-5/#server-update-data
+ * - https://github.com/fnuecke/Space/blob/5ddfec5fc8139c4b0def8fdfc16b5f5357a8cd38/EngineController/AbstractTssClient.cs#L325
  *
  * License notice:
  *
@@ -165,6 +166,29 @@
 
 #ifdef __cplusplus
 extern "C" {
+#endif
+
+
+// =======================================================================//
+// !
+// ! Library compile-time configure features
+// !
+// =======================================================================//
+
+// #define LIBRG_FEATURE_MULTITHREADED 1    // disabled by default
+// #define LIBRG_FEATURE_VIRTUAL_WORLDS 1   // disabled by default
+#define LIBRG_FEATURE_ENTITY_VISIBILITY 1   // enabled by default
+
+#if defined(LIBRG_FEATURE_MULTITHREADED) && defined(LIBRG_DISABLE_FEATURE_MULTITHREADED)
+#undef LIBRG_FEATURE_MULTITHREADED
+#endif
+
+#if defined(LIBRG_FEATURE_VIRTUAL_WORLDS) && defined(LIBRG_DISABLE_FEATURE_VIRTUAL_WORLDS)
+#undef LIBRG_FEATURE_VIRTUAL_WORLDS
+#endif
+
+#if defined(LIBRG_FEATURE_ENTITY_VISIBILITY) && defined(LIBRG_DISABLE_FEATURE_ENTITY_VISIBILITY)
+#undef LIBRG_FEATURE_ENTITY_VISIBILITY
 #endif
 
 // =======================================================================//
@@ -262,7 +286,14 @@ typedef struct librg_entity_t {
     void *user_data;
     struct librg_space_t *stream_branch;
 
+    #ifdef LIBRG_FEATURE_ENTITY_VISIBILITY
     librg_table_t ignored;
+    #endif
+
+    #ifdef LIBRG_FEATURE_VIRTUAL_WORLDS
+    u32 virual_world;
+    #endif
+
     librg_table_t last_snapshot;
 
     librg_peer_t *client_peer;
@@ -301,44 +332,34 @@ LIBRG_API b32 librg_entity_valid(struct librg_ctx_t *ctx, librg_entity_id id);
  * Try to find an entity that is assossiated with a particular peer, or NULL
  */
 LIBRG_API struct librg_entity_t *librg_entity_find(struct librg_ctx_t *ctx, librg_peer_t *peer);
+
 /**
- * Set particular entity visible or invisible
- * for other entities in stream zone
- */
-LIBRG_API void librg_entity_visibility_set(struct librg_ctx_t *ctx, librg_entity_id entity_id, b32 state);
-/**
- * Set particular entity visible or invisible
- * for other particular entity
- */
-LIBRG_API void librg_entity_visibility_set_for(struct librg_ctx_t *ctx, librg_entity_id entity_id, librg_entity_id target, b32 state);
-/**
- * Get particular entity visible or invisible
- * for other entities in stream zone
- */
-LIBRG_API b32 librg_entity_visibility_get(struct librg_ctx_t *ctx, librg_entity_id entity_id);
-/**
- * Get particular entity visible or invisible
- * for other particular entity
- */
-LIBRG_API b32 librg_entity_visibility_get_for(struct librg_ctx_t *ctx, librg_entity_id entity_id, librg_entity_id target);
-/**
- * Set some entity as client streamable
- * Which means, that client will become responsive for sending
- * updates about this entity
+ * Concept of entity control describes an entity behavior, data of which is constantly sent to the server from a particular peer (controller).
+ * And, updates about that entity are later sent to other peers, except the original controller.
  *
- * And this entity wont be sent to the client, until he stops being the streamer
+ * New data will arrive, accordingly to configured client tick delay, and the LIBRG_CLIENT_STREAMER_UPDATE event will be triggered.
+ * librg_entity_control_set is an async method, it will send a message to the client, notifiyng him of becoming a controller.
+ * librg_entity_control_remove is a hybrid sync+async method. Behaves similar wat to _set, described above, however,
+ * even thought client will still be sending control messages for some time, server will reject them if method has been called.
  *
- * Setting other client as streamer, will remove previous streamer from entity
+ * Control ignore, can be used for occasions, where some sort of an authoritative pause is needed for the server, in the controlled data stream.
+ * For example, you want to change some property data of the entity, authoritatively from the server, like position.
+ * Calling librg_entity_control_ignore_set(ctx, id, true), will make sure all current streamed data from the client will be ignored.
+ * And client will start receiving data changes from the server, as if it stopped controlling the entity.
+ *
+ * librg_entity_control_ignore_once will have the same effect, however it will have one-shot effect, for a single server tick.
+ * It will make sure the new, server sent data will be delivered to client, and handled properly, and then will unblock receiving for the client.
  */
-LIBRG_API void librg_entity_control_set(struct librg_ctx_t *ctx, librg_entity_id entity_id, librg_peer_t *peer);
-/**
- * Get controller of the entity
- */
+
 LIBRG_API librg_peer_t *librg_entity_control_get(struct librg_ctx_t *ctx, librg_entity_id entity_id);
-/**
- * Remove some entity from stream ownership of the client
- */
+
+LIBRG_API void librg_entity_control_set(struct librg_ctx_t *ctx, librg_entity_id entity_id, librg_peer_t *peer);
 LIBRG_API void librg_entity_control_remove(struct librg_ctx_t *ctx, librg_entity_id entity_id);
+
+LIBRG_API b32  librg_entity_control_ignore_get(struct librg_ctx_t *ctx, librg_entity_id entity_id);
+LIBRG_API void librg_entity_control_ignore_set(struct librg_ctx_t *ctx, librg_entity_id entity_id, b32 state);
+LIBRG_API void librg_entity_control_ignore_once(struct librg_ctx_t *ctx, librg_entity_id entity_id);
+
 /**
  * Iterate over all the entities with a flag
  */
@@ -347,17 +368,46 @@ LIBRG_API void librg_entity_iterate(struct librg_ctx_t *ctx, u64 flags, librg_en
  * C based entity iteration macro
  */
 #define librg_entity_iteratex(ctx, cflags, cname, code) do { \
-    for (int _ent = 0, _valid = 0; _ent < ctx->max_entities && _valid < ctx->entity.count; ++_ent) { \
+    for (u32 _ent = 0, _valid = 0; _ent < ctx->max_entities && _valid < ctx->entity.count; ++_ent) { \
         if ((ctx->entity.list[_ent].flags & (LIBRG_ENTITY_ALIVE | cflags)) == (LIBRG_ENTITY_ALIVE | cflags)) { \
             _valid++; librg_entity_id cname = _ent; code; \
         } \
     } \
 } while (0);
+
 /**
  * Return entity type
  * @deprecated
  */
 LIBRG_API u32 librg_entity_type(struct librg_ctx_t *ctx, librg_entity_id entity_id);
+
+#ifdef LIBRG_FEATURE_ENTITY_VISIBILITY
+    /**
+     * Set particular entity visible or invisible
+     * for other entities in stream zone
+     */
+    LIBRG_API void librg_entity_visibility_set(struct librg_ctx_t *ctx, librg_entity_id entity_id, b32 state);
+    /**
+     * Set particular entity visible or invisible
+     * for other particular entity
+     */
+    LIBRG_API void librg_entity_visibility_set_for(struct librg_ctx_t *ctx, librg_entity_id entity_id, librg_entity_id target, b32 state);
+    /**
+     * Get particular entity visible or invisible
+     * for other entities in stream zone
+     */
+    LIBRG_API b32 librg_entity_visibility_get(struct librg_ctx_t *ctx, librg_entity_id entity_id);
+    /**
+     * Get particular entity visible or invisible
+     * for other particular entity
+     */
+    LIBRG_API b32 librg_entity_visibility_get_for(struct librg_ctx_t *ctx, librg_entity_id entity_id, librg_entity_id target);
+#endif
+
+#ifdef LIBRG_FEATURE_VIRTUAL_WORLDS
+    LIBRG_API u32  librg_entity_world_get(struct librg_ctx_t *ctx, librg_entity_id entity_id);
+    LIBRG_API void librg_entity_world_set(struct librg_ctx_t *ctx, librg_entity_id entity_id, u32 world);
+#endif
 
 // =======================================================================//
 // !
@@ -782,7 +832,11 @@ typedef struct librg_ctx_t {
     struct {
         u32 count;
         u32 cursor;
+
+        #ifdef LIBRG_FEATURE_ENTITY_VISIBILITY
         librg_table_t ignored;
+        #endif
+
         struct librg_entity_t *list;
         zpl_array(librg_entity_id) remove_queue;
         zpl_array(librg_message_t *) add_control_queue;
@@ -799,7 +853,7 @@ typedef struct librg_ctx_t {
         librg_data_t streams[LIBRG_DATA_STREAMS_AMOUNT];
     };
 
-    #ifdef LIBRG_MULTITHREADED
+    #ifdef LIBRG_FEATURE_MULTITHREADED
     struct {
         zpl_atomic32_t signal;
         zpl_atomic32_t work_count;
@@ -1058,9 +1112,12 @@ extern "C" {
         }
 
         librg__space_init(&ctx->world, ctx->allocator, dimension, world, ctx->min_branch_size, librg_option_get(LIBRG_MAX_ENTITIES_PER_BRANCH));
-        librg_table_init(&ctx->entity.ignored, ctx->allocator);
 
-        #ifdef LIBRG_MULTITHREADED
+        #ifdef LIBRG_FEATURE_ENTITY_VISIBILITY
+        librg_table_init(&ctx->entity.ignored, ctx->allocator);
+        #endif
+
+        #ifdef LIBRG_FEATURE_MULTITHREADED
         // threading
         usize thread_count = librg_option_get(LIBRG_MAX_THREADS_PER_UPDATE);
         if (thread_count > 0) {
@@ -1148,9 +1205,12 @@ extern "C" {
 
         // streamer
         librg__space_clear(&ctx->world);
-        librg_table_destroy(&ctx->entity.ignored);
 
-        #ifdef LIBRG_MULTITHREADED
+        #ifdef LIBRG_FEATURE_ENTITY_VISIBILITY
+        librg_table_destroy(&ctx->entity.ignored);
+        #endif
+
+        #ifdef LIBRG_FEATURE_MULTITHREADED
         // threading
         usize thread_count = librg_option_get(LIBRG_MAX_THREADS_PER_UPDATE);
         if (thread_count > 0) {
@@ -1195,6 +1255,11 @@ extern "C" {
 
                     data.rawptr = event.packet->data;
                     data.capacity = event.packet->dataLength;
+
+                    if (!data.rawptr || data.capacity < sizeof(librg_message_t)) {
+                        librg_dbg("[info] corrupted packet in librg_tick, on receive\n");
+                        continue;
+                    }
 
                     // get curernt packet id
                     librg_message_id id = librg_data_rmid(&data);
@@ -1317,41 +1382,6 @@ extern "C" {
         return NULL;
     }
 
-    void librg_entity_visibility_set(librg_ctx_t *ctx, librg_entity_id entity, b32 state) {
-        librg_assert(librg_is_server(ctx) && librg_entity_valid(ctx, entity));
-        librg_table_set(&ctx->entity.ignored, entity, (u32)!state);
-    }
-
-    void librg_entity_visibility_set_for(librg_ctx_t *ctx, librg_entity_id entity, librg_entity_id target, b32 state) {
-        librg_assert(librg_is_server(ctx) && librg_entity_valid(ctx, entity));
-        librg_entity_t *blob = librg_entity_fetch(ctx, entity);
-
-        if (!(blob->flags & LIBRG_ENTITY_IGNORING)) {
-            blob->flags |= LIBRG_ENTITY_IGNORING;
-            librg_table_init(&blob->ignored, ctx->allocator);
-        }
-
-        librg_table_set(&blob->ignored, target, (u32)!state);
-    }
-
-    b32 librg_entity_visibility_get(librg_ctx_t *ctx, librg_entity_id entity) {
-        librg_assert(librg_is_server(ctx) && librg_entity_valid(ctx, entity));
-        u32 *ignored = librg_table_get(&ctx->entity.ignored, entity);
-        return !(ignored && *ignored);
-    }
-
-    b32 librg_entity_visibility_get_for(librg_ctx_t *ctx, librg_entity_id entity, librg_entity_id target) {
-        librg_assert(librg_is_server(ctx));
-        librg_entity_t *blob = librg_entity_fetch(ctx, entity);
-
-        if (!(blob->flags & LIBRG_ENTITY_IGNORING)) {
-            return true;
-        }
-
-        u32 *ignored = librg_table_get(&blob->ignored, target);
-        return !(ignored && *ignored);
-    }
-
     void librg_entity_control_set(librg_ctx_t *ctx, librg_entity_id entity, librg_peer_t *peer) {
         librg_assert(ctx && peer && librg_entity_valid(ctx, entity));
         librg_assert(librg_is_server(ctx));
@@ -1422,6 +1452,67 @@ extern "C" {
         librg_assert(librg_entity_valid(ctx, id));
         return ctx->entity.list[id].type;
     }
+
+
+    #ifdef LIBRG_FEATURE_ENTITY_VISIBILITY
+        void librg_entity_visibility_set(librg_ctx_t *ctx, librg_entity_id entity, b32 state) {
+            librg_assert(librg_is_server(ctx) && librg_entity_valid(ctx, entity));
+            librg_table_set(&ctx->entity.ignored, entity, (u32)!state);
+        }
+
+        void librg_entity_visibility_set_for(librg_ctx_t *ctx, librg_entity_id entity, librg_entity_id target, b32 state) {
+            librg_assert(librg_is_server(ctx) && librg_entity_valid(ctx, entity));
+            librg_entity_t *blob = librg_entity_fetch(ctx, entity);
+
+            if (!(blob->flags & LIBRG_ENTITY_IGNORING)) {
+                blob->flags |= LIBRG_ENTITY_IGNORING;
+                librg_table_init(&blob->ignored, ctx->allocator);
+            }
+
+            librg_table_set(&blob->ignored, target, (u32)!state);
+        }
+
+        b32 librg_entity_visibility_get(librg_ctx_t *ctx, librg_entity_id entity) {
+            librg_assert(librg_is_server(ctx) && librg_entity_valid(ctx, entity));
+            u32 *ignored = librg_table_get(&ctx->entity.ignored, entity);
+            return !(ignored && *ignored);
+        }
+
+        b32 librg_entity_visibility_get_for(librg_ctx_t *ctx, librg_entity_id entity, librg_entity_id target) {
+            librg_assert(librg_is_server(ctx));
+            librg_entity_t *blob = librg_entity_fetch(ctx, entity);
+
+            if (!(blob->flags & LIBRG_ENTITY_IGNORING)) {
+                return true;
+            }
+
+            u32 *ignored = librg_table_get(&blob->ignored, target);
+            return !(ignored && *ignored);
+        }
+    #endif
+
+    #ifdef LIBRG_FEATURE_VIRTUAL_WORLDS
+        u32 librg_entity_world_get(struct librg_ctx_t *ctx, librg_entity_id entity_id) {
+            librg_assert(ctx);
+            librg_entity_t *entity = librg_entity_fetch(ctx, entity_id);
+
+            if (entity) {
+                return entity->virual_world;
+            }
+
+            return 0;
+        }
+
+        void librg_entity_world_set(struct librg_ctx_t *ctx, librg_entity_id entity_id, u32 world) {
+            librg_assert(ctx);
+            librg_entity_t *entity = librg_entity_fetch(ctx, entity_id);
+
+            if (entity) {
+                entity->virual_world = world;
+            }
+        }
+    #endif
+
 #endif
 
 // =======================================================================//
@@ -1790,7 +1881,7 @@ extern "C" {
         librg_message_send_instream_except(ctx, id, entity, NULL, data, size);
     }
 
-    void librg_message_send_instream_except(librg_ctx_t *ctx, librg_message_id id, librg_entity_id entity, librg_peer_t * ignored, void *data, usize size) {
+    void librg_message_send_instream_except(librg_ctx_t *ctx, librg_message_id id, librg_entity_id entity, librg_peer_t *ignored, void *data, usize size) {
         zpl_array(librg_entity_id) queue;
         usize count = librg_entity_query(ctx, entity, &queue);
 
@@ -2590,7 +2681,7 @@ extern "C" {
             librg_table_destroy(&blob->last_snapshot);
             *last_snapshot = next_snapshot;
 
-            #ifdef LIBRG_MULTITHREADED
+            #ifdef LIBRG_FEATURE_MULTITHREADED
             if (librg_option_get(LIBRG_MAX_THREADS_PER_UPDATE) > 0) zpl_mutex_lock(ctx->threading.send_lock);
             #endif
 
@@ -2605,7 +2696,7 @@ extern "C" {
                 enet_packet_create(unreliable->rawptr, librg_data_get_wpos(unreliable), 0)
             );
 
-            #ifdef LIBRG_MULTITHREADED
+            #ifdef LIBRG_FEATURE_MULTITHREADED
             if (librg_option_get(LIBRG_MAX_THREADS_PER_UPDATE) > 0) zpl_mutex_unlock(ctx->threading.send_lock);
             #endif
 
@@ -2615,7 +2706,7 @@ extern "C" {
         }
     }
 
-    #ifdef LIBRG_MULTITHREADED
+    #ifdef LIBRG_FEATURE_MULTITHREADED
     isize librg__execute_server_entity_update_worker(zpl_thread_t *thread) {
         librg_update_worker_si_t *si = cast(librg_update_worker_si_t *)thread->user_data;
         librg_ctx_t *ctx = si->ctx;
@@ -2657,7 +2748,7 @@ extern "C" {
             return;
         }
 
-        #ifdef LIBRG_MULTITHREADED
+        #ifdef LIBRG_FEATURE_MULTITHREADED
         zpl_atomic32_store(&ctx->threading.signal, LIBRG_THREAD_WORK);
         zpl_atomic32_store(&ctx->threading.work_count, librg_option_get(LIBRG_MAX_THREADS_PER_UPDATE));
 
@@ -2905,8 +2996,14 @@ extern "C" {
                 b32 inside = librg__space_contains(c->dimensions, bounds, blob->position.e);
 
                 if (inside) {
+                    #ifdef LIBRG_FEATURE_ENTITY_VISIBILITY
                     if (!librg_entity_visibility_get(ctx, target)) continue;
                     if (!librg_entity_visibility_get_for(ctx, target, entity)) continue;
+                    #endif
+
+                    #ifdef LIBRG_FEATURE_VIRTUAL_WORLDS
+                    if (librg_entity_world_get(ctx, target) != librg_entity_world_get(ctx, entity)) continue;
+                    #endif
 
                     zpl_array_append(*out_entities, target);
                 }
@@ -2945,6 +3042,7 @@ extern "C" {
             zpl_array_free(entity->last_query);
         }
 
+        #ifdef LIBRG_FEATURE_ENTITY_VISIBILITY
         if (entity->flags & LIBRG_ENTITY_IGNORING) {
             librg_table_destroy(&entity->ignored);
         }
@@ -2952,11 +3050,16 @@ extern "C" {
         if (librg_is_server(ctx)) {
             librg_entity_visibility_set(ctx, entity->id, true);
         }
+        #endif
 
         entity->flags         = LIBRG_ENTITY_NONE;
         entity->position      = zplm_vec3f_zero();
         entity->type          = 0;
         entity->stream_branch = NULL;
+
+        #ifdef LIBRG_FEATURE_VIRTUAL_WORLDS
+        entity->virual_world  = 0;
+        #endif
 
         return true;
     }
