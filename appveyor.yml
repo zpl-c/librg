@@ -21,12 +21,6 @@ artifacts:
   - path: 'Release\*.dll'
     name: Releases
 
-on_success:
-    - curl -v -H User-Agent:bot -H Content-Type:application/json -d '{"content":"**librg** 'win' build has failed! :no_entry:"}' https://discordapp.com/api/webhooks/$DISCORD_WEBHOOK_CHANNEL_ID/$DISCORD_WEBHOOK_TOKEN
-
-on_failure:
-    - curl -v -H User-Agent:bot -H Content-Type:application/json -d '{"content":"**librg** 'win' build has succeeded! :white_check_mark:"}' https://discordapp.com/api/webhooks/$DISCORD_WEBHOOK_CHANNEL_ID/$DISCORD_WEBHOOK_TOKEN
-
 deploy:
   provider: GitHub
   auth_token:
