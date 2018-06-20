@@ -20,6 +20,20 @@
  * sdl2.h
  *
  * Version History:
+ * 3.4.0
+ * - Added compile-time 'features':
+ *     - Ability to enable/disable some librg compile-time features
+ *     - Multithreading 'rebranded' as feature
+ *     - Entity igore tables are now optional, and can be disabled
+ *     - Implmented simple Virtual world feature for entities
+ *     - Multiple features can be combined
+ * - Added 'generation' to entity control lists:
+ *     Setting, removing and setting control to the same entity again with same owner
+ *     will now distinct between old and new controllers, and messages still coming
+ *     from old control generation will be rejected in favor of new ones.
+ * - Added guard to minimum sized packet in receive for both sides
+ * - Fixed nullptr crash on empty host string for client on connect
+ *
  * 3.3.0
  * - Added ipv6 support
  * - Added safe bitstream reads for internal methods
@@ -97,7 +111,7 @@
 #define LIBRG_INCLUDE_H
 
 #define LIBRG_VERSION_MAJOR 3
-#define LIBRG_VERSION_MINOR 3
+#define LIBRG_VERSION_MINOR 4
 #define LIBRG_VERSION_PATCH 0
 #define LIBRG_VERSION_CREATE(major, minor, patch) (((major)<<16) | ((minor)<<8) | (patch))
 #define LIBRG_VERSION_GET_MAJOR(version) (((version)>>16)&0xFF)
