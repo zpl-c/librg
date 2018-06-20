@@ -1058,7 +1058,7 @@ extern "C" {
     }
 
     void librg_init(librg_ctx_t *ctx) {
-        librg_dbg("librg_init\n");
+        librg_dbg("[dbg] librg_init\n");
 
         #define librg_set_default(expr, value) if (!expr) expr = value
 
@@ -1115,7 +1115,7 @@ extern "C" {
         // threading
         usize thread_count = librg_option_get(LIBRG_MAX_THREADS_PER_UPDATE);
         if (thread_count > 0) {
-            librg_dbg("librg: warning, LIBRG_MAX_THREADS_PER_UPDATE is experimental, and highly unstable!\n");
+            librg_dbg("[dbg] warning, LIBRG_MAX_THREADS_PER_UPDATE is experimental, and highly unstable!\n");
 
             ctx->threading.update_workers = (zpl_thread_t *)zpl_alloc(ctx->allocator, sizeof(zpl_thread_t)*thread_count);
             usize step = ctx->max_entities / thread_count;
@@ -1177,7 +1177,7 @@ extern "C" {
     }
 
     void librg_free(librg_ctx_t *ctx) {
-        librg_dbg("librg_free\n");
+        librg_dbg("[dbg] librg_free\n");
 
         // free all timers and events first
         zpl_array_free(ctx->timers);
@@ -1250,8 +1250,9 @@ extern "C" {
                     data.rawptr = event.packet->data;
                     data.capacity = event.packet->dataLength;
 
-                    if (!data.rawptr || data.capacity < sizeof(librg_message_t)) {
-                        librg_dbg("[info] corrupted packet in librg_tick, on receive\n");
+                    if (!data.rawptr || data.capacity < sizeof(librg_message_id)) {
+                        librg_assert(false);
+                        librg_dbg("[dbg] corrupted packet in librg_tick, on receive\n");
                         continue;
                     }
 
@@ -1276,7 +1277,7 @@ extern "C" {
                     }
                     else {
                         /* print unknown message id  */
-                        librg_dbg("network: unknown message: %u\n", id);
+                        librg_dbg("[dbg] unknown message: %u\n", id);
                     }
 
                     enet_packet_destroy(event.packet);
@@ -1721,7 +1722,7 @@ extern "C" {
         if ((librg_data_get_rpos(DATA) + sizeof(TYPE)) <= librg_data_capacity(DATA)) { \
             VAR = ZPL_JOIN2(librg_data_r,TYPE)(DATA); \
         } else { \
-            librg_dbg("[info] corrupted packet in method (%s::%s) at line: %d\n", _LIBRG_METHOD, "librg_data_r"#TYPE, __LINE__); \
+            librg_dbg("[dbg] corrupted packet in method (%s::%s) at line: %d\n", _LIBRG_METHOD, "librg_data_r"#TYPE, __LINE__); \
             return; \
         }
 
@@ -1747,7 +1748,7 @@ extern "C" {
     }
 
     void librg_network_start(librg_ctx_t *ctx, librg_address_t addr) {
-        librg_dbg("librg_network_start\n");
+        librg_dbg("[dbg] librg_network_start\n");
 
         if (librg_is_server(ctx)) {
             librg_table_init(&ctx->network.connected_peers, ctx->allocator);
@@ -1768,7 +1769,7 @@ extern "C" {
         else {
             ENetAddress address = {0};
 
-            if (zpl_strcmp(addr.host, "localhost") == 0) {
+            if (addr.host && zpl_strcmp(addr.host, "localhost") == 0) {
                 addr.host = "::1";
             }
 
@@ -1781,7 +1782,7 @@ extern "C" {
             librg_assert_msg(ctx->network.host, "could not start client");
 
             // create peer connecting to server
-            librg_dbg("connecting to server %s:%u\n", addr.host, addr.port);
+            librg_dbg("[dbg] connecting to server %s:%u\n", addr.host, addr.port);
             ctx->network.peer = enet_host_connect(ctx->network.host, &address, librg_option_get(LIBRG_NETWORK_CHANNELS), 0);
             librg_assert_msg(ctx->network.peer, "could not setup peer for provided address");
         }
@@ -1790,7 +1791,7 @@ extern "C" {
     }
 
     void librg_network_stop(librg_ctx_t *ctx) {
-        librg_dbg("librg_network_stop\n");
+        librg_dbg("[dbg] librg_network_stop\n");
 
         if (ctx->network.peer) {
             ENetEvent event;
@@ -2021,7 +2022,7 @@ extern "C" {
 
         // if current update if too old, just skip it, and call next one
         if (snap->time < (librg_time_now(ctx) - time_diff)) {
-            librg_dbg("librg__buffer_tick: dropping old update packet\n");
+            librg_dbg("[dbg] librg__buffer_tick: dropping old update packet\n");
             zpl_mfree(snap->data);
             librg__buffer_tick((void *)ctx);
             return;
@@ -2058,13 +2059,13 @@ extern "C" {
     /* Execution side: SHARED */
     LIBRG_INTERNAL void librg__callback_connection_init(librg_message_t *msg) {
         #define _LIBRG_METHOD "librg__callback_connection_init"
-        librg_dbg("%s\n", _LIBRG_METHOD);
+        librg_dbg("[dbg] %s\n", _LIBRG_METHOD);
 
         #if defined(LIBRG_DEBUG)
         char my_host[16];
 
         enet_address_get_host_ip(&msg->peer->address, my_host, 16);
-        librg_dbg("%s: a new connection attempt at %s:%u.\n", _LIBRG_METHOD, my_host, msg->peer->address.port);
+        librg_dbg("[dbg] %s: a new connection attempt at %s:%u.\n", _LIBRG_METHOD, my_host, msg->peer->address.port);
         #endif
 
         if (librg_is_client(msg->ctx)) {
@@ -2099,7 +2100,7 @@ extern "C" {
     /* Execution side: SERVER */
     LIBRG_INTERNAL void librg__callback_connection_request(librg_message_t *msg) {
         #define _LIBRG_METHOD "librg__callback_connection_request"
-        librg_dbg("%s\n", _LIBRG_METHOD);
+        librg_dbg("[dbg] %s\n", _LIBRG_METHOD);
 
         librg_data_read_safe(u32, platform_id, msg->data);
         librg_data_read_safe(u32, platform_build, msg->data);
@@ -2109,11 +2110,11 @@ extern "C" {
         b32 blocked = (platform_id != librg_option_get(LIBRG_PLATFORM_ID) || platform_protocol != librg_option_get(LIBRG_PLATFORM_PROTOCOL));
 
         if (platform_build != librg_option_get(LIBRG_PLATFORM_BUILD)) {
-            librg_dbg("NOTICE: librg platform build mismatch client %u, server: %u\n", platform_build, librg_option_get(LIBRG_PLATFORM_BUILD));
+            librg_dbg("[dbg] NOTICE: librg platform build mismatch client %u, server: %u\n", platform_build, librg_option_get(LIBRG_PLATFORM_BUILD));
         }
 
         if (blocked) {
-            librg_dbg("our platform: %d %d, their platform: %d %d\n",
+            librg_dbg("[dbg] BLOCKED: our platform: %d %d, their platform: %d %d\n",
                 librg_option_get(LIBRG_PLATFORM_ID),
                 librg_option_get(LIBRG_PLATFORM_PROTOCOL),
                 platform_id, platform_protocol
@@ -2154,7 +2155,7 @@ extern "C" {
             librg_event_trigger(msg->ctx, LIBRG_CONNECTION_ACCEPT, &event);
         }
         else {
-            librg_dbg("librg__connection_refuse\n");
+            librg_dbg("[dbg] librg__connection_refuse\n");
             librg_message_send_to(msg->ctx, LIBRG_CONNECTION_REFUSE, msg->peer, NULL, 0);
 
             event.data   = NULL;
@@ -2168,14 +2169,14 @@ extern "C" {
 
     /* Execution side: CLIENT */
     LIBRG_INTERNAL void librg__callback_connection_refuse(librg_message_t *msg) {
-        librg_dbg("librg__connection_refuse\n");
+        librg_dbg("[dbg] librg__connection_refuse\n");
         LIBRG_MESSAGE_TO_EVENT(event, msg);
         librg_event_trigger(msg->ctx, LIBRG_CONNECTION_REFUSE, &event);
     }
 
     /* Execution side: CLIENT */
     LIBRG_INTERNAL void librg__callback_connection_accept(librg_message_t *msg) {
-        librg_dbg("librg__connection_accept\n");
+        librg_dbg("[dbg] librg__connection_accept\n");
         librg_table_init(&msg->ctx->network.connected_peers, msg->ctx->allocator);
 
         f32 server_delay = librg_data_rf32(msg->data);
@@ -2210,7 +2211,7 @@ extern "C" {
 
     /* Execution side: SHARED */
     LIBRG_INTERNAL void librg__callback_connection_disconnect(librg_message_t *msg) {
-        librg_dbg("librg__connection_disconnect\n");
+        librg_dbg("[dbg] librg__connection_disconnect\n");
         if (!msg->ctx->network.connected_peers.hashes) {
             librg_event_t event = {0}; {
                 event.peer      = msg->peer;
@@ -2339,7 +2340,7 @@ extern "C" {
                 librg__world_entity_destroy(msg->ctx, entity);
             }
             else {
-                librg_dbg("unexpected entity %u on remove\n", entity);
+                librg_dbg("[dbg] unexpected entity %u on remove\n", entity);
             }
         }
     }
@@ -2371,7 +2372,7 @@ extern "C" {
         librg_entity_id entity = librg_data_rent(msg->data);
 
         if (!librg_entity_valid(msg->ctx, entity)) {
-            librg_dbg("trying to add unknown entity to clientstream!\n");
+            librg_dbg("[dbg] trying to add unknown entity to clientstream!\n");
             return;
         }
 
@@ -2398,12 +2399,12 @@ extern "C" {
 
             if (librg_data_capacity(msg->data) < librg_data_get_rpos(msg->data) + size ||
                 librg_data_capacity(msg->data) < librg_data_get_rpos(msg->data) + sizeof(zplm_vec3)) {
-                librg_dbg("invalid packet size on client streamer update\n");
+                librg_dbg("[dbg] invalid packet size on client streamer update\n");
                 return;
             }
 
             if (!librg_entity_valid(msg->ctx, entity)) {
-                librg_dbg("invalid entity on client streamer update\n");
+                librg_dbg("[dbg] invalid entity on client streamer update\n");
                 librg_data_set_rpos(msg->data, librg_data_get_rpos(msg->data) + size);
                 continue;
             }
@@ -2411,7 +2412,7 @@ extern "C" {
             librg_entity_t *blob = librg_entity_fetch(msg->ctx, entity);
 
             if (!(blob->flags & LIBRG_ENTITY_CONTROLLED) || blob->control_peer != msg->peer || control_generation != blob->control_generation) {
-                librg_dbg("no component, or peer is different\n");
+                librg_dbg("[dbg] no component, or peer is different\n");
                 librg_data_set_rpos(msg->data, librg_data_get_rpos(msg->data) + size);
                 continue;
             }
@@ -2429,7 +2430,7 @@ extern "C" {
         librg_entity_id entity = librg_data_rent(msg->data);
 
         if (!librg_entity_valid(msg->ctx, entity)) {
-            librg_dbg("trying to remove unknown entity from clientstream!\n");
+            librg_dbg("[dbg] trying to remove unknown entity from clientstream!\n");
             return;
         }
 

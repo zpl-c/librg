@@ -1,5 +1,7 @@
 #define LIBRG_DEBUG
 #define LIBRG_IMPLEMENTATION
+#define LIBRG_DISABLE_FEATURE_ENTITY_VISIBILITY
+#define LIBRG_FEATURE_VIRUAL_WORLDS
 #include <librg.h>
 #include <SDL.h>
 
@@ -298,7 +300,7 @@ int main(int argc, char *argv[]) {
     librg_event_add(&ctx, LIBRG_CLIENT_STREAMER_UPDATE, on_client_entity_update);
 
     // librg_network_start(&ctx, (librg_address_t) { .host = "139.59.142.46", .port = 17777 });
-    librg_network_start(&ctx, (librg_address_t) { .host = "inlife.no-ip.org", .port = 7777 });
+    librg_network_start(&ctx, (librg_address_t) { .host = "localhost", .port = 7777 });
 
     bool loop = true;
 
