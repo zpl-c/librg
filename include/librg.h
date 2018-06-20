@@ -266,7 +266,7 @@ LIBRG_API void librg_tick(struct librg_ctx_t *ctx);
 #define librg_entity_id u32
 
 enum librg_entity_flag {
-    LIBRG_ENTITY_NONE       = 0, /* general flag, all destroyed/non-created entities have it */
+    LIBRG_ENTITY_NONE       = 0,        /* general flag, all destroyed/non-created entities have it */
     LIBRG_ENTITY_ALIVE      = (1 << 0), /* general flag, all created entities have it */
     LIBRG_ENTITY_CLIENT     = (1 << 1), /* flag describing entities created for client peer */
     LIBRG_ENTITY_IGNORING   = (1 << 2), /* flag showing that entity has ignore overrides */
@@ -298,6 +298,8 @@ typedef struct librg_entity_t {
 
     librg_peer_t *client_peer;
     librg_peer_t *control_peer;
+
+    u8 control_generation;
 
     zpl_array(librg_entity_id) last_query;
 } librg_entity_t;
@@ -342,23 +344,15 @@ LIBRG_API struct librg_entity_t *librg_entity_find(struct librg_ctx_t *ctx, libr
  * librg_entity_control_remove is a hybrid sync+async method. Behaves similar wat to _set, described above, however,
  * even thought client will still be sending control messages for some time, server will reject them if method has been called.
  *
- * Control ignore, can be used for occasions, where some sort of an authoritative pause is needed for the server, in the controlled data stream.
- * For example, you want to change some property data of the entity, authoritatively from the server, like position.
- * Calling librg_entity_control_ignore_set(ctx, id, true), will make sure all current streamed data from the client will be ignored.
- * And client will start receiving data changes from the server, as if it stopped controlling the entity.
- *
- * librg_entity_control_ignore_once will have the same effect, however it will have one-shot effect, for a single server tick.
- * It will make sure the new, server sent data will be delivered to client, and handled properly, and then will unblock receiving for the client.
+ * For occasions, where some sort of an authoritative pause is needed for the server, in the controlled data stream,
+ * for example you want to change some property data of the entity, authoritatively from the server, like position.
+ * Calling librg_entity_control_remove(ctx, id), making the neccessary changes, and calling librg_entity_control_set(ctx, id, peer)
+ * will make sure all current streamed data from the client will be ignored, and new data will be force-delivered to client
  */
 
 LIBRG_API librg_peer_t *librg_entity_control_get(struct librg_ctx_t *ctx, librg_entity_id entity_id);
-
 LIBRG_API void librg_entity_control_set(struct librg_ctx_t *ctx, librg_entity_id entity_id, librg_peer_t *peer);
 LIBRG_API void librg_entity_control_remove(struct librg_ctx_t *ctx, librg_entity_id entity_id);
-
-LIBRG_API b32  librg_entity_control_ignore_get(struct librg_ctx_t *ctx, librg_entity_id entity_id);
-LIBRG_API void librg_entity_control_ignore_set(struct librg_ctx_t *ctx, librg_entity_id entity_id, b32 state);
-LIBRG_API void librg_entity_control_ignore_once(struct librg_ctx_t *ctx, librg_entity_id entity_id);
 
 /**
  * Iterate over all the entities with a flag
@@ -1382,67 +1376,6 @@ extern "C" {
         return NULL;
     }
 
-    void librg_entity_control_set(librg_ctx_t *ctx, librg_entity_id entity, librg_peer_t *peer) {
-        librg_assert(ctx && peer && librg_entity_valid(ctx, entity));
-        librg_assert(librg_is_server(ctx));
-        librg_entity_t *blob = librg_entity_fetch(ctx, entity);
-
-        // replace current entity owner
-        if (blob->flags & LIBRG_ENTITY_CONTROLLED) {
-            if (blob->control_peer == peer) {
-                return;
-            }
-
-            librg_send_to(ctx, LIBRG_CLIENT_STREAMER_REMOVE, blob->control_peer, librg_lambda(data), {
-                librg_data_went(&data, entity);
-            });
-
-            blob->control_peer = peer;
-        }
-        // attach new entity owner
-        else {
-            blob->flags |= LIBRG_ENTITY_CONTROLLED;
-            blob->control_peer = peer;
-        }
-
-        librg_message_t *msg = (librg_message_t *)zpl_alloc(ctx->allocator, sizeof(librg_message_t)); {
-            librg_message_id id = LIBRG_CLIENT_STREAMER_ADD;
-
-            msg->peer   = peer;
-            msg->packet = enet_packet_create_offset(
-                &entity, sizeof(librg_entity_id), sizeof(librg_message_id), ENET_PACKET_FLAG_RELIABLE
-            );
-
-            zpl_memcopy(msg->packet->data, &id, sizeof(librg_message_id));
-        }
-
-        zpl_array_append(ctx->entity.add_control_queue, msg);
-    }
-
-    librg_peer_t *librg_entity_control_get(librg_ctx_t *ctx, librg_entity_id entity) {
-        librg_assert(ctx);
-        librg_assert(librg_is_server(ctx));
-        librg_entity_t *blob = librg_entity_fetch(ctx, entity);
-        return (blob && blob->flags & LIBRG_ENTITY_CONTROLLED) ? blob->control_peer : NULL;
-    }
-
-    void librg_entity_control_remove(librg_ctx_t *ctx, librg_entity_id entity) {
-        librg_assert(ctx && librg_entity_valid(ctx, entity));
-        librg_assert(librg_is_server(ctx));
-        librg_entity_t *blob = librg_entity_fetch(ctx, entity);
-
-        if (!(blob->flags & LIBRG_ENTITY_CONTROLLED)) {
-            return;
-        }
-
-        librg_send_to(ctx, LIBRG_CLIENT_STREAMER_REMOVE, blob->control_peer, librg_lambda(data), {
-            librg_data_went(&data, entity);
-        });
-
-        blob->flags &= ~LIBRG_ENTITY_CONTROLLED;
-        blob->control_peer = NULL;
-    }
-
     void librg_entity_iterate(librg_ctx_t *ctx, u64 flags, librg_entity_cb callback) {
         librg_entity_iteratex(ctx, flags, librg_lambda(entity), { callback(ctx, librg_entity_fetch(ctx, entity)); });
     }
@@ -1512,6 +1445,70 @@ extern "C" {
             }
         }
     #endif
+
+    void librg_entity_control_set(librg_ctx_t *ctx, librg_entity_id entity, librg_peer_t *peer) {
+        librg_assert(ctx && peer && librg_entity_valid(ctx, entity));
+        librg_assert(librg_is_server(ctx));
+        librg_entity_t *blob = librg_entity_fetch(ctx, entity);
+
+        // replace current entity owner
+        if (blob->flags & LIBRG_ENTITY_CONTROLLED) {
+            if (blob->control_peer == peer) {
+                return;
+            }
+
+            librg_send_to(ctx, LIBRG_CLIENT_STREAMER_REMOVE, blob->control_peer, librg_lambda(data), {
+                librg_data_went(&data, entity);
+            });
+
+            blob->control_peer = peer;
+        }
+        // attach new entity owner
+        else {
+            blob->flags |= LIBRG_ENTITY_CONTROLLED;
+            blob->control_peer = peer;
+        }
+
+        // main compare/validation thingy
+        blob->control_generation++;
+
+        librg_message_t *msg = (librg_message_t *)zpl_alloc(ctx->allocator, sizeof(librg_message_t)); {
+            librg_message_id id = LIBRG_CLIENT_STREAMER_ADD;
+
+            msg->peer   = peer;
+            msg->packet = enet_packet_create_offset(
+                &entity, sizeof(librg_entity_id), sizeof(librg_message_id), ENET_PACKET_FLAG_RELIABLE
+            );
+
+            zpl_memcopy(msg->packet->data, &id, sizeof(librg_message_id));
+        }
+
+        zpl_array_append(ctx->entity.add_control_queue, msg);
+    }
+
+    librg_peer_t *librg_entity_control_get(librg_ctx_t *ctx, librg_entity_id entity) {
+        librg_assert(ctx);
+        librg_assert(librg_is_server(ctx));
+        librg_entity_t *blob = librg_entity_fetch(ctx, entity);
+        return (blob && blob->flags & LIBRG_ENTITY_CONTROLLED) ? blob->control_peer : NULL;
+    }
+
+    void librg_entity_control_remove(librg_ctx_t *ctx, librg_entity_id entity) {
+        librg_assert(ctx && librg_entity_valid(ctx, entity));
+        librg_assert(librg_is_server(ctx));
+        librg_entity_t *blob = librg_entity_fetch(ctx, entity);
+
+        if (!(blob->flags & LIBRG_ENTITY_CONTROLLED)) {
+            return;
+        }
+
+        librg_send_to(ctx, LIBRG_CLIENT_STREAMER_REMOVE, blob->control_peer, librg_lambda(data), {
+            librg_data_went(&data, entity);
+        });
+
+        blob->flags &= ~LIBRG_ENTITY_CONTROLLED;
+        blob->control_peer = NULL;
+    }
 
 #endif
 
@@ -2382,8 +2379,7 @@ extern "C" {
 
         if (!(blob->flags & LIBRG_ENTITY_CONTROLLED)) {
             blob->flags |= LIBRG_ENTITY_CONTROLLED;
-
-            librg_entity_t *blob = librg_entity_fetch(msg->ctx, entity);
+            blob->control_generation++;
 
             LIBRG_MESSAGE_TO_EVENT(event, msg); event.entity = blob;
             librg_event_trigger(msg->ctx, LIBRG_CLIENT_STREAMER_ADD, &event);
@@ -2397,6 +2393,7 @@ extern "C" {
 
         for (usize i = 0; i < amount; i++) {
             librg_data_read_safe(u32, entity, msg->data);
+            librg_data_read_safe(u8, control_generation, msg->data);
             librg_data_read_safe(u32, size, msg->data);
 
             if (librg_data_capacity(msg->data) < librg_data_get_rpos(msg->data) + size ||
@@ -2413,7 +2410,7 @@ extern "C" {
 
             librg_entity_t *blob = librg_entity_fetch(msg->ctx, entity);
 
-            if (!(blob->flags & LIBRG_ENTITY_CONTROLLED) || blob->control_peer != msg->peer) {
+            if (!(blob->flags & LIBRG_ENTITY_CONTROLLED) || blob->control_peer != msg->peer || control_generation != blob->control_generation) {
                 librg_dbg("no component, or peer is different\n");
                 librg_data_set_rpos(msg->data, librg_data_get_rpos(msg->data) + size);
                 continue;
@@ -2485,6 +2482,7 @@ extern "C" {
             if (!(event.flags & LIBRG_EVENT_REJECTED)) {
                 librg_data_wptr(&subdata, &blob->position, sizeof(zplm_vec3));
                 librg_data_went(&data, entity);
+                librg_data_wu8(&data, blob->control_generation);
                 librg_data_wu32(&data, librg_data_get_wpos(&subdata));
 
                 // write sub-bitstream to main bitstream
