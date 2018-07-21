@@ -1782,9 +1782,10 @@ extern "C" {
         }
         else {
             ENetAddress address = {0};
+            const char *ipv6lclhst = "::1";
 
-            if (addr.host && zpl_strcmp(addr.host, "localhost") == 0) {
-                addr.host = "::1";
+            if (zpl_strcmp(addr.host, "localhost") == 0) {
+                addr.host = (char *)ipv6lclhst;
             }
 
             address.port = addr.port;
