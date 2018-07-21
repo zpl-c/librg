@@ -287,6 +287,7 @@ enum librg_entity_flag {
     LIBRG_ENTITY_QUERIED    = (1 << 3), /* flag showing that entity has a cached culler query */
     LIBRG_ENTITY_CONTROLLED = (1 << 4), /* flag showing if the entity is controlled(streamed) by some peer */
     LIBRG_ENTITY_UNUSED     = (1 << 5), /* flag showing whether the entity's space is unused */
+    LIBRG_ENTITY_CONTROL_REQUESTED = (1 << 5), /* flag showing whether or not an entity control has been requested, but not yet sent */
 };
 
 typedef struct librg_entity_t {
@@ -1475,14 +1476,11 @@ extern "C" {
             librg_send_to(ctx, LIBRG_CLIENT_STREAMER_REMOVE, blob->control_peer, librg_lambda(data), {
                 librg_data_went(&data, entity);
             });
+        }
 
-            blob->control_peer = peer;
-        }
         // attach new entity owner
-        else {
-            blob->flags |= LIBRG_ENTITY_CONTROLLED;
-            blob->control_peer = peer;
-        }
+        blob->flags |= (LIBRG_ENTITY_CONTROLLED | LIBRG_ENTITY_CONTROL_REQUESTED);
+        blob->control_peer = peer;
 
         // main compare/validation thingy
         blob->control_generation++;
@@ -1513,9 +1511,9 @@ extern "C" {
         librg_assert(librg_is_server(ctx));
         librg_entity_t *blob = librg_entity_fetch(ctx, entity);
 
-        if (!(blob->flags & LIBRG_ENTITY_CONTROLLED)) {
-            return;
-        }
+        // some minor validations
+        if (!(blob->flags & LIBRG_ENTITY_CONTROLLED)) { return; }
+        if (blob->flags & LIBRG_ENTITY_CONTROL_REQUESTED) { return; }
 
         librg_send_to(ctx, LIBRG_CLIENT_STREAMER_REMOVE, blob->control_peer, librg_lambda(data), {
             librg_data_went(&data, entity);
@@ -2417,19 +2415,27 @@ extern "C" {
                 return;
             }
 
+            #define LIBRG_LOCAL_ASSERT(cond, msg) \
+                if (!cond) { \
+                    librg_data_set_rpos(msg->data, librg_data_get_rpos(msg->data) + size); \
+                    librg_dbg(msg); continue; \
+                }
+
             if (!librg_entity_valid(msg->ctx, entity)) {
                 librg_dbg("[dbg] invalid entity on client streamer update\n");
                 librg_data_set_rpos(msg->data, librg_data_get_rpos(msg->data) + size);
                 continue;
             }
 
+            LIBRG_LOCAL_ASSERT(librg_entity_valid(msg->ctx, entity), "[dbg] client_streamer_update: invalid entity\n");
             librg_entity_t *blob = librg_entity_fetch(msg->ctx, entity);
 
-            if (!(blob->flags & LIBRG_ENTITY_CONTROLLED) || blob->control_peer != msg->peer || control_generation != blob->control_generation) {
-                librg_dbg("[dbg] no component, or peer is different\n");
-                librg_data_set_rpos(msg->data, librg_data_get_rpos(msg->data) + size);
-                continue;
-            }
+            LIBRG_LOCAL_ASSERT(blob->flags & LIBRG_ENTITY_CONTROLLED, "[dbg] client_streamer_update: entity has no LIBRG_ENTITY_CONTROLLED flag\n");
+            LIBRG_LOCAL_ASSERT(blob->control_peer == msg->peer, "[dbg] client_streamer_update: entity controller peer and msg->peer are different\n");
+            LIBRG_LOCAL_ASSERT(!(blob->flags & LIBRG_ENTITY_CONTROL_REQUESTED), "[dbg] client_streamer_update: entity still has LIBRG_ENTITY_CONTROL_REQUESTED flag\n");
+            LIBRG_LOCAL_ASSERT(blob->control_generation == control_generation, "[dbg] client_streamer_update: control_generation is different\n");
+
+            #undef LIBRG_LOCAL_ASSERT
 
             LIBRG_MESSAGE_TO_EVENT(event, msg); event.entity = blob;
             librg_event_trigger(msg->ctx, LIBRG_CLIENT_STREAMER_UPDATE, &event);
@@ -2531,6 +2537,12 @@ extern "C" {
     void librg__execute_server_entity_update_proc(librg_ctx_t *ctx, librg_data_t *reliable, librg_data_t *unreliable, usize offset, usize count) {
         for (isize j = offset; j < offset+count; j++) {
             librg_entity_t *blob = &ctx->entity.list[j];
+
+            // if this entity has requested the control access
+            // it will be approved right after this code finishes executing
+            if (blob->flags & LIBRG_ENTITY_CONTROL_REQUESTED) {
+                blob->flags &= ~LIBRG_ENTITY_CONTROL_REQUESTED;
+            }
 
             if (!(blob->flags & LIBRG_ENTITY_CLIENT)) continue;
 
