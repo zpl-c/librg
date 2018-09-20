@@ -40,7 +40,7 @@ Thus we hope that with this library, which is just a small step in the direction
 ## Description
 
 **librg** is a light-weight "mid-level" (can be considered/used as both low-level and high-level) game networking library. It is based on our fork of **ENet** library,
-which gives us low-level UDP networking with optional reliability. That, accompanied by our handmade general purpose **zpl** library, high-peformant network culling algorithms,
+which gives us low-level UDP networking with optional reliability. That, accompanied by our handmade general purpose **zpl** library, high-performant network culling algorithms,
 event-based approach used for creation and management of your flow with a simple interface, gives you the tools to create a simple and yet powerful multi-player based projects.
 
 ## Features
