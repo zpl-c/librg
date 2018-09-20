@@ -84,7 +84,7 @@ int main(int argc, char const *argv[]) {
 
 Everything is built around events, something gets created - the related event gets triggered. Your task as a developer is to use these events and write appropriate handlers.
 
-Let's look at the example, client connects to the server, spawns on the map, and librg triggers `LIBRG_ENTIY_CREATE` event for every entity in the player's range:
+Let's look at the example, client connects to the server, spawns on the map, and librg triggers `LIBRG_ENTITY_CREATE` event for every entity in the player's range:
 
 ```c
 void mygame_entity_create(librg_event_t *event) {
@@ -107,11 +107,11 @@ This way, the client on his side creates all entities that server tells him to c
 And the best part is that, server will tell only about those entities that are in the specified range.
 This allows you to have bigger amounts of synced data, using the same amount of bandwidth.
 
-Same concept applies when your client's entity needs to be removed, you just register the `LIBRG_ENTITY_REMOVE` handler, and unspawn the entity from the game world.
+Same concept applies when your client's entity needs to be removed, you just register the `LIBRG_ENTITY_REMOVE` handler and despawn the entity from the game world.
 
 #### Server sync
 
-What if you need, (and most likely you do), to send some data, on every server tick, like object position or rotation, or maybe even object color.
+What if you need, and most likely you do, to send some data, on every server tick, like object position or rotation, or maybe even object color.
 
 You need to register a handler for the `LIBRG_ENTITY_UDPATE` event, but this time you need to do it on both sides!
 
@@ -146,7 +146,7 @@ Now, when you write data on the server, you just read it back on the client in t
 #### Messages
 
 Considering you've already synced your server and clients after reading the previous section, you might want to trigger some actions/commands on the server, so it could become interactive.
-And the way you can do it is quite simple, it is similar to events you are familiar already, so it should be an easy task:
+And the way you can do it is quite simple, it is similar to events you are already familiar with, so it should be an easy task:
 
 ```c
 /* server side */
@@ -175,14 +175,14 @@ void myserver_onmessage2(librg_message_t *msg) {
 
 #### Client sync
 
-If you want your client to send updates about one or more entities to the server, and you need a simple and fast solution, you can stream your entities right from your clients.
-For example, you have a huge game world (e.g. open world sandbox game), where there are some entities which are not players, however you need someone to control them.
-Considering the fact that you probably don't have any game logic on the server, you need one of your clients to send updates about ingame entities to other clients.
+If you want your client to send updates about one or more entities to the server and you need a simple and fast solution, you can stream your entities right from your clients.
+For example, you have a huge game world, (e.g. open world sandbox game) where there are some entities which are not players, however you need someone to control them.
+Considering the fact, that you probably don't have any game logic on the server, you need one of your clients to send updates about ingame entities to other clients.
 
-This can be achieved quite easily, you can just call method `librg_entity_control_set` on the server, for specific entity.
-It will make provided client responsive for streaming this entity to the server.
+This can be achieved quite easily, for a specific entity, you can just call method `librg_entity_control_set` on the server.
+It will make provided client responsible for streaming this entity to the server.
 
-Now, what you need to do is just to update that entity data from your local client's game world. And that can also be achieved quite easily:
+Now, what you need to do is to update that entity data from your local client's game world. You can achieve that like this:
 
 ```c
 /* client side */
@@ -203,7 +203,7 @@ Now on the server side, you pretty much do the same, it is very similar to what 
 
 #### Querying
 
-Sometimes when you need loop over entities visible (streamed) for a particlar entity on the server, you will need to do a query:
+Sometimes when you need loop over entities visible (streamed) for a particular entity on the server, you will need to do a query:
 
 ```c
     librg_entity_id *results;
@@ -218,13 +218,13 @@ Sometimes when you need loop over entities visible (streamed) for a particlar en
 #### Additional
 
 You can and **MUST** (not really, but we really advise you to) look into the source code ([librg.h](include/librg.h)).
-There we have many helpful (and not really) comments that will guide you or at very least give you explanation what is this or that, why it's needed, and how to use it.
+There we have many helpful (and not really) comments that will guide you or at very least give you explanation what is this or that, why it is needed and how to use it.
 
 Also you can look inside our [test](test/) folder, there are many different things. It's usually used for the development purposes, but I guarantee you can find something interesting in there.
 
 ## Installation
 
-There are multiple way of how you can "download" the library:
+There are multiple way of how you can embed the library:
 
 * automatic
     * using **[npm](https://www.npmjs.com/get-npm)**. Just run `npm install librg.c` in folder with your project, that's it!   
@@ -247,7 +247,7 @@ Current list and description of dependencies looks like this:
 | Library | Version | Description |
 |:-:|:-:|---|
 | [enet](https://github.com/zpl-c/enet) | ![](https://img.shields.io/npm/v/enet.c.svg?maxAge=3600) | **enet** is a quite popular high performant low-level network library. A core for the librg. |
-| [zpl](https://github.com/zpl-c/zpl) | ![](https://img.shields.io/npm/v/zpl.c.svg?maxAge=3600) | **zpl** is a basic library containing many functions you would use in everyday programming. |
+| [zpl](https://github.com/zpl-c/zpl) | ![](https://img.shields.io/npm/v/zpl.c.svg?maxAge=3600) | **zpl** is a basic library containing many functions you would use in every day programming. |
 
 ### Build instructions
 librg comes with a **[CMakeLists.txt](CMakeLists.txt)** file. You can use it to integrate the library inside your project. Or use it as a boilerplate for new project.
