@@ -25,7 +25,7 @@ extern "C" {
         f32 update_deteoriation;
         f32 update_moving_treshold;
 
-        zplm_vec3_t last_position;
+        zpl_vec3_t last_position;
     } librg_limiter_t;
 
     LIBRG_API void librg_limiter_init(librg_limiter_t *entity_limit);
@@ -51,10 +51,10 @@ extern "C" {
         if (entity_limit->update_time < entity_limit->update_delay) {
             entity_limit->update_time += ctx->tick_delay;
             {
-                zplm_vec3_t dir;
-                zplm_vec3_sub(&dir, entity_limit->last_position, entity->position);
+                zpl_vec3_t dir;
+                zpl_vec3_sub(&dir, entity_limit->last_position, entity->position);
 
-                b32 is_moving = (zplm_vec3_dot(dir, dir) > entity_limit->update_moving_treshold);
+                b32 is_moving = (zpl_vec3_dot(dir, dir) > entity_limit->update_moving_treshold);
 
                 if (is_moving || entity_limit->update_now) {
                     entity_limit->update_delay = entity_limit->update_initial_delay;

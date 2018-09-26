@@ -11,7 +11,7 @@ int main() {
 
     ctx.tick_delay   = 32;
     ctx.mode         = LIBRG_MODE_SERVER;
-    ctx.world_size   = zplm_vec3f(5000.0f, 5000.0f, 0.0f);
+    ctx.world_size   = zpl_vec3f(5000.0f, 5000.0f, 0.0f);
 
     librg_init(&ctx);
 

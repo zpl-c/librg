@@ -22,7 +22,7 @@ enum {
 typedef struct hero_t {
 
     struct {
-        zplm_vec3_t accel;
+        zpl_vec3_t accel;
         f32 walk_time;
         f32 cooldown;
         i32 max_hp;
@@ -32,7 +32,7 @@ typedef struct hero_t {
 #ifdef DEMO_CLIENT
     // interpolation
     f32 delta;
-    zplm_vec3_t curr_pos, last_pos, target_pos;
+    zpl_vec3_t curr_pos, last_pos, target_pos;
 #endif
 
     librg_entity_t *follower1;
@@ -142,7 +142,7 @@ void ai_think(librg_ctx_t *ctx) {
                 hero->stream.accel.y = (hero->stream.accel.y > -1.0) ? ((hero->stream.accel.y < 1.0) ? hero->stream.accel.y : 1.0) : -1.0;
             }
             else {
-                zplm_vec3_t curpos = entity->position;
+                zpl_vec3_t curpos = entity->position;
 
                 curpos.x += hero->stream.accel.x;
                 curpos.y += hero->stream.accel.y;
@@ -157,7 +157,7 @@ void ai_think(librg_ctx_t *ctx) {
                     hero->stream.accel.y *= -1;
                 }
 #define PP(x) x*x
-                if (zplm_vec3_mag2(hero->stream.accel) > PP(0.3)) {
+                if (zpl_vec3_mag2(hero->stream.accel) > PP(0.3)) {
                     entity->position = curpos;
                 }
 #undef PP
@@ -200,7 +200,7 @@ int main() {
     ctx.mode            = LIBRG_MODE_SERVER;
     ctx.tick_delay      = 16.66666666666 * 4;
     // ctx.tick_delay      = 1000;
-    ctx.world_size      = zplm_vec3f(50000.0f, 50000.0f, 0.f);
+    ctx.world_size      = zpl_vec3f(50000.0f, 50000.0f, 0.f);
     ctx.max_connections = 128;
     ctx.max_entities    = 16000,
 
