@@ -21,7 +21,7 @@ enum {
 typedef struct {
 
     struct {
-        zplm_vec3_t accel;
+        zpl_vec3_t accel;
         f32 walk_time;
         f32 cooldown;
         i32 max_hp;
@@ -31,7 +31,7 @@ typedef struct {
 #ifdef DEMO_CLIENT
     // interpolation
     f32 delta;
-    zplm_vec3_t curr_pos, last_pos, target_pos;
+    zpl_vec3_t curr_pos, last_pos, target_pos;
 #endif
 } hero_t;
 
@@ -144,8 +144,8 @@ void interpolate_npcs(librg_ctx_t *ctx) {
 
         hero->delta += 16.666f / (ctx->timesync.server_delay / 0.001f);
 
-        zplm_vec3_t delta_pos;
-        zplm_vec3_lerp(&delta_pos, hero->last_pos, hero->target_pos, zpl_clamp01(hero->delta));
+        zpl_vec3_t delta_pos;
+        zpl_vec3_lerp(&delta_pos, hero->last_pos, hero->target_pos, zpl_clamp01(hero->delta));
 
         hero->curr_pos = delta_pos;
         // hero->curr_pos = entity->position;
@@ -283,7 +283,7 @@ int main(int argc, char *argv[]) {
     ctx.tick_delay      = 16.66666666666 * 4;
     // ctx.tick_delay      = 250;
     ctx.mode            = LIBRG_MODE_CLIENT;
-    ctx.world_size      = zplm_vec3f(50000.0f, 50000.0f, 0.f);
+    ctx.world_size      = zpl_vec3f(50000.0f, 50000.0f, 0.f);
     ctx.max_entities    = 16000;
 
     librg_option_set(LIBRG_NETWORK_BUFFER_SIZE, 2);

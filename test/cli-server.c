@@ -68,8 +68,8 @@ int main() {
 
     ctx.tick_delay      = 64;
     ctx.mode            = LIBRG_MODE_SERVER;
-    ctx.world_size      = zplm_vec3f(5000.0f, 5000.0f, 0.f);
-    ctx.min_branch_size = zplm_vec3f(-1, -1, -1);
+    ctx.world_size      = zpl_vec3f(5000.0f, 5000.0f, 0.f);
+    ctx.min_branch_size = zpl_vec3f(-1, -1, -1);
     ctx.max_entities    = 60000;
     ctx.max_connections = 1200;
 
