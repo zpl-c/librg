@@ -2508,10 +2508,11 @@ extern "C" {
 
                 // write sub-bitstream to main bitstream
                 librg_data_wptr(&data, subdata.rawptr, librg_data_get_wpos(&subdata));
-                librg_data_free(&subdata);
 
                 amount++;
             }
+
+            librg_data_free(&subdata);
         });
 
         if (amount < 1) {
