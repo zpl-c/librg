@@ -2,7 +2,7 @@
 #define LIBRG_DEBUG
 #include <librg.h>
 
-void on_connect_request(librg_event_t *event) {
+void on_connect_request(librg_event *event) {
     u32 secret = librg_data_ru32(event->data);
 
     if (secret != 42) {
@@ -10,9 +10,9 @@ void on_connect_request(librg_event_t *event) {
     }
 }
 
-void on_connect_accepted(librg_event_t *event) {
+void on_connect_accepted(librg_event *event) {
     librg_log("on_connect_accepted\n");
-    librg_entity_t *blob = event->entity;
+    librg_entity *blob = event->entity;
 
     blob->position.x = (float)(2000 - rand() % 4000);
     blob->position.y = (float)(2000 - rand() % 4000);
@@ -25,20 +25,20 @@ void on_connect_accepted(librg_event_t *event) {
     );
 }
 
-void on_connect_refused(librg_event_t *event) {
+void on_connect_refused(librg_event *event) {
     librg_log("on_connect_refused\n");
 }
 
-void on_entity_create(librg_event_t *event) {
+void on_entity_create(librg_event *event) {
 
 }
 
-void on_entity_update(librg_event_t *event) {
+void on_entity_update(librg_event *event) {
 
 }
 
 void measure(void *userptr) {
-    librg_ctx_t *ctx = (librg_ctx_t *)userptr;
+    librg_ctx *ctx = (librg_ctx *)userptr;
 
     if (!ctx || !ctx->network.host) return;
 
@@ -64,7 +64,7 @@ int main() {
 
     librg_option_set(LIBRG_MAX_ENTITIES_PER_BRANCH, 4);
 
-    librg_ctx_t ctx     = {0};
+    librg_ctx ctx     = {0};
 
     ctx.tick_delay      = 64;
     ctx.mode            = LIBRG_MODE_SERVER;
@@ -82,17 +82,17 @@ int main() {
     librg_event_add(&ctx, LIBRG_ENTITY_CREATE, on_entity_create);
     librg_event_add(&ctx, LIBRG_ENTITY_UPDATE, on_entity_update);
 
-    librg_network_start(&ctx, (librg_address_t) { .port = 7779 });
+    librg_network_start(&ctx, (librg_address) { .port = 7779 });
 
     for (isize i = 0; i < 10000; i++) {
-        librg_entity_t *enemy = librg_entity_create(&ctx, 0);
+        librg_entity *enemy = librg_entity_create(&ctx, 0);
 
         //librg_attach_foo(&ctx, enemy, NULL);
         enemy->position.x = (float)(2000 - rand() % 4000);
         enemy->position.y = (float)(2000 - rand() % 4000);
     }
 
-    zpl_timer_t *tick_timer = zpl_timer_add(ctx.timers);
+    zpl_timer *tick_timer = zpl_timer_add(ctx.timers);
     tick_timer->user_data = (void *)&ctx; /* provide ctx as a argument to timer */
     zpl_timer_set(tick_timer, 1.0, -1, measure);
     zpl_timer_start(tick_timer, 1.0);
