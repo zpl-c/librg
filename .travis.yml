@@ -1,17 +1,19 @@
 os:
-  - linux
-  - osx
+    - linux
+    - osx
 
 language: c
 compiler:
-  - clang
+    - clang
 
 script:
-  - npm install
-  - cmake . -DCMAKE_BUILD_TYPE=Release -DLIBRG_TEST=1 -DLIBRG_SHARED=1
-  - cmake --build .
-  - ./librg_test
-  - ./librg_test_cpp
+    - npm install
+    - cmake . -DCMAKE_BUILD_TYPE=Release -DLIBRG_TEST=1 -DLIBRG_SHARED=1
+    - cmake --build .
+    - ./librg_test
+    - ./librg_test_cpp
+    - mv liblibrg_shared.dylib librg.dylib 2>/dev/null || true
+    - mv liblibrg_shared.so librg.so 2>/dev/null || true
 
 after_failure:
     - curl -v -H User-Agent:bot -H Content-Type:application/json -d '{"content":"**librg** '$TRAVIS_OS_NAME' build has failed! :no_entry:"}' https://discordapp.com/api/webhooks/$DISCORD_WEBHOOK_CHANNEL_ID/$DISCORD_WEBHOOK_TOKEN
@@ -20,16 +22,14 @@ after_success:
     - curl -v -H User-Agent:bot -H Content-Type:application/json -d '{"content":"**librg** '$TRAVIS_OS_NAME' build has succeeded! :white_check_mark:"}' https://discordapp.com/api/webhooks/$DISCORD_WEBHOOK_CHANNEL_ID/$DISCORD_WEBHOOK_TOKEN
 
 before_deploy:
-    - mv liblibrg_shared.dylib librg.dylib 2>/dev/null
-    - mv liblibrg_shared.so librg.so 2>/dev/null
     - export FILE_TO_UPLOAD=$(ls *.dylib *.so)
 
 deploy:
-  provider: releases
-  api_key:
-    - secure: "enSO+Yl62HY/XblFuRxJiNW0r6OdcWfy69jFfHLO1FuSRbPXj1tUjFMn0XnWv2OXiISB4Ln86fPN8Lhi7EJfe/tl6MFItbzxmdQGf8jjybj/TzRIXD/T6Re5FSFHthZv47DsZFxEmdNSYN7zHmguUEUrTlUnNVfGaSP9TZnHMzdmzVG9sYomEBzAMjWCaDSWywhWI2BAAjY/buLhAejJXz2/o/LgOs0oRt5UT6NbI3vnnnJiOjUm/zitcNGkGEek+Ailz3svLMPGqw1BOS2QvXJfDZk0lBc5JIX3hzm/5/yck+pXTYt1AZ7hMtstjrS7l+i/wITz2Tg32rlIZcoArL49KBCeSp7F2iK4wsK7+ksBXkVYwU4YsSIQM5ycRz7roOCMSzml8Px26dczasXHD7z7y4RDXLYDpX5aiyyXhVBOKbzwEYUQ3yScXL/SlM+JnjFDGSQmxlh7CDNlIZOqcvF6l0asce4ZPRXMHb5kp9ov8/ULaO49rOzyZs11LT27VOVWm9UrHjAOLOyM3o6oTgxtg79cQQt98Lp/xg4oz351+7dzryxMoMpYVfh1RwOo0EPNhsuh1j+hKpYrXMHjZbJM9ZnFAXDT6eLuRe24HS4oJ3J2LuI0pewv0+eZMfd4WeumRUTvTPQEeWMf82jK9joFhR6GRoF4I1dSk3KEKaY="
-  file_glob: true
-  file: "${FILE_TO_UPLOAD}"
-  skip_cleanup: true
-  on:
-    tags: true
+    provider: releases
+    api_key:
+        - secure: "enSO+Yl62HY/XblFuRxJiNW0r6OdcWfy69jFfHLO1FuSRbPXj1tUjFMn0XnWv2OXiISB4Ln86fPN8Lhi7EJfe/tl6MFItbzxmdQGf8jjybj/TzRIXD/T6Re5FSFHthZv47DsZFxEmdNSYN7zHmguUEUrTlUnNVfGaSP9TZnHMzdmzVG9sYomEBzAMjWCaDSWywhWI2BAAjY/buLhAejJXz2/o/LgOs0oRt5UT6NbI3vnnnJiOjUm/zitcNGkGEek+Ailz3svLMPGqw1BOS2QvXJfDZk0lBc5JIX3hzm/5/yck+pXTYt1AZ7hMtstjrS7l+i/wITz2Tg32rlIZcoArL49KBCeSp7F2iK4wsK7+ksBXkVYwU4YsSIQM5ycRz7roOCMSzml8Px26dczasXHD7z7y4RDXLYDpX5aiyyXhVBOKbzwEYUQ3yScXL/SlM+JnjFDGSQmxlh7CDNlIZOqcvF6l0asce4ZPRXMHb5kp9ov8/ULaO49rOzyZs11LT27VOVWm9UrHjAOLOyM3o6oTgxtg79cQQt98Lp/xg4oz351+7dzryxMoMpYVfh1RwOo0EPNhsuh1j+hKpYrXMHjZbJM9ZnFAXDT6eLuRe24HS4oJ3J2LuI0pewv0+eZMfd4WeumRUTvTPQEeWMf82jK9joFhR6GRoF4I1dSk3KEKaY="
+    file_glob: true
+    file: "${FILE_TO_UPLOAD}"
+    skip_cleanup: true
+    on:
+        tags: true
