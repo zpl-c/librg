@@ -97,8 +97,8 @@
 #ifndef LIBRG_INCLUDE_H
 #define LIBRG_INCLUDE_H
 
-#define LIBRG_VERSION_MAJOR 3
-#define LIBRG_VERSION_MINOR 3
+#define LIBRG_VERSION_MAJOR 4
+#define LIBRG_VERSION_MINOR 0
 #define LIBRG_VERSION_PATCH 0
 #define LIBRG_VERSION_CREATE(major, minor, patch) (((major)<<16) | ((minor)<<8) | (patch))
 #define LIBRG_VERSION_GET_MAJOR(version) (((version)>>16)&0xFF)
@@ -163,6 +163,20 @@
 #define librg_dbg(fmt, ...) librg_log(fmt, ##__VA_ARGS__)
 #else
 #define librg_dbg(fmt, ...)
+#endif
+
+/* keeping enabled by default depecrecated */
+/* naming support till next major release */
+#ifndef LIBRG_NO_DEPRECATIONS
+#define librg_ctx_t     librg_ctx
+#define librg_data_t    librg_data
+#define librg_entity_t  librg_entity
+#define librg_address_t librg_address
+#define librg_message_t librg_message
+#define librg_event_t   librg_event
+#define librg_peer_t    librg_peer
+#define librg_host_t    librg_host
+#define librg_packet_t  librg_packet
 #endif
 
 #ifdef __cplusplus
@@ -436,7 +450,7 @@ LIBRG_API u64 librg_event_add(struct librg_ctx *ctx, u64 id, librg_event_cb call
  * @param id usually you define event ids inside enum
  * @param event pointer onto data or NULL
  */
-LIBRG_API void librg_eventrigger(struct librg_ctx *ctx, u64 id, struct librg_event *event);
+LIBRG_API void librg_event_trigger(struct librg_ctx *ctx, u64 id, struct librg_event *event);
 /**
  * Used to remove particular callback from
  * event chain, so it wont be called ever again
@@ -825,8 +839,8 @@ typedef struct librg_ctx {
     librg_message_cb **messages; ///< zpl_buffer
 
     zpl_allocator     allocator;
-    zpl_timer_pool      timers;
-    librg_event_pool    events;
+    zpl_timer_pool    timers;
+    librg_event_pool  events;
     librg_space       world;
 
 } librg_ctx;
@@ -922,7 +936,7 @@ extern "C" {
     LIBRG_INTERNAL void librg__buffer_tick(void *usrptr);
 
     // short internal helper macro
-    #define librg_messageO_EVENT(NAME, MSG) \
+    #define LIBRG_MSG_TO_EVENT(NAME, MSG) \
         librg_event NAME = {0}; \
         NAME.peer   = MSG->peer; \
         NAME.data   = MSG->data; \
@@ -1449,7 +1463,7 @@ extern "C" {
         return offset;
     }
 
-    void librg_eventrigger(librg_ctx *ctx, u64 id, librg_event *event) {
+    void librg_event_trigger(librg_ctx *ctx, u64 id, librg_event *event) {
         librg_assert(event); event->ctx = ctx;
         librg_event_block *block = librg_event_pool_get(&ctx->events, id);
         if (!block) return;
@@ -1729,7 +1743,7 @@ extern "C" {
                 // skip local client entity
                 if (event.entity->flags & LIBRG_ENTITY_CLIENT) continue;
 
-                librg_eventrigger(ctx, LIBRG_ENTITY_REMOVE, &event);
+                librg_event_trigger(ctx, LIBRG_ENTITY_REMOVE, &event);
                 librg__world_entity_destroy(ctx, i);
             }
         }
@@ -1997,7 +2011,7 @@ extern "C" {
                 event.flags = (LIBRG_EVENT_REJECTABLE | LIBRG_EVENT_REMOTE);
             }
 
-            librg_eventrigger(msg->ctx, LIBRG_CONNECTION_REQUEST, &event);
+            librg_event_trigger(msg->ctx, LIBRG_CONNECTION_REQUEST, &event);
 
             if (librg_event_succeeded(&event)) {
                 librg_message_send_to(msg->ctx, LIBRG_CONNECTION_REQUEST,
@@ -2041,7 +2055,7 @@ extern "C" {
             event.flags = (LIBRG_EVENT_REJECTABLE | LIBRG_EVENT_REMOTE);
         }
 
-        librg_eventrigger(msg->ctx, LIBRG_CONNECTION_REQUEST, &event);
+        librg_event_trigger(msg->ctx, LIBRG_CONNECTION_REQUEST, &event);
 
         if (librg_event_succeeded(&event) && !blocked) {
             librg_entity *entity = librg_entity_create(msg->ctx, librg_option_get(LIBRG_DEFAULT_CLIENT_TYPE));
@@ -2066,7 +2080,7 @@ extern "C" {
             event.entity = entity;
             event.flags  = LIBRG_EVENT_LOCAL;
 
-            librg_eventrigger(msg->ctx, LIBRG_CONNECTION_ACCEPT, &event);
+            librg_event_trigger(msg->ctx, LIBRG_CONNECTION_ACCEPT, &event);
         }
         else {
             librg_dbg("librg__connection_refuse\n");
@@ -2075,7 +2089,7 @@ extern "C" {
             event.data   = NULL;
             event.flags  = LIBRG_EVENT_LOCAL;
 
-            librg_eventrigger(msg->ctx, LIBRG_CONNECTION_REFUSE, &event);
+            librg_event_trigger(msg->ctx, LIBRG_CONNECTION_REFUSE, &event);
         }
 
         #undef _LIBRG_METHOD
@@ -2084,8 +2098,8 @@ extern "C" {
     /* Execution side: CLIENT */
     LIBRG_INTERNAL void librg__callback_connection_refuse(librg_message *msg) {
         librg_dbg("librg__connection_refuse\n");
-        librg_messageO_EVENT(event, msg);
-        librg_eventrigger(msg->ctx, LIBRG_CONNECTION_REFUSE, &event);
+        LIBRG_MSG_TO_EVENT(event, msg);
+        librg_event_trigger(msg->ctx, LIBRG_CONNECTION_REFUSE, &event);
     }
 
     /* Execution side: CLIENT */
@@ -2110,8 +2124,8 @@ extern "C" {
         librg_table_set(&msg->ctx->network.connected_peers, cast(u64)msg->peer, entity);
 
         // trigger damn events!
-        librg_messageO_EVENT(event, msg); event.entity = blob;
-        librg_eventrigger(msg->ctx, LIBRG_CONNECTION_ACCEPT, &event);
+        LIBRG_MSG_TO_EVENT(event, msg); event.entity = blob;
+        librg_event_trigger(msg->ctx, LIBRG_CONNECTION_ACCEPT, &event);
 
         librg__timesync_start(msg->ctx);
         msg->ctx->timesync.start_time   = zpl_time_now();
@@ -2134,7 +2148,7 @@ extern "C" {
                 event.flags     = (LIBRG_EVENT_REJECTABLE);
             }
 
-            librg_eventrigger(msg->ctx, LIBRG_CONNECTION_DISCONNECT, &event);
+            librg_event_trigger(msg->ctx, LIBRG_CONNECTION_DISCONNECT, &event);
             return;
         }
 
@@ -2148,7 +2162,7 @@ extern "C" {
                 event.flags     = (LIBRG_EVENT_REJECTABLE | LIBRG_EVENT_REMOTE);
             }
 
-            librg_eventrigger(msg->ctx, LIBRG_CONNECTION_DISCONNECT, &event);
+            librg_event_trigger(msg->ctx, LIBRG_CONNECTION_DISCONNECT, &event);
 
             if (librg_is_server(msg->ctx)) {
                 librg_entity_destroy(msg->ctx, *entity);
@@ -2238,8 +2252,8 @@ extern "C" {
 
             msg->ctx->entity.count++;
 
-            librg_messageO_EVENT(event, msg); event.entity = blob;
-            librg_eventrigger(msg->ctx, LIBRG_ENTITY_CREATE, &event);
+            LIBRG_MSG_TO_EVENT(event, msg); event.entity = blob;
+            librg_event_trigger(msg->ctx, LIBRG_ENTITY_CREATE, &event);
         }
 
         u32 remove_size = librg_data_ru32(msg->data);
@@ -2248,9 +2262,9 @@ extern "C" {
             librg_entity_id entity = librg_data_rent(msg->data);
 
             if (librg_entity_valid(msg->ctx, entity)) {
-                librg_messageO_EVENT(event, msg);
+                LIBRG_MSG_TO_EVENT(event, msg);
                 event.entity = librg_entity_fetch(msg->ctx, entity);
-                librg_eventrigger(msg->ctx, LIBRG_ENTITY_REMOVE, &event);
+                librg_event_trigger(msg->ctx, LIBRG_ENTITY_REMOVE, &event);
                 librg__world_entity_destroy(msg->ctx, entity);
             }
             else {
@@ -2276,8 +2290,8 @@ extern "C" {
             librg_entity *blob = librg_entity_fetch(msg->ctx, entity);
             blob->position = position;
 
-            librg_messageO_EVENT(event, msg); event.entity = blob;
-            librg_eventrigger(msg->ctx, LIBRG_ENTITY_UPDATE, &event);
+            LIBRG_MSG_TO_EVENT(event, msg); event.entity = blob;
+            librg_event_trigger(msg->ctx, LIBRG_ENTITY_UPDATE, &event);
         }
     }
 
@@ -2297,8 +2311,8 @@ extern "C" {
 
             librg_entity *blob = librg_entity_fetch(msg->ctx, entity);
 
-            librg_messageO_EVENT(event, msg); event.entity = blob;
-            librg_eventrigger(msg->ctx, LIBRG_CLIENT_STREAMER_ADD, &event);
+            LIBRG_MSG_TO_EVENT(event, msg); event.entity = blob;
+            librg_event_trigger(msg->ctx, LIBRG_CLIENT_STREAMER_ADD, &event);
         }
     }
 
@@ -2331,8 +2345,8 @@ extern "C" {
                 continue;
             }
 
-            librg_messageO_EVENT(event, msg); event.entity = blob;
-            librg_eventrigger(msg->ctx, LIBRG_CLIENT_STREAMER_UPDATE, &event);
+            LIBRG_MSG_TO_EVENT(event, msg); event.entity = blob;
+            librg_event_trigger(msg->ctx, LIBRG_CLIENT_STREAMER_UPDATE, &event);
             librg_data_rptr(msg->data, &blob->position, sizeof(blob->position));
         }
 
@@ -2353,8 +2367,8 @@ extern "C" {
         if (blob->flags & LIBRG_ENTITY_CONTROLLED) {
             blob->flags &= ~LIBRG_ENTITY_CONTROLLED;
 
-            librg_messageO_EVENT(event, msg); event.entity = blob;
-            librg_eventrigger(msg->ctx, LIBRG_CLIENT_STREAMER_REMOVE, &event);
+            LIBRG_MSG_TO_EVENT(event, msg); event.entity = blob;
+            librg_event_trigger(msg->ctx, LIBRG_CLIENT_STREAMER_REMOVE, &event);
         }
     }
 #endif
@@ -2391,7 +2405,7 @@ extern "C" {
                 event.flags = (LIBRG_EVENT_REJECTABLE | LIBRG_EVENT_LOCAL);
             }
 
-            librg_eventrigger(ctx, LIBRG_CLIENT_STREAMER_UPDATE, &event);
+            librg_event_trigger(ctx, LIBRG_CLIENT_STREAMER_UPDATE, &event);
 
             // check if user rejected the event
             if (!(event.flags & LIBRG_EVENT_REJECTED)) {
@@ -2494,7 +2508,7 @@ extern "C" {
                         event.flags  = (LIBRG_EVENT_REJECTABLE | LIBRG_EVENT_LOCAL);
                     }
 
-                    librg_eventrigger(ctx, LIBRG_ENTITY_CREATE, &event);
+                    librg_event_trigger(ctx, LIBRG_ENTITY_CREATE, &event);
 
                     // check if event was rejected
                     if (event.flags & LIBRG_EVENT_REJECTED) {
@@ -2528,7 +2542,7 @@ extern "C" {
                             event.flags  = (LIBRG_EVENT_REJECTABLE | LIBRG_EVENT_LOCAL);
                         }
 
-                        librg_eventrigger(ctx, LIBRG_ENTITY_UPDATE, &event);
+                        librg_event_trigger(ctx, LIBRG_ENTITY_UPDATE, &event);
 
                         // check if event was rejected
                         if (event.flags & LIBRG_EVENT_REJECTED) {
@@ -2577,7 +2591,7 @@ extern "C" {
                     event.flags  = (LIBRG_EVENT_REJECTABLE | LIBRG_EVENT_LOCAL);
                 }
 
-                librg_eventrigger(ctx, LIBRG_ENTITY_REMOVE, &event);
+                librg_event_trigger(ctx, LIBRG_ENTITY_REMOVE, &event);
 
                 // check if even was rejected
                 if (event.flags & LIBRG_EVENT_REJECTED) {
@@ -2997,7 +3011,7 @@ extern "C" {
         return librg_options[option];
     }
 
-#undef librg_messageO_EVENT
+#undef LIBRG_MSG_TO_EVENT
 #ifdef __cplusplus
 }
 #endif
