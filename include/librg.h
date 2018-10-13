@@ -368,6 +368,7 @@ LIBRG_API struct librg_entity_t *librg_entity_find(struct librg_ctx_t *ctx, libr
 LIBRG_API librg_peer_t *librg_entity_control_get(struct librg_ctx_t *ctx, librg_entity_id entity_id);
 LIBRG_API void librg_entity_control_set(struct librg_ctx_t *ctx, librg_entity_id entity_id, librg_peer_t *peer);
 LIBRG_API void librg_entity_control_remove(struct librg_ctx_t *ctx, librg_entity_id entity_id);
+LIBRG_API void librg_entity_control_ignore_once(struct librg_ctx_t *ctx, librg_entity_id entity_id);
 
 /**
  * Iterate over all the entities with a flag
