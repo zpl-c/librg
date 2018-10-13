@@ -19,7 +19,7 @@ int main() {
     librg_event_add(&ctx, LIBRG_CONNECTION_ACCEPT, on_connect_accepted);
 
     librg_event e = {0};
-    librg_eventrigger(&ctx, 42, &e);
+    librg_event_trigger(&ctx, 42, &e);
 
     // starting server
     librg_address address = {0}; address.port = 27010;

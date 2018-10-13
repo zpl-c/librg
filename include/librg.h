@@ -116,8 +116,8 @@
 #ifndef LIBRG_INCLUDE_H
 #define LIBRG_INCLUDE_H
 
-#define LIBRG_VERSION_MAJOR 3
-#define LIBRG_VERSION_MINOR 4
+#define LIBRG_VERSION_MAJOR 4
+#define LIBRG_VERSION_MINOR 0
 #define LIBRG_VERSION_PATCH 0
 #define LIBRG_VERSION_CREATE(major, minor, patch) (((major)<<16) | ((minor)<<8) | (patch))
 #define LIBRG_VERSION_GET_MAJOR(version) (((version)>>16)&0xFF)
@@ -182,6 +182,20 @@
 #define librg_dbg(fmt, ...) librg_log(fmt, ##__VA_ARGS__)
 #else
 #define librg_dbg(fmt, ...)
+#endif
+
+/* keeping enabled by default depecrecated */
+/* naming support till next major release */
+#ifndef LIBRG_NO_DEPRECATIONS
+#define librg_ctx_t     librg_ctx
+#define librg_data_t    librg_data
+#define librg_entity_t  librg_entity
+#define librg_address_t librg_address
+#define librg_message_t librg_message
+#define librg_event_t   librg_event
+#define librg_peer_t    librg_peer
+#define librg_host_t    librg_host
+#define librg_packet_t  librg_packet
 #endif
 
 #ifdef __cplusplus
@@ -894,8 +908,8 @@ typedef struct librg_ctx {
     librg_message_cb **messages; ///< zpl_buffer
 
     zpl_allocator     allocator;
-    zpl_timer_pool      timers;
-    librg_event_pool    events;
+    zpl_timer_pool    timers;
+    librg_event_pool  events;
     librg_space       world;
 
 } librg_ctx;
@@ -2406,6 +2420,7 @@ extern "C" {
         if (!(blob->flags & LIBRG_ENTITY_CONTROLLED)) {
             blob->flags |= LIBRG_ENTITY_CONTROLLED;
             blob->control_generation++;
+
             LIBRG_MESSAGE_TO_EVENT(event, msg); event.entity = blob;
             librg_event_trigger(msg->ctx, LIBRG_CLIENT_STREAMER_ADD, &event);
         }
