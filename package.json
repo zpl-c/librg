@@ -1,7 +1,7 @@
 {
   "name": "librg.c",
-  "version": "3.3.1",
-  "description": "Pure C library for building simple and elegant cross-platform mmo client-server solutions.",
+  "version": "4.0.0",
+  "description": "Pure C library for building simple and elegant cross-platform multiplayer client-server solutions.",
   "main": "include/librg.h",
   "directories": {
     "test": "test"
@@ -21,6 +21,6 @@
   "homepage": "https://github.com/reguider/librg#readme",
   "dependencies": {
     "enet.c": "^2.0.1",
-    "zpl.c": "^8.12.2"
+    "zpl.c": "^9.0.3"
   }
 }

@@ -90,24 +90,24 @@ void free_sdl() {
 SDL_Rect camera;
 librg_entity_id player;
 
-void on_connect_request(librg_event_t *event) {
+void on_connect_request(librg_event *event) {
     librg_log("on_connect_request\n");
     librg_data_wu32(event->data, 42);
 }
 
-void on_connect_accepted(librg_event_t *event) {
+void on_connect_accepted(librg_event *event) {
     librg_log("on_connect_accepted\n");
     player = event->entity->id;
 
     librg_log("spawned me with id: %u\n", player);
 }
 
-void on_connect_refused(librg_event_t *event) {
+void on_connect_refused(librg_event *event) {
     librg_log("on_connect_refused\n");
 }
 
-void on_entity_create(librg_event_t *event) {
-    switch (librg_entity_type(event->ctx, event->entity->id)) {
+void on_entity_create(librg_event *event) {
+    switch (librg_entityype(event->ctx, event->entity->id)) {
         case DEMO_TYPE_PLAYER:
         case DEMO_TYPE_NPC: {
             event->entity->user_data = zpl_malloc(sizeof(hero_t));
@@ -122,7 +122,7 @@ void on_entity_create(librg_event_t *event) {
     }
 }
 
-void on_entity_update(librg_event_t *event) {
+void on_entity_update(librg_event *event) {
     hero_t *hero = (hero_t *)event->entity->user_data;
     if (!hero) return;
 
@@ -131,11 +131,11 @@ void on_entity_update(librg_event_t *event) {
     hero->delta = .0f;
 }
 
-void interpolate_npcs(librg_ctx_t *ctx) {
+void interpolate_npcs(librg_ctx *ctx) {
     for (u32 i = 0; i < ctx->max_entities; i++) {
         if (i == player) continue;
 
-        librg_entity_t *entity = librg_entity_fetch(ctx, i);
+        librg_entity *entity = librg_entity_fetch(ctx, i);
 
         if (!entity) continue;
 
@@ -152,7 +152,7 @@ void interpolate_npcs(librg_ctx_t *ctx) {
     }
 }
 
-void on_client_entity_update(librg_event_t *event) {
+void on_client_entity_update(librg_event *event) {
 }
 
 /**
@@ -168,17 +168,17 @@ SDL_Rect default_position() {
     return position;
 }
 
-void render_entity(librg_ctx_t *ctx, librg_entity_t *blob) {
+void render_entity(librg_ctx *ctx, librg_entity *blob) {
     librg_entity_id entity = blob->id;
 
     // set render color
     if (entity == player) {
         SDL_SetRenderDrawColor( sdl_renderer, 150, 250, 150, 255 );
     }
-    else if (librg_entity_type(ctx, entity) == DEMO_TYPE_NPC) {
+    else if (librg_entityype(ctx, entity) == DEMO_TYPE_NPC) {
         SDL_SetRenderDrawColor( sdl_renderer, 150, 25, 25, 255 );
     }
-    else if (librg_entity_type(ctx, entity) == DEMO_TYPE_NPC) {
+    else if (librg_entityype(ctx, entity) == DEMO_TYPE_NPC) {
         SDL_SetRenderDrawColor( sdl_renderer, 25, 25, 150, 255 );
     }
     else {
@@ -221,7 +221,7 @@ void render_entity(librg_ctx_t *ctx, librg_entity_t *blob) {
     SDL_RenderFillRect(sdl_renderer, &position);
 }
 
-void render(librg_ctx_t *ctx)
+void render(librg_ctx *ctx)
 {
     // clear the window and make it all green
     SDL_RenderClear( sdl_renderer );
@@ -248,7 +248,7 @@ void render(librg_ctx_t *ctx)
     SDL_RenderPresent( sdl_renderer );
 }
 
-void on_entity_remove(librg_event_t *event) {
+void on_entity_remove(librg_event *event) {
     // if (event->entity->type == DEMO_TYPE_NPC) {
         zpl_mfree(event->entity->user_data);
     // }
@@ -279,7 +279,7 @@ int main(int argc, char *argv[]) {
                         "==                                              ==\n" \
                         "==================================================\n");
 
-    librg_ctx_t ctx     = {0};
+    librg_ctx ctx     = {0};
     ctx.tick_delay      = 16.66666666666 * 4;
     // ctx.tick_delay      = 250;
     ctx.mode            = LIBRG_MODE_CLIENT;
@@ -297,8 +297,8 @@ int main(int argc, char *argv[]) {
     librg_event_add(&ctx, LIBRG_ENTITY_REMOVE, on_entity_remove);
     librg_event_add(&ctx, LIBRG_CLIENT_STREAMER_UPDATE, on_client_entity_update);
 
-    // librg_network_start(&ctx, (librg_address_t) { .host = "139.59.142.46", .port = 17777 });
-    librg_network_start(&ctx, (librg_address_t) { .host = "inlife.no-ip.org", .port = 7777 });
+    // librg_network_start(&ctx, (librg_address) { .host = "139.59.142.46", .port = 17777 });
+    librg_network_start(&ctx, (librg_address) { .host = "inlife.no-ip.org", .port = 7777 });
 
     bool loop = true;
 
@@ -346,7 +346,7 @@ int main(int argc, char *argv[]) {
         }
 
         if (librg_entity_valid(&ctx, player)) {
-            librg_entity_t *blob = librg_entity_fetch(&ctx, player);
+            librg_entity *blob = librg_entity_fetch(&ctx, player);
 
             blob->position.x = (f32)camera.x;
             blob->position.y = (f32)camera.y;

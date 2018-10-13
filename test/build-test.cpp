@@ -1,13 +1,13 @@
 #define LIBRG_IMPLEMENTATION
 #include <librg.h>
 
-void on_connect_accepted(librg_event_t *event) {
+void on_connect_accepted(librg_event *event) {
     librg_log("someone connected to the server!\n");
 }
 
 int main() {
     // initialization
-    librg_ctx_t ctx = {0};
+    librg_ctx ctx = {0};
 
     ctx.tick_delay   = 32;
     ctx.mode         = LIBRG_MODE_SERVER;
@@ -18,11 +18,11 @@ int main() {
     // adding event handlers
     librg_event_add(&ctx, LIBRG_CONNECTION_ACCEPT, on_connect_accepted);
 
-    librg_event_t e = {0};
+    librg_event e = {0};
     librg_event_trigger(&ctx, 42, &e);
 
     // starting server
-    librg_address_t address = {0}; address.port = 27010;
+    librg_address address = {0}; address.port = 27010;
     librg_network_start(&ctx, address);
 
     // starting main loop (run 100 times for test)

@@ -85,17 +85,17 @@ extern "C" {
     /**
      * Try to attach provided component to/from a particular entity
      */
-    LIBRG_API librg_void *librg_component_attach(librg_component_ctx *ctx, u32 index, librg_entity_t entity, librg_void *data);
+    LIBRG_API librg_void *librg_component_attach(librg_component_ctx *ctx, u32 index, librg_entity entity, librg_void *data);
 
     /**
      * Try to fetch provided component to/from a particular entity
      */
-    LIBRG_API librg_void *librg_component_fetch(librg_component_ctx *ctx, u32 index, librg_entity_t entity);
+    LIBRG_API librg_void *librg_component_fetch(librg_component_ctx *ctx, u32 index, librg_entity entity);
 
     /**
      * Try to detach provided component to/from a particular entity
      */
-    LIBRG_API void librg_component_detach(librg_component_ctx *ctx, u32 index, librg_entity_t entity);
+    LIBRG_API void librg_component_detach(librg_component_ctx *ctx, u32 index, librg_entity entity);
 
     /**
      * Try to interate on each entity with provided component filter
@@ -126,14 +126,14 @@ extern "C" {
                 if (header->used[_ent]) { _used = false; }                                                          \
             }                                                                                                       \
             /* execute code */                                                                                      \
-            if (_used) { librg_entity_t name = _ent; code; }                                                        \
+            if (_used) { librg_entity name = _ent; code; }                                                        \
         }                                                                                                           \
     } while(0)
 
     #define librg_component(NAME, INDEX, COMP) \
-        static librg_inline COMP *ZPL_JOIN2(librg_attach_,NAME) (librg_ctx_t *ctx, librg_entity_t entity, COMP *component) { return (COMP *)librg_component_attach(ctx, INDEX, entity, (char *)component); } \
-        static librg_inline COMP *ZPL_JOIN2(librg_fetch_ ,NAME) (librg_ctx_t *ctx, librg_entity_t entity) { return (COMP *)librg_component_fetch(ctx, INDEX, entity); } \
-        static librg_inline void  ZPL_JOIN2(librg_detach_,NAME) (librg_ctx_t *ctx, librg_entity_t entity) { librg_component_detach(ctx, INDEX, entity); }
+        static librg_inline COMP *ZPL_JOIN2(librg_attach_,NAME) (librg_ctx *ctx, librg_entity entity, COMP *component) { return (COMP *)librg_component_attach(ctx, INDEX, entity, (char *)component); } \
+        static librg_inline COMP *ZPL_JOIN2(librg_fetch_ ,NAME) (librg_ctx *ctx, librg_entity entity) { return (COMP *)librg_component_fetch(ctx, INDEX, entity); } \
+        static librg_inline void  ZPL_JOIN2(librg_detach_,NAME) (librg_ctx *ctx, librg_entity entity) { librg_component_detach(ctx, INDEX, entity); }
 
 #ifdef __cplusplus
 }
@@ -170,7 +170,7 @@ extern "C" {
 
     }
 
-    librg_void *librg_component_attach(librg_component_ctx *ctx, u32 index, librg_entity_t entity, librg_void *data) {
+    librg_void *librg_component_attach(librg_component_ctx *ctx, u32 index, librg_entity entity, librg_void *data) {
         librg_component_meta *header = &ctx->components.headers[index];
         librg_assert_msg(header && header->size, "make sure you registered component you are trying to use");
         header->used[entity] = true;
@@ -180,13 +180,13 @@ extern "C" {
         return &cdata[entity * header->size];
     }
 
-    librg_inline librg_void *librg_component_fetch(librg_component_ctx *ctx, u32 index, librg_entity_t entity) {
+    librg_inline librg_void *librg_component_fetch(librg_component_ctx *ctx, u32 index, librg_entity entity) {
         librg_component_meta *header = &ctx->components.headers[index]; librg_assert(header);
         librg_void *cdata = ctx->components.data + header->offset;
         return header->used[entity] ? &cdata[entity * header->size] : NULL;
     }
 
-    librg_inline void librg_component_detach(librg_component_ctx *ctx, u32 index, librg_entity_t entity) {
+    librg_inline void librg_component_detach(librg_component_ctx *ctx, u32 index, librg_entity entity) {
         librg_component_meta *header = &ctx->components.headers[index]; librg_assert(header);
         header->used[entity] = false;
     }

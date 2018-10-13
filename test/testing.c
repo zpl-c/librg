@@ -15,7 +15,7 @@ int main() {
     // zpl_printf("%f\n", foo[3]);
     // zpl_printf("%f\n", foo[4]);
 
-    librg_data_t data;
+    librg_data data;
     librg_data_init_size(&data, sizeof(u32));
     // librg_log("r: %d w: %d\n", librg_data_get_rpos(&data), librg_data_get_wpos(&data));
 

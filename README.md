@@ -1,5 +1,5 @@
 <div align="center">
-    <a href="https://github.com/librg/librg"><img src="https://user-images.githubusercontent.com/2182108/29322933-0be3cb06-81e8-11e7-9cef-aa6be82c9faa.png" alt="librg" /></a>
+    <a href="https://github.com/librg/librg"><img src="https://user-images.githubusercontent.com/2182108/46903598-f6e48380-cedf-11e8-8b05-c89e80f60b73.png" alt="librg" /></a>
 </div>
 
 <div align="center">
@@ -14,7 +14,7 @@
 
 <br />
 <div align="center">
-  Pure C99 game networking library for building simple and elegant cross-platform mmo client-server solutions.
+  Pure C99 game networking library for building simple and elegant cross-platform multiplayer client-server solutions.
 </div>
 
 <div align="center">
@@ -43,6 +43,8 @@ Thus we hope that with this library, which is just a small step in the direction
 which gives us low-level UDP networking with optional reliability. That, accompanied by our handmade general purpose **zpl** library, high-performant network culling algorithms,
 event-based approach used for creation and management of your flow with a simple interface, gives you the tools to create a simple and yet powerful multi-player based projects.
 
+Library is oriented to work with **single-sharded** boundary-limited 2d/3d multiplayer worlds with **up to 4000 simultanous** connected clients.
+
 ## Features
 
 * high performance
@@ -63,10 +65,10 @@ As we've mentioned before, librg has a simple interface. Like many C libraries, 
 
 ```c
 int main(int argc, char const *argv[]) {
-    librg_ctx_t ctx = { 0 };
+    librg_ctx ctx = { 0 };
     librg_init(&ctx);
 
-    librg_address_t addr = { 27010 };
+    librg_address addr = { 27010 };
     librg_network_start(&ctx, addr);
 
     bool running = true;
@@ -87,7 +89,7 @@ Everything is built around events, something gets created - the related event ge
 Let's look at the example, client connects to the server, spawns on the map, and librg triggers `LIBRG_ENTITY_CREATE` event for every entity in the player's range:
 
 ```c
-void mygame_entity_create(librg_event_t *event) {
+void mygame_entity_create(librg_event *event) {
     int entity_id   = event->entity->id;
     int entity_type = event->entity->type;
     vec3 position   = event->entity->position;
@@ -117,7 +119,7 @@ You need to register a handler for the `LIBRG_ENTITY_UDPATE` event, but this tim
 
 ```c
 /* server side */
-void myserver_entity_update(librg_event_t *event) {
+void myserver_entity_update(librg_event *event) {
     // change the position, it will be sent automatically
     event->entity->position.x += 5.0f;
 
@@ -127,7 +129,7 @@ void myserver_entity_update(librg_event_t *event) {
 }
 
 /* client side */
-void myclient_entity_update(librg_event_t *event) {
+void myclient_entity_update(librg_event *event) {
     int entity_id    = event->entity->id;
     MyEntity *entity = myEntities[entity_id];
 
@@ -150,11 +152,11 @@ And the way you can do it is quite simple, it is similar to events you are alrea
 
 ```c
 /* server side */
-void myserver_onmessage1(librg_message_t *msg) {
+void myserver_onmessage1(librg_message *msg) {
     printf("we got message 1\n");
 }
 
-void myserver_onmessage2(librg_message_t *msg) {
+void myserver_onmessage2(librg_message *msg) {
     printf("we got message 2\n");
 
     YourData yourData; /* read data back */
@@ -186,7 +188,7 @@ Now, what you need to do is to update that entity data from your local client's 
 
 ```c
 /* client side */
-void mygame_client_stream(librg_event_t *event) {
+void mygame_client_stream(librg_event *event) {
     // write new entity position (will be sent automatically)
     event->entity->position = MyGame_GetPosition(event->entity->id);
 
@@ -210,7 +212,7 @@ Sometimes when you need loop over entities visible (streamed) for a particular e
     int amount = librg_entity_query(&ctx, my_entity_id, &results);
 
     for (int i = 0; i < amount; ++i) {
-        librg_entity_t *entity = librg_entity_fetch(&ctx, results[i]);
+        librg_entity *entity = librg_entity_fetch(&ctx, results[i]);
         // do stuff with entity
     }
 ```

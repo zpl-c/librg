@@ -29,7 +29,7 @@ extern "C" {
     } librg_limiter_t;
 
     LIBRG_API void librg_limiter_init(librg_limiter_t *entity_limit);
-    LIBRG_API void librg_limiter_fire(librg_event_t *event, librg_limiter_t *entity_limit);
+    LIBRG_API void librg_limiter_fire(librg_event *event, librg_limiter_t *entity_limit);
 
 
 #if defined(LIBRG_LIMITER_IMPLEMENTATION) && !defined(LIBRG_LIMITER_IMPLEMENTATION_DONE)
@@ -42,11 +42,11 @@ extern "C" {
         entity_limit->update_moving_treshold = 0.03f;
     }
 
-    void librg_limiter_fire(librg_event_t *event, librg_limiter_t *entity_limit) {
+    void librg_limiter_fire(librg_event *event, librg_limiter_t *entity_limit) {
         librg_assert(event && event->ctx);
 
-        librg_ctx_t *ctx = event->ctx;
-        librg_entity_t *entity = event->entity;
+        librg_ctx *ctx = event->ctx;
+        librg_entity *entity = event->entity;
 
         if (entity_limit->update_time < entity_limit->update_delay) {
             entity_limit->update_time += ctx->tick_delay;
