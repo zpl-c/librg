@@ -1,5 +1,5 @@
 <div align="center">
-    <a href="https://github.com/librg/librg"><img src="https://user-images.githubusercontent.com/2182108/29322933-0be3cb06-81e8-11e7-9cef-aa6be82c9faa.png" alt="librg" /></a>
+    <a href="https://github.com/librg/librg"><img src="https://user-images.githubusercontent.com/2182108/46903598-f6e48380-cedf-11e8-8b05-c89e80f60b73.png" alt="librg" /></a>
 </div>
 
 <div align="center">
@@ -14,7 +14,7 @@
 
 <br />
 <div align="center">
-  Pure C99 game networking library for building simple and elegant cross-platform mmo client-server solutions.
+  Pure C99 game networking library for building simple and elegant cross-platform multiplayer client-server solutions.
 </div>
 
 <div align="center">
@@ -42,6 +42,8 @@ Thus we hope that with this library, which is just a small step in the direction
 **librg** is a light-weight "mid-level" (can be considered/used as both low-level and high-level) game networking library. It is based on our fork of **ENet** library,
 which gives us low-level UDP networking with optional reliability. That, accompanied by our handmade general purpose **zpl** library, high-performant network culling algorithms,
 event-based approach used for creation and management of your flow with a simple interface, gives you the tools to create a simple and yet powerful multi-player based projects.
+
+Library is oriented to work with **single-sharded** boundary-limited 2d/3d multiplayer worlds with **up to 4000 simultanous** connected clients.
 
 ## Features
 

@@ -1,5 +1,5 @@
 /**
- * librg - a library for building simple and elegant cross-platform mmo client-server solutions.
+ * librg - a library for building simple and elegant cross-platform multiplayer client-server solutions.
  *
  * Usage:
  * #define LIBRG_IMPLEMENTATION exactly in ONE source file right BEFORE including the library, like:
