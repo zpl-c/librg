@@ -1329,11 +1329,12 @@ extern "C" {
 
             if (entity->flags & LIBRG_ENTITY_ALIVE) continue;
 
-            entity->type            = type;
-            entity->flags           = LIBRG_ENTITY_ALIVE;
-            entity->position        = zplm_vec3f_zero();
-            entity->stream_range    = librg_option_get(LIBRG_DEFAULT_STREAM_RANGE) * 1.0f;
-            entity->stream_branch   = NULL;
+            entity->type               = type;
+            entity->flags              = LIBRG_ENTITY_ALIVE;
+            entity->position           = zplm_vec3f_zero();
+            entity->stream_range       = librg_option_get(LIBRG_DEFAULT_STREAM_RANGE) * 1.0f;
+            entity->stream_branch      = NULL;
+            entity->control_generation = 0;
 
             return entity;
         }
@@ -2321,18 +2322,19 @@ extern "C" {
 
         for (usize i = 0; i < query_size; ++i) {
             librg_entity_id entity = librg_data_rent(msg->data);
-            u32 type               = librg_data_ru32(msg->data);
+            u32 entity_type        = librg_data_ru32(msg->data);
+            u8 control_generation  = librg_data_ru8(msg->data);
 
             zplm_vec3 position;
             librg_data_rptr(msg->data, &position, sizeof(zplm_vec3));
 
             // Create new entity on client side
-            librg_entity_t *blob = &msg->ctx->entity.list[entity];
-            librg_assert(blob);
-
-            blob->type     = type;
-            blob->flags    = LIBRG_ENTITY_ALIVE;
-            blob->position = position;
+            librg_entity_t *blob = &msg->ctx->entity.list[entity]; librg_assert(blob); {
+                blob->type               = entity_type;
+                blob->flags              = LIBRG_ENTITY_ALIVE;
+                blob->position           = position;
+                blob->control_generation = control_generation;
+            };
 
             msg->ctx->entity.count++;
 
@@ -2346,8 +2348,10 @@ extern "C" {
             librg_entity_id entity = librg_data_rent(msg->data);
 
             if (librg_entity_valid(msg->ctx, entity)) {
-                LIBRG_MESSAGE_TO_EVENT(event, msg);
-                event.entity = librg_entity_fetch(msg->ctx, entity);
+                LIBRG_MESSAGE_TO_EVENT(event, msg); {
+                    event.entity = librg_entity_fetch(msg->ctx, entity);
+                };
+
                 librg_event_trigger(msg->ctx, LIBRG_ENTITY_REMOVE, &event);
                 librg__world_entity_destroy(msg->ctx, entity);
             }
@@ -2598,6 +2602,7 @@ extern "C" {
                     // write all basic data
                     librg_data_went(reliable, entity);
                     librg_data_wu32(reliable, eblob->type);
+                    librg_data_wu8(reliable,  eblob->control_generation);
                     librg_data_wptr(reliable, &eblob->position, sizeof(eblob->position));
 
                     // request custom data from user
