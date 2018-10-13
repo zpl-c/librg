@@ -16,6 +16,7 @@ build:
 test_script:
   - '%APPVEYOR_BUILD_FOLDER%\%CONFIGURATION%\librg_test.exe'
   - '%APPVEYOR_BUILD_FOLDER%\%CONFIGURATION%\librg_test_cpp.exe'
+  - mv '%APPVEYOR_BUILD_FOLDER%\Release\librg_shared.exe' '%APPVEYOR_BUILD_FOLDER%\Release\librg.exe' 2>nul
 
 artifacts:
   - path: 'Release\*.dll'

@@ -20,7 +20,9 @@ after_success:
     - curl -v -H User-Agent:bot -H Content-Type:application/json -d '{"content":"**librg** '$TRAVIS_OS_NAME' build has succeeded! :white_check_mark:"}' https://discordapp.com/api/webhooks/$DISCORD_WEBHOOK_CHANNEL_ID/$DISCORD_WEBHOOK_TOKEN
 
 before_deploy:
-  - export FILE_TO_UPLOAD=$(ls *.dylib *.so)
+    - mv liblibrg_shared.dylib librg.dylib 2>/dev/null
+    - mv liblibrg_shared.so librg.so 2>/dev/null
+    - export FILE_TO_UPLOAD=$(ls *.dylib *.so)
 
 deploy:
   provider: releases
