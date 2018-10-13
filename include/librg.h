@@ -2396,7 +2396,7 @@ extern "C" {
         librg_entity_iteratex(ctx, LIBRG_ENTITY_CONTROLLED, librg_lambda(entity), {
             librg_entity *blob = librg_entity_fetch(ctx, entity);
 
-            librg_data subdata;
+            librg_data subdata = {0};
             librg_data_init(&subdata);
 
             librg_event event = {0}; {
@@ -2415,10 +2415,10 @@ extern "C" {
 
                 // write sub-bitstream to main bitstream
                 librg_data_wptr(&data, subdata.rawptr, librg_data_get_wpos(&subdata));
-                librg_data_free(&subdata);
-
                 amount++;
             }
+
+            librg_data_free(&subdata);
         });
 
         if (amount < 1) {
