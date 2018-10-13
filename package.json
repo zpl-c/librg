@@ -1,7 +1,7 @@
 {
   "name": "librg.c",
   "version": "4.0.0",
-  "description": "Pure C library for building simple and elegant cross-platform mmo client-server solutions.",
+  "description": "Pure C library for building simple and elegant cross-platform multiplayer client-server solutions.",
   "main": "include/librg.h",
   "directories": {
     "test": "test"
