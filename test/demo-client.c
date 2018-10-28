@@ -23,7 +23,7 @@ enum {
 typedef struct {
 
     struct {
-        zpl_vec3_t accel;
+        zpl_vec3 accel;
         f32 walk_time;
         f32 cooldown;
         i32 max_hp;
@@ -33,7 +33,7 @@ typedef struct {
 #ifdef DEMO_CLIENT
     // interpolation
     f32 delta;
-    zpl_vec3_t curr_pos, last_pos, target_pos;
+    zpl_vec3 curr_pos, last_pos, target_pos;
 #endif
 } hero_t;
 
@@ -146,7 +146,7 @@ void interpolate_npcs(librg_ctx *ctx) {
 
         hero->delta += 16.666f / (ctx->timesync.server_delay / 0.001f);
 
-        zpl_vec3_t delta_pos;
+        zpl_vec3 delta_pos;
         zpl_vec3_lerp(&delta_pos, hero->last_pos, hero->target_pos, zpl_clamp01(hero->delta));
 
         hero->curr_pos = delta_pos;

@@ -33,6 +33,9 @@
  * - Added guard to minimum sized packet in receive for both sides
  * - Fixed nullptr crash on empty host string for client on connect
  *
+ * 4.1.0
+ * - Added new, extended message methods and sending options
+ *
  * 4.0.0
  * - Coding style changes and bug fixes
  *
@@ -243,7 +246,7 @@ typedef ENetHost   librg_host;
 typedef ENetPacket librg_packet;
 
 enum librg_mode         { LIBRG_MODE_SERVER, LIBRG_MODE_CLIENT };
-enum librg_spaceype   { LIBRG_SPACE_2D = 2, LIBRG_SPACE_3D = 3 };
+enum librg_space_type   { LIBRG_SPACE_2D = 2, LIBRG_SPACE_3D = 3 };
 enum librg_pointer_type { LIBRG_POINTER_CTX, LIBRG_POINTER_DATA, LIBRG_POINTER_EVENT };
 enum librg_thread_state { LIBRG_THREAD_IDLE, LIBRG_THREAD_WORK, LIBRG_THREAD_EXIT };
 
@@ -701,38 +704,45 @@ LIBRG_API void librg_network_add(struct librg_ctx *ctx, librg_message_id id, lib
  * from particular message id
  */
 LIBRG_API void librg_network_remove(struct librg_ctx *ctx, librg_message_id id);
+
 /**
- * Part of message API
- * Takes in initialized void of size pointer with written packet id
- * and sends data to all connected peers ( or to server if its client )
+ * General reliable message/data sending API
+ * (original message api version since v2.0.0, might be subject for changes in the future)
+ *
+ * Message id - is an identifier which librg will use to route the message from
+ * (to particlar handlers which are added via librg_network_add)
+ *
+ * method _all - sends the data to all connected peers
+ * method _to - sends the data to particular peer
+ * method _except - sends the data to all but particular peer
+ * method _instream - sends the data to all connected peers in the particular range (based off entity's stream_range)
+ * method _instream_except - similar to method above, however excludes particular peer
+ *
+ * The data which is provided inside the method will be copied inside packet struct, so it can be safely freed after you've called a method.
  */
-LIBRG_API void librg_message_send_all(struct librg_ctx *ctx, librg_message_id id, void *data, usize size);
+
+LIBRG_API void librg_message_send_all             (struct librg_ctx *ctx, librg_message_id id, void *data, usize size);
+LIBRG_API void librg_message_send_to              (struct librg_ctx *ctx, librg_message_id id, librg_peer *target, void *data, usize size);
+LIBRG_API void librg_message_send_except          (struct librg_ctx *ctx, librg_message_id id, librg_peer *target, void *data, usize size);
+LIBRG_API void librg_message_send_instream        (struct librg_ctx *ctx, librg_message_id id, librg_entity_id entity_id, void *data, usize size);
+LIBRG_API void librg_message_send_instream_except (struct librg_ctx *ctx, librg_message_id id, librg_entity_id entity_id, librg_peer *target, void *data, usize size);
+
 /**
- * Part of message API
- * Applies all from previous mehod
- * But data will be sent only to particular provided peer
+ * The basic message/data sending API
+ * Supports sending both reliable and unreliable messages, and ability to set which channel to use for message sending.
+ *
+ * All previous message sending methods are using these extended variants internally.
+ *
+ * method sendex:
+ *     if target is NULL - will send the data to all connected peers, else - to a particular peer
+ *     if except is NULL - argument does nothing, else - prevents data from being sent to a particlar peer
+ *     channel - provides which network channel is supposed to be used for message sending
+ *         (make that channel id is always < librg_option_get(LIBRG_NETWORK_CHANNELS), or use librg_option_set to change the default value)
+ *     if reliable is 1 (true) - message will be sent using reliable methods, else using unreliable
  */
-LIBRG_API void librg_message_send_to(struct librg_ctx *ctx, librg_message_id id, librg_peer *peer, void *data, usize size);
-/**
- * Part of message API
- * Applies all from previous mehod
- * But data will be sent to all except provided peer
- */
-LIBRG_API void librg_message_send_except(struct librg_ctx *ctx, librg_message_id id, librg_peer *peer, void *data, usize size);
-/**
- * Part of message API
- * Applies all from previous mehod
- * Data will be sent only to entities, which are inside streamzone
- * for provided entity
- */
-LIBRG_API void librg_message_send_instream(struct librg_ctx *ctx, librg_message_id id, librg_entity_id entity_id, void *data, usize size);
-/**
- * Part of message API
- * Applies all from previous mehod
- * Data will be sent only to entities, which are inside streamzone
- * for provided entity except peer
- */
-LIBRG_API void librg_message_send_instream_except(struct librg_ctx *ctx, librg_message_id id, librg_entity_id entity_id, librg_peer *peer, void *data, usize size);
+
+LIBRG_API void librg_message_sendex               (struct librg_ctx *ctx, librg_message_id id, librg_peer *target, librg_peer *except, u16 channel, b8 reliable, void *data, usize size);
+LIBRG_API void librg_message_sendex_instream      (struct librg_ctx *ctx, librg_message_id id, librg_entity_id entity_id, librg_peer *except, u16 channel, b8 reliable, void *data, usize size);
 
 // =======================================================================//
 // !
@@ -1873,50 +1883,51 @@ extern "C" {
         ctx->messages[id] = NULL;
     }
 
-    void librg_message_send_all(librg_ctx *ctx, librg_message_id id, void *data, usize size) {
-        if (librg_is_client(ctx)) {
-            librg_message_send_to(ctx, id, ctx->network.peer, data, size);
-            return;
-        }
-
-        librg_message_send_except(ctx, id, NULL, data, size);
-    }
-
-    void librg_message_send_to(librg_ctx *ctx, librg_message_id id, librg_peer *peer, void *data, usize size) {
-        zpl_unused(ctx);
-
+    void librg_message_sendex(struct librg_ctx *ctx, librg_message_id id, librg_peer *target, librg_peer *except, u16 channel, b8 reliable, void *data, usize size) {
         librg_packet *packet = enet_packet_create_offset(
-            data, size, sizeof(librg_message_id), ENET_PACKET_FLAG_RELIABLE
+            data, size, sizeof(librg_message_id), reliable ? ENET_PACKET_FLAG_RELIABLE : 0
         );
 
         // write id at the beginning
         zpl_memcopy(packet->data, &id, sizeof(librg_message_id));
-        enet_peer_send(peer, librg_option_get(LIBRG_NETWORK_MESSAGE_CHANNEL), packet);
-    }
+        librg_assert(channel <= librg_option_get(LIBRG_NETWORK_CHANNELS));
 
-    void librg_message_send_except(librg_ctx *ctx, librg_message_id id, librg_peer *peer, void *data, usize size) {
-        librg_entity_iteratex(ctx, LIBRG_ENTITY_CLIENT, librg_lambda(entity), {
-            librg_entity *blob = librg_entity_fetch(ctx, entity);
+        if (target) {
+            enet_peer_send(target, channel, packet);
+        } else {
+            ENetPeer *currentPeer;
 
-            if (blob->client_peer != peer) {
-                librg_packet *packet = enet_packet_create_offset(
-                    data, size, sizeof(librg_message_id), ENET_PACKET_FLAG_RELIABLE
-                );
+            for (currentPeer = ctx->network.host->peers; currentPeer < &ctx->network.host->peers[ctx->network.host->peerCount]; ++currentPeer) {
+                if (currentPeer->state != ENET_PEER_STATE_CONNECTED) {
+                    continue;
+                }
 
-                // write id at the beginning
-                zpl_memcopy(packet->data, &id, sizeof(librg_message_id));
-                enet_peer_send(blob->client_peer, librg_option_get(LIBRG_NETWORK_MESSAGE_CHANNEL), packet);
+                if (currentPeer == except) {
+                    continue;
+                }
+
+                /* TODO: add a skip if not peer's entity is not 'alive' */
+
+                enet_peer_send(currentPeer, channel, packet);
             }
-        });
+        }
+
+        if (packet->referenceCount == 0) {
+            enet_packet_destroy(packet);
+        }
     }
 
-    void librg_message_send_instream(librg_ctx *ctx, librg_message_id id, librg_entity_id entity, void *data, usize size) {
-        librg_message_send_instream_except(ctx, id, entity, NULL, data, size);
-    }
+    void librg_message_sendex_instream(struct librg_ctx *ctx, librg_message_id id, librg_entity_id entity_id, librg_peer *except, u16 channel, b8 reliable, void *data, usize size) {
+        librg_packet *packet = enet_packet_create_offset(
+            data, size, sizeof(librg_message_id), reliable ? ENET_PACKET_FLAG_RELIABLE : 0
+        );
 
-    void librg_message_send_instream_except(librg_ctx *ctx, librg_message_id id, librg_entity_id entity, librg_peer *ignored, void *data, usize size) {
+        // write id at the beginning
+        zpl_memcopy(packet->data, &id, sizeof(librg_message_id));
+        librg_assert(channel <= librg_option_get(LIBRG_NETWORK_CHANNELS));
+
         zpl_array(librg_entity_id) queue;
-        usize count = librg_entity_query(ctx, entity, &queue);
+        usize count = librg_entity_query(ctx, entity_id, &queue);
 
         for (isize i = 0; i < count; i++) {
             librg_entity_id target = queue[i];
@@ -1927,18 +1938,36 @@ extern "C" {
             librg_peer *peer = blob->client_peer;
             librg_assert(peer);
 
-            if (peer == ignored) {
+            if (peer == except) {
                 continue;
             }
 
-            librg_packet *packet = enet_packet_create_offset(
-                data, size, sizeof(librg_message_id), ENET_PACKET_FLAG_RELIABLE
-            );
-
-            // write id at the beginning
-            zpl_memcopy(packet->data, &id, sizeof(librg_message_id));
-            enet_peer_send(peer, librg_option_get(LIBRG_NETWORK_MESSAGE_CHANNEL), packet);
+            enet_peer_send(peer, channel, packet);
         }
+
+        if (packet->referenceCount == 0) {
+            enet_packet_destroy(packet);
+        }
+    }
+
+    librg_inline void librg_message_send_all(librg_ctx *ctx, librg_message_id id, void *data, usize size) {
+        librg_message_sendex(ctx, id, NULL, NULL, librg_option_get(LIBRG_NETWORK_MESSAGE_CHANNEL), true, data, size);
+    }
+
+    librg_inline void librg_message_send_to(librg_ctx *ctx, librg_message_id id, librg_peer *target, void *data, usize size) {
+        librg_message_sendex(ctx, id, target, NULL, librg_option_get(LIBRG_NETWORK_MESSAGE_CHANNEL), true, data, size);
+    }
+
+    librg_inline void librg_message_send_except(librg_ctx *ctx, librg_message_id id, librg_peer *except, void *data, usize size) {
+        librg_message_sendex(ctx, id, NULL, except, librg_option_get(LIBRG_NETWORK_MESSAGE_CHANNEL), true, data, size);
+    }
+
+    librg_inline void librg_message_send_instream(librg_ctx *ctx, librg_message_id id, librg_entity_id entity_id, void *data, usize size) {
+        librg_message_sendex_instream(ctx, id, entity_id, NULL, librg_option_get(LIBRG_NETWORK_MESSAGE_CHANNEL), true, data, size);
+    }
+
+    librg_inline void librg_message_send_instream_except(librg_ctx *ctx, librg_message_id id, librg_entity_id entity_id, librg_peer *except, void *data, usize size) {
+        librg_message_sendex_instream(ctx, id, entity_id, except, librg_option_get(LIBRG_NETWORK_MESSAGE_CHANNEL), true, data, size);
     }
 #endif
 
