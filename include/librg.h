@@ -805,7 +805,7 @@ enum librg_options {
     LIBRG_NETWORK_BUFFER_SIZE,
 
     LIBRG_MAX_ENTITIES_PER_BRANCH,
-    LIBRG_MAX_THREADS_PER_UPDATE,
+    LIBRG_USE_RADIUS_CULLING,
 
     LIBRG_OPTIONS_SIZE,
 };
@@ -2961,15 +2961,25 @@ extern "C" {
         if (c->nodes == NULL) return;
         if (!librg__space_intersects(c->dimensions, c->boundary, bounds)) return;
 
+        b32 use_radius = librg_option_get(LIBRG_USE_RADIUS_CULLING);
+        librg_entity *ent_blob = librg_entity_fetch(ctx, entity);
+        librg_assert(ent_blob);
+
         isize nodes_count = zpl_array_count(c->nodes);
         for (i32 i = 0; i < nodes_count; ++i) {
             if (c->nodes[i].unused) continue;
-
             librg_entity_id target = c->nodes[i].blob->id;
 
             if (librg_entity_valid(ctx, target)) {
                 librg_entity *blob = c->nodes[i].blob;
-                b32 inside = librg__space_contains(c->dimensions, bounds, blob->position.e);
+
+                b32 inside = false; if (!use_radius) {
+                    inside = librg__space_contains(c->dimensions, bounds, blob->position.e);
+                } else {
+                    zpl_vec3 diff;
+                    zpl_vec3_sub(&diff, ent_blob->position, blob->position);
+                    inside = zpl_vec3_mag2(diff) < zpl_square(ent_blob->stream_range);
+                }
 
                 if (inside) {
                     #ifdef LIBRG_FEATURE_ENTITY_VISIBILITY
@@ -3062,7 +3072,7 @@ extern "C" {
         /*LIBRG_NETWORK_MESSAGE_CHANNEL*/   3,
         /*LIBRG_NETWORK_BUFFER_SIZE*/       0,
         /*LIBRG_MAX_ENTITIES_PER_BRANCH*/   4,
-        /*LIBRG_MAX_THREADS_PER_UPDATE*/    0, /* MT is disabled by default = 0 */
+        /*LIBRG_USE_RADIUS_CULLING*/        0,
     };
 
     void librg_option_set(u32 option, u32 value) {

@@ -4,32 +4,13 @@
 
 
 int main() {
-    // f64 foo[5] = { 5, 3, 6, 0, 1};
-    // zpl_printf("librg_standard_deviation: %f\n", librg_standard_deviation(foo, 5));
+    zpl_aabb3 test;
 
-    // zpl_sort(foo, 5, sizeof(f64), zpl_f64_cmp(0));
+    test.centre = zpl_vec3f(100,100,100);
+    test.half_size = zpl_vec3f(5,5,5);
 
-    // zpl_printf("%f\n", foo[0]);
-    // zpl_printf("%f\n", foo[1]);
-    // zpl_printf("%f\n", foo[2]);
-    // zpl_printf("%f\n", foo[3]);
-    // zpl_printf("%f\n", foo[4]);
+    zpl_vec3 point = zpl_vec3f(105,95,95);
+    librg_log("contains: %d\n", librg__space_contains(3, test, (f32 *)&point));
 
-    librg_data data;
-    librg_data_init_size(&data, sizeof(u32));
-    // librg_log("r: %d w: %d\n", librg_data_get_rpos(&data), librg_data_get_wpos(&data));
-
-    librg_data_wu32(&data, 32);
-
-    u32 a = librg_data_ru32(&data);
-    // u32 b = librg_data_ru32(&data);
-
-    // librg_log("%ld > %zu\n", librg_data_get_rpos(&data) + sizeof(u32), librg_data_capacity(&data));
-    // librg_data_read_safe(u32, b, &data);
-    // librg_data_read_safe(u32, c, &data);
-    // librg_log("b = %d\n", b);
-
-    // #undef _LIBRG_METHOD_NAME
-    // #undef _LIBRG_METHOD_TYPE
     return 0;
 }
