@@ -417,32 +417,38 @@ LIBRG_API void librg_entity_iterate(struct librg_ctx *ctx, u64 flags, librg_enti
  * Return entity type
  * @deprecated
  */
-LIBRG_API u32 librg_entityype(struct librg_ctx *ctx, librg_entity_id entity_id);
+LIBRG_API u32 librg_entity_type(struct librg_ctx *ctx, librg_entity_id entity_id);
 
 #ifdef LIBRG_FEATURE_ENTITY_VISIBILITY
+
     /**
-     * Set particular entity visible or invisible
-     * for other entities in stream zone
+     * A complex api allowing to change visibility of the entities via specific set of rules.
+     *
+     * Calling librg_entity_visibility_set, will change global visibility of partiulcar entity for others.
+     * Meaning, the entity is still gonna be able to see other entities, while others won't be able to see it back.
+     *
+     * Calling librg_entity_visibility_set_for, has a similar effect to method mentioned above,
+     * however extends also to specify entity inivisibilty for other specific entity.
      */
+
     LIBRG_API void librg_entity_visibility_set(struct librg_ctx *ctx, librg_entity_id entity_id, b32 state);
-    /**
-     * Set particular entity visible or invisible
-     * for other particular entity
-     */
-    LIBRG_API void librg_entity_visibility_set_for(struct librg_ctx *ctx, librg_entity_id entity_id, librg_entity_id target, b32 state);
-    /**
-     * Get particular entity visible or invisible
-     * for other entities in stream zone
-     */
     LIBRG_API b32 librg_entity_visibility_get(struct librg_ctx *ctx, librg_entity_id entity_id);
-    /**
-     * Get particular entity visible or invisible
-     * for other particular entity
-     */
+
+    LIBRG_API void librg_entity_visibility_set_for(struct librg_ctx *ctx, librg_entity_id entity_id, librg_entity_id target, b32 state);
     LIBRG_API b32 librg_entity_visibility_get_for(struct librg_ctx *ctx, librg_entity_id entity_id, librg_entity_id target);
 #endif
 
 #ifdef LIBRG_FEATURE_VIRTUAL_WORLDS
+
+    /**
+     * A simple thin api allowing to change virtual world for specific entity
+     * "Virtual world" is a concept where entities can see other entities near
+     * each other only when they share the virtual world.
+     *
+     * If entity is being removed from the virtual world, it's, LIBRG_ENTITY_REMOVED
+     * will be called for all the clients that were sharing same world with target entity.
+     */
+
     LIBRG_API u32  librg_entity_world_get(struct librg_ctx *ctx, librg_entity_id entity_id);
     LIBRG_API void librg_entity_world_set(struct librg_ctx *ctx, librg_entity_id entity_id, u32 world);
 #endif
