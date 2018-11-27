@@ -1504,7 +1504,6 @@ extern "C" {
 
         // some minor validations
         if (!(blob->flags & LIBRG_ENTITY_CONTROLLED)) { return; }
-        if (blob->flags & LIBRG_ENTITY_CONTROL_REQUESTED) { return; }
 
         librg_send_to(ctx, LIBRG_CLIENT_STREAMER_REMOVE, blob->control_peer, librg_lambda(data), {
             librg_data_went(&data, entity);
@@ -1512,6 +1511,21 @@ extern "C" {
 
         blob->flags &= ~LIBRG_ENTITY_CONTROLLED;
         blob->control_peer = NULL;
+    }
+
+    void librg_entity_control_ignore_once(librg_ctx *ctx, librg_entity_id entity) {
+        librg_assert(ctx && librg_entity_valid(ctx, entity));
+        librg_assert(librg_is_server(ctx));
+        librg_entity *blob = librg_entity_fetch(ctx, entity);
+
+        // some minor validations
+        if (!(blob->flags & LIBRG_ENTITY_CONTROLLED)) { return; }
+        if (blob->flags & LIBRG_ENTITY_CONTROL_REQUESTED) { return; }
+
+        // and super complex algo to reset the peer, and update the control_generation
+        librg_peer *client_peer = librg_entity_control_get(ctx, entity);
+        librg_entity_control_remove(ctx, entity);
+        librg_entity_control_set(ctx, entity, client_peer);
     }
 
 #endif
