@@ -17,7 +17,7 @@
  *
  * For the demo:
  * sdl2.h
-
+ *
  * TODO:
  *     Remove MULTIUTHEREDADEING
  *     Fix zpl_strmp("localhost") != 0
@@ -26,14 +26,12 @@
  *     find a nice way to decrease size on client for peer struct
  *     make zak remember stuff about bistram safety
  *
-
  * Version History:
  * 4.1.1
  * - Added compile-time 'features':
  *     - Ability to enable/disable some librg compile-time features
- *     - Multithreading 'rebranded' as feature
  *     - Entity igore tables are now optional, and can be disabled
- *     - Implmented simple Virtual world feature for entities
+ *     - Implmented simple optional Virtual world feature for entities
  *     - Multiple features can be combined
  * - Added 'generation' to entity control lists:
  *     Setting, removing and setting control to the same entity again with same owner
@@ -41,6 +39,7 @@
  *     from old control generation will be rejected in favor of new ones.
  * - Added guard to minimum sized packet in receive for both sides
  * - Fixed nullptr crash on empty host string for client on connect
+ * - Removed experimental multithreading code
  *
  * 4.1.0
  * - Added new, extended message methods and sending options
@@ -2589,8 +2588,7 @@ extern "C" {
             librg_data_wu32(unreliable, updated_entities);
 
             // add entity creates and updates
-            for (isize i = 0; i < queue_count; ++i) {
-
+            for (usize i = 0; i < queue_count; ++i) {
                 librg_entity_id entity = cast(librg_entity_id)queue[i];
 
                 // fetch value of entity in the last snapshot
