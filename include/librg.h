@@ -2573,13 +2573,6 @@ extern "C" {
 
         for (usize j = 0; j < ctx->max_entities; j++) {
             librg_entity *blob = &ctx->entity.list[j];
-
-            // if this entity has requested the control access
-            // it will be approved right after this code finishes executing
-            if (blob->flags & LIBRG_ENTITY_CONTROL_REQUESTED) {
-                blob->flags &= ~LIBRG_ENTITY_CONTROL_REQUESTED;
-            }
-
             if (!(blob->flags & LIBRG_ENTITY_CLIENT)) continue;
 
             // assume that entity is valid, having the client
@@ -2655,7 +2648,7 @@ extern "C" {
                     librg_table_set(last_snapshot, entity, 0);
 
                     // if this entity is client streamable and this client is owner
-                    if ((eblob->flags & LIBRG_ENTITY_CONTROLLED) && eblob->control_peer == blob->client_peer) {
+                    if ((eblob->flags & LIBRG_ENTITY_CONTROLLED) && (!(eblob->flags & LIBRG_ENTITY_CONTROL_REQUESTED) && eblob->control_peer == blob->client_peer) {
                         updated_entities--;
                     }
                     // write update
@@ -2916,10 +2909,9 @@ extern "C" {
         // fill up
         librg_entity_iteratex(ctx, LIBRG_ENTITY_ALIVE, entity, {
             librg_entity *blob = &ctx->entity.list[entity];
-
-            librg_space_node node = { 0 };
-
-            node.blob        = blob;
+            librg_space_node node = {0}; {
+                node.blob = blob;
+            }
 
             if (blob->stream_branch == NULL) {
                 blob->stream_branch = librg__space_insert(ctx, &ctx->world, node);
@@ -2944,6 +2936,10 @@ extern "C" {
     }
 
     librg_inline void librg__execture_server_entity_control(librg_ctx *ctx) {
+        librg_entity_iteratex(ctx, LIBRG_ENTITY_CONTROL_REQUESTED, (entity), {
+            librg_entity_fetch(ctx, entity)->flags &= ~LIBRG_ENTITY_CONTROL_REQUESTED;
+        });
+
         for (isize i = 0; i < zpl_array_count(ctx->entity.add_control_queue); i++) {
             librg_message *msg = ctx->entity.add_control_queue[i];
             enet_peer_send(msg->peer, librg_option_get(LIBRG_NETWORK_MESSAGE_CHANNEL), msg->packet);
