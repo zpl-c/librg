@@ -391,7 +391,7 @@ LIBRG_API struct librg_entity *librg_entity_find(struct librg_ctx *ctx, librg_pe
 LIBRG_API librg_peer *librg_entity_control_get(struct librg_ctx *ctx, librg_entity_id entity_id);
 LIBRG_API void librg_entity_control_set(struct librg_ctx *ctx, librg_entity_id entity_id, librg_peer *peer);
 LIBRG_API void librg_entity_control_remove(struct librg_ctx *ctx, librg_entity_id entity_id);
-LIBRG_API void librg_entity_control_ignore_once(struct librg_ctx *ctx, librg_entity_id entity_id);
+LIBRG_API void librg_entity_control_ignore_next_update(struct librg_ctx *ctx, librg_entity_id entity_id);
 
 /**
  * Iterate over all the entities with a flag
@@ -1513,7 +1513,7 @@ extern "C" {
         blob->control_peer = NULL;
     }
 
-    void librg_entity_control_ignore_once(librg_ctx *ctx, librg_entity_id entity) {
+    void librg_entity_control_ignore_next_update(librg_ctx *ctx, librg_entity_id entity) {
         librg_assert(ctx && librg_entity_valid(ctx, entity));
         librg_assert(librg_is_server(ctx));
         librg_entity *blob = librg_entity_fetch(ctx, entity);
