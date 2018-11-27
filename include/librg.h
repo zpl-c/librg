@@ -19,10 +19,6 @@
  * sdl2.h
  *
  * TODO:
- *     Remove MULTIUTHEREDADEING
- *     Fix zpl_strmp("localhost") != 0
- *     Add cicrular/squared runtime configured check for inside space check
- *     find a nice way to let the streamer have entity not being removed from the stream zone
  *     find a nice way to decrease size on client for peer struct
  *     make zak remember stuff about bistram safety
  *
@@ -1041,7 +1037,7 @@ extern "C" {
 
     LIBRG_INTERNAL void librg__world_update(void *);
 
-    LIBRG_INTERNAL void librg__world_entity_query(librg_ctx *ctx, librg_entity_id entity, librg_space *c, zpl_aabb3 bounds, librg_entity_id **out_entities);
+    LIBRG_INTERNAL void librg__world_entity_query(librg_ctx *ctx, librg_entity_id entity, librg_space *c, zpl_aabb3 bounds, usize controlled_amount, librg_entity_id **out_entities);
     LIBRG_INTERNAL b32 librg__world_entity_destroy(librg_ctx *ctx, librg_entity_id id);
 
     /* space stuff */
@@ -1354,10 +1350,19 @@ extern "C" {
         // reset array to 0
         zpl_array_count(blob->last_query) = 0;
 
-        zpl_aabb3 search_bounds;
-        search_bounds.centre    = blob->position;
-        search_bounds.half_size = zpl_vec3f(blob->stream_range, blob->stream_range, blob->stream_range);
-        librg__world_entity_query(ctx, entity, &ctx->world, search_bounds, &blob->last_query);
+        // add all currently streamed entities automatically
+        librg_entity_iteratex(ctx, LIBRG_ENTITY_CONTROLLED, librg_lambda(controlled), {
+            if (blob->client_peer && librg_entity_control_get(ctx, controlled) == blob->client_peer) {
+                zpl_array_append(blob->last_query, controlled);
+            }
+        });
+
+        zpl_aabb3 search_bounds; {
+            search_bounds.centre    = blob->position;
+            search_bounds.half_size = zpl_vec3f(blob->stream_range, blob->stream_range, blob->stream_range);
+        };
+
+        librg__world_entity_query(ctx, entity, &ctx->world, search_bounds, zpl_array_count(blob->last_query), &blob->last_query);
         *out_entities = blob->last_query;
 
         return zpl_array_count(blob->last_query);
@@ -2957,7 +2962,7 @@ extern "C" {
 
 
 
-    void librg__world_entity_query(librg_ctx *ctx, librg_entity_id entity, librg_space *c, zpl_aabb3 bounds, librg_entity_id **out_entities) {
+    void librg__world_entity_query(librg_ctx *ctx, librg_entity_id entity, librg_space *c, zpl_aabb3 bounds, usize controlled_amount, librg_entity_id **out_entities) {
         if (c->nodes == NULL) return;
         if (!librg__space_intersects(c->dimensions, c->boundary, bounds)) return;
 
@@ -2969,6 +2974,11 @@ extern "C" {
         for (i32 i = 0; i < nodes_count; ++i) {
             if (c->nodes[i].unused) continue;
             librg_entity_id target = c->nodes[i].blob->id;
+
+            // iterate over pre-added controlled entities, to prevent duplications
+            for (int j = 0; j < controlled_amount; ++j) {
+                if (target == (*out_entities)[j]) { continue; }
+            }
 
             if (librg_entity_valid(ctx, target)) {
                 librg_entity *blob = c->nodes[i].blob;
@@ -3002,7 +3012,7 @@ extern "C" {
         if (spaces_count == 0) return;
 
         for (i32 i = 0; i < spaces_count; ++i) {
-            librg__world_entity_query(ctx, entity, (c->spaces+i), bounds, out_entities);
+            librg__world_entity_query(ctx, entity, (c->spaces+i), bounds, controlled_amount, out_entities);
         }
     }
 
