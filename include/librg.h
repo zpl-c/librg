@@ -2648,7 +2648,7 @@ extern "C" {
                     librg_table_set(last_snapshot, entity, 0);
 
                     // if this entity is client streamable and this client is owner
-                    if ((eblob->flags & LIBRG_ENTITY_CONTROLLED) && (!(eblob->flags & LIBRG_ENTITY_CONTROL_REQUESTED) && eblob->control_peer == blob->client_peer) {
+                    if ((eblob->flags & LIBRG_ENTITY_CONTROLLED) && (!(eblob->flags & LIBRG_ENTITY_CONTROL_REQUESTED)) && eblob->control_peer == blob->client_peer) {
                         updated_entities--;
                     }
                     // write update
