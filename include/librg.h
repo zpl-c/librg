@@ -17,7 +17,16 @@
  *
  * For the demo:
  * sdl2.h
+
+ * TODO:
+ *     Remove MULTIUTHEREDADEING
+ *     Fix zpl_strmp("localhost") != 0
+ *     Add cicrular/squared runtime configured check for inside space check
+ *     find a nice way to let the streamer have entity not being removed from the stream zone
+ *     find a nice way to decrease size on client for peer struct
+ *     make zak remember stuff about bistram safety
  *
+
  * Version History:
  * 4.1.1
  * - Added compile-time 'features':
@@ -120,7 +129,7 @@
 #define LIBRG_INCLUDE_H
 
 #define LIBRG_VERSION_MAJOR 4
-#define LIBRG_VERSION_MINOR 0
+#define LIBRG_VERSION_MINOR 1
 #define LIBRG_VERSION_PATCH 0
 #define LIBRG_VERSION_CREATE(major, minor, patch) (((major)<<16) | ((minor)<<8) | (patch))
 #define LIBRG_VERSION_GET_MAJOR(version) (((version)>>16)&0xFF)
@@ -1798,7 +1807,7 @@ extern "C" {
             librg_table_init(&ctx->network.connected_peers, ctx->allocator);
             ENetAddress address = {0};
 
-            if (addr.host && zpl_strcmp(addr.host, "localhost") == 0) {
+            if (addr.host && zpl_strcmp(addr.host, "localhost") != 0) {
                 enet_address_set_host(&address, addr.host);
             } else {
                 address.host = ENET_HOST_ANY;
@@ -1814,7 +1823,7 @@ extern "C" {
             ENetAddress address = {0};
             const char *ipv6lclhst = "::1";
 
-            if (zpl_strcmp(addr.host, "localhost") == 0) {
+            if (!addr.host || zpl_strcmp(addr.host, "localhost") == 0) {
                 addr.host = (char *)ipv6lclhst;
             }
 
