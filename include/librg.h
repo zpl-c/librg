@@ -221,7 +221,7 @@ extern "C" {
 // !
 // =======================================================================//
 
-// #define LIBRG_FEATURE_VIRTUAL_WORLDS 1   // disabled by default
+#define LIBRG_FEATURE_VIRTUAL_WORLDS 1      // enabled by default
 #define LIBRG_FEATURE_ENTITY_VISIBILITY 1   // enabled by default
 
 #if defined(LIBRG_FEATURE_VIRTUAL_WORLDS) && defined(LIBRG_DISABLE_FEATURE_VIRTUAL_WORLDS)
