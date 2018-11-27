@@ -2546,8 +2546,14 @@ extern "C" {
      *
      * Responsive for updating the server-side streamer
      */
-    void librg__execute_server_entity_update_proc(librg_ctx *ctx, librg_data *reliable, librg_data *unreliable, usize offset, usize count) {
-        for (isize j = offset; j < offset+count; j++) {
+    librg_internal void librg__execute_server_entity_update(librg_ctx *ctx) {
+        librg_assert(ctx);
+
+        // use preallocated data stream objects
+        librg_data *reliable   = &ctx->stream_upd_reliable;
+        librg_data *unreliable = &ctx->stream_upd_unreliable;
+
+        for (usize j = 0; j < ctx->max_entities; j++) {
             librg_entity *blob = &ctx->entity.list[j];
 
             // if this entity has requested the control access
@@ -2589,8 +2595,7 @@ extern "C" {
 
                 // fetch value of entity in the last snapshot
                 u32 *existed_in_last = librg_table_get(last_snapshot, entity);
-
-                librg_entity *eblob = librg_entity_fetch(ctx, entity);
+                librg_entity *eblob  = librg_entity_fetch(ctx, entity);
 
                 // write create
                 if (!existed_in_last) {
@@ -2733,50 +2738,6 @@ extern "C" {
             // and cleanup
             librg_data_reset(reliable);
             librg_data_reset(unreliable);
-        }
-    }
-
-
-    #ifdef LIBRG_MULTITHREADED
-    isize librg__execute_server_entity_update_worker(zpl_thread *thread) {
-        librg_update_worker_si_t *si = cast(librg_update_worker_si_t *)thread->user_data;
-        librg_ctx *ctx = si->ctx;
-
-        librg_data reliable, unreliable;
-        librg_data_init(&reliable);
-        librg_data_init(&unreliable);
-
-        while (true) {
-            i32 signal = zpl_atomic32_load(&ctx->threading.signal);
-
-            while (signal == LIBRG_THREAD_IDLE) {
-                zpl_sleep_ms(1);
-                signal = zpl_atomic32_load(&ctx->threading.signal);
-                zpl_mfence();
-            };
-
-            if (signal == LIBRG_THREAD_EXIT) break;
-
-            librg__execute_server_entity_update_proc(ctx, &reliable, &unreliable, si->offset, si->count);
-            zpl_atomic32_fetch_add(&ctx->threading.work_count, -1);
-        }
-
-        librg_data_free(&reliable);
-        librg_data_free(&unreliable);
-
-        zpl_free(ctx->allocator, si);
-        thread->return_value = 0;
-
-        return 0;
-    }
-    #endif
-
-    librg_internal void librg__execute_server_entity_update(librg_ctx *ctx) {
-        librg_assert(ctx);
-
-        if (librg_option_get(LIBRG_MAX_THREADS_PER_UPDATE) == 0) {
-            librg__execute_server_entity_update_proc(ctx, &ctx->stream_upd_reliable, &ctx->stream_upd_unreliable, 0, ctx->max_entities);
-            return;
         }
     }
 #endif
