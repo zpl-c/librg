@@ -2453,6 +2453,10 @@ extern "C" {
             librg_data_read_safe(u8, control_generation, msg->data);
             librg_data_read_safe(u32, size, msg->data);
 
+            librg_data_read_safe(f32, x, msg->data);
+            librg_data_read_safe(f32, y, msg->data);
+            librg_data_read_safe(f32, z, msg->data);
+
             if (librg_data_capacity(msg->data) < librg_data_get_rpos(msg->data) + size ||
                 librg_data_capacity(msg->data) < librg_data_get_rpos(msg->data) + sizeof(zpl_vec3)) {
                 librg_dbg("[dbg] invalid packet size on client streamer update\n");
@@ -2481,9 +2485,12 @@ extern "C" {
 
             #undef LIBRG_LOCAL_ASSERT
 
+            blob->position.x = x;
+            blob->position.y = y;
+            blob->position.z = z;
+
             LIBRG_MESSAGE_TO_EVENT(event, msg); event.entity = blob;
             librg_event_trigger(msg->ctx, LIBRG_CLIENT_STREAMER_UPDATE, &event);
-            librg_data_rptr(msg->data, &blob->position, sizeof(blob->position));
         }
 
         #undef _LIBRG_METHOD
@@ -2545,10 +2552,10 @@ extern "C" {
 
             // check if user rejected the event
             if (!(event.flags & LIBRG_EVENT_REJECTED)) {
-                librg_data_wptr(&subdata, &blob->position, sizeof(zpl_vec3));
                 librg_data_went(&data, entity);
                 librg_data_wu8(&data, blob->control_generation);
                 librg_data_wu32(&data, librg_data_get_wpos(&subdata));
+                librg_data_wptr(&data, &blob->position, sizeof(zpl_vec3));
 
                 // write sub-bitstream to main bitstream
                 librg_data_wptr(&data, subdata.rawptr, librg_data_get_wpos(&subdata));
