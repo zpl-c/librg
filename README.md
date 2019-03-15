@@ -43,7 +43,7 @@ Thus we hope that with this library, which is just a small step in the direction
 which gives us low-level UDP networking with optional reliability. That, accompanied by our handmade general purpose **zpl** library, high-performant network culling algorithms,
 event-based approach used for creation and management of your flow with a simple interface, gives you the tools to create a simple and yet powerful multi-player based projects.
 
-Library is oriented to work with **single-sharded** boundary-limited 2d/3d multiplayer worlds with **up to 4000 simultanous** connected clients.
+Library is oriented to work with **single-sharded** boundary-limited 2D/3D multiplayer worlds with **up to 4000 simultaneous** connected clients.
 
 ## Features
 
