@@ -2997,10 +2997,10 @@ extern "C" {
             if (c->nodes[i].unused) continue;
             librg_entity_id target = c->nodes[i].blob->id;
     #else
-        librg_entity_iteratex(ctx, LIBRG_ENTITY_ALIVE, librg_lambda(target), {
+        for (u32 target = 0; target < ctx->max_entities; ++target) {
+            if (!librg_entity_valid(ctx, target)) { continue; }
             if (target == entity) { continue; }
     #endif
-
             // iterate over pre-added controlled entities, to prevent duplications
             for (int j = 0; j < controlled_amount; ++j) {
                 if (target == (*out_entities)[j]) { continue; }
@@ -3034,9 +3034,9 @@ extern "C" {
                     zpl_array_append(*out_entities, target);
                 }
             }
-    #if defined(LIBRG_FEATURE_OCTREE_CULLER)
         }
 
+    #if defined(LIBRG_FEATURE_OCTREE_CULLER)
         if(c->spaces == NULL) return;
 
         isize spaces_count = zpl_array_count(c->spaces);
@@ -3045,8 +3045,6 @@ extern "C" {
         for (i32 i = 0; i < spaces_count; ++i) {
             librg__world_entity_query(ctx, entity, (c->spaces+i), bounds, controlled_amount, out_entities);
         }
-    #else
-        });
     #endif
     }
 
