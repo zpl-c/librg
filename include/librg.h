@@ -217,8 +217,9 @@ extern "C" {
 // !
 // =======================================================================//
 
-#define LIBRG_FEATURE_VIRTUAL_WORLDS 1      // enabled by default
-#define LIBRG_FEATURE_ENTITY_VISIBILITY 1   // enabled by default
+#define LIBRG_FEATURE_VIRTUAL_WORLDS 1      // enabled by default (define LIBRG_DISABLE_FEATURE_VIRTUAL_WORLDS before including to disable)
+#define LIBRG_FEATURE_ENTITY_VISIBILITY 1   // enabled by default (define LIBRG_DISABLE_FEATURE_ENTITY_VISIBILITY before including to disable)
+// #define LIBRG_FEATURE_OCTREE_CULLER 1    // disabled by default (define before including to enable)
 
 #if defined(LIBRG_FEATURE_VIRTUAL_WORLDS) && defined(LIBRG_DISABLE_FEATURE_VIRTUAL_WORLDS)
 #undef LIBRG_FEATURE_VIRTUAL_WORLDS
@@ -226,6 +227,10 @@ extern "C" {
 
 #if defined(LIBRG_FEATURE_ENTITY_VISIBILITY) && defined(LIBRG_DISABLE_FEATURE_ENTITY_VISIBILITY)
 #undef LIBRG_FEATURE_ENTITY_VISIBILITY
+#endif
+
+#if defined(LIBRG_FEATURE_OCTREE_CULLER) && defined(LIBRG_DISABLE_FEATURE_OCTREE_CULLER)
+#undef LIBRG_FEATURE_OCTREE_CULLER
 #endif
 
 // =======================================================================//
@@ -2956,7 +2961,10 @@ extern "C" {
         librg_assert(ctx);
 
         if (librg_is_server(ctx)) {
+            #if defined(LIBRG_FEATURE_OCTREE_CULLER)
             librg__execute_server_entity_insert(ctx); /* create the server cull tree */
+            #endif
+
             librg__execute_server_entity_update(ctx); /* create and send updates to all clients */
             librg__execute_server_entity_destroy(ctx); /* destroy queued entities */
             librg__execture_server_entity_control(ctx); /* send controll add for created entities */
@@ -2974,17 +2982,24 @@ extern "C" {
 
 
     void librg__world_entity_query(librg_ctx *ctx, librg_entity_id entity, librg_space *c, zpl_aabb3 bounds, usize controlled_amount, librg_entity_id **out_entities) {
+    #if defined(LIBRG_FEATURE_OCTREE_CULLER)
         if (c->nodes == NULL) return;
         if (!librg__space_intersects(c->dimensions, c->boundary, bounds)) return;
+    #endif
 
         b32 use_radius = librg_option_get(LIBRG_USE_RADIUS_CULLING);
         librg_entity *ent_blob = librg_entity_fetch(ctx, entity);
         librg_assert(ent_blob);
 
+    #if defined(LIBRG_FEATURE_OCTREE_CULLER)
         isize nodes_count = zpl_array_count(c->nodes);
         for (i32 i = 0; i < nodes_count; ++i) {
             if (c->nodes[i].unused) continue;
             librg_entity_id target = c->nodes[i].blob->id;
+    #else
+        librg_entity_iteratex(ctx, LIBRG_ENTITY_ALIVE, librg_lambda(target), {
+            if (target == entity) { continue; }
+    #endif
 
             // iterate over pre-added controlled entities, to prevent duplications
             for (int j = 0; j < controlled_amount; ++j) {
@@ -2992,7 +3007,11 @@ extern "C" {
             }
 
             if (librg_entity_valid(ctx, target)) {
+                #if defined(LIBRG_FEATURE_OCTREE_CULLER)
                 librg_entity *blob = c->nodes[i].blob;
+                #else
+                librg_entity *blob = librg_entity_fetch(ctx, target);
+                #endif
 
                 b32 inside = false; if (!use_radius) {
                     inside = librg__space_contains(c->dimensions, bounds, blob->position.e);
@@ -3015,6 +3034,7 @@ extern "C" {
                     zpl_array_append(*out_entities, target);
                 }
             }
+    #if defined(LIBRG_FEATURE_OCTREE_CULLER)
         }
 
         if(c->spaces == NULL) return;
@@ -3025,6 +3045,9 @@ extern "C" {
         for (i32 i = 0; i < spaces_count; ++i) {
             librg__world_entity_query(ctx, entity, (c->spaces+i), bounds, controlled_amount, out_entities);
         }
+    #else
+        });
+    #endif
     }
 
     b32 librg__world_entity_destroy(librg_ctx *ctx, librg_entity_id id) {

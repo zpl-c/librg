@@ -109,7 +109,7 @@ void on_connect_refused(librg_event *event) {
 }
 
 void on_entity_create(librg_event *event) {
-    switch (librg_entityype(event->ctx, event->entity->id)) {
+    switch (librg_entity_type(event->ctx, event->entity->id)) {
         case DEMO_TYPE_PLAYER:
         case DEMO_TYPE_NPC: {
             event->entity->user_data = zpl_malloc(sizeof(hero_t));
@@ -177,10 +177,10 @@ void render_entity(librg_ctx *ctx, librg_entity *blob) {
     if (entity == player) {
         SDL_SetRenderDrawColor( sdl_renderer, 150, 250, 150, 255 );
     }
-    else if (librg_entityype(ctx, entity) == DEMO_TYPE_NPC) {
+    else if (librg_entity_type(ctx, entity) == DEMO_TYPE_NPC) {
         SDL_SetRenderDrawColor( sdl_renderer, 150, 25, 25, 255 );
     }
-    else if (librg_entityype(ctx, entity) == DEMO_TYPE_NPC) {
+    else if (librg_entity_type(ctx, entity) == DEMO_TYPE_NPC) {
         SDL_SetRenderDrawColor( sdl_renderer, 25, 25, 150, 255 );
     }
     else {
