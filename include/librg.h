@@ -18,10 +18,6 @@
  * For the demo:
  * sdl2.h
  *
- * TODO:
- *     find a nice way to decrease size on client for peer struct
- *     make zak remember stuff about bistram safety
- *
  * Version History:
  * 4.1.1
  * - Added compile-time 'features':
@@ -34,6 +30,9 @@
  *     will now distinct between old and new controllers, and messages still coming
  *     from old control generation will be rejected in favor of new ones.
  * - Added guard to minimum sized packet in receive for both sides
+ * - Added sperical culler handler, and ability to do runtime switch
+ * - Streamed entities are now gonna be always returned in query for controlling peer
+ * - Fixed issue with host setting on the server side
  * - Fixed nullptr crash on empty host string for client on connect
  * - Removed experimental multithreading code
  *
@@ -91,7 +90,9 @@
  * 2.0.0 - Initial C version rewrite
  *
  * Things TODO:
- * v3.3.0?
+ *     find a nice way to decrease size on client for peer struct
+ *     try to remember stuff about bistram safety
+ *     fix disconnection code issues
  * - Add method to check if entity is in stream of other entity
  * - Add DEBUG packet size validation (FEATURE)
  * - refactoring librg_table (FEATURE)
@@ -2608,7 +2609,7 @@ extern "C" {
                 librg_entity *eblob  = librg_entity_fetch(ctx, entity);
 
                 // write create
-                if (!existed_in_last) {
+                if (entity != player && !existed_in_last) {
                     updated_entities--;
 
                     // skip entity create if this is player's entity

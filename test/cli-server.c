@@ -34,7 +34,6 @@ void on_entity_create(librg_event *event) {
 }
 
 void on_entity_update(librg_event *event) {
-
 }
 
 void measure(void *userptr) {
@@ -84,7 +83,7 @@ int main() {
 
     librg_network_start(&ctx, (librg_address) { .port = 7779 });
 
-    for (isize i = 0; i < 10000; i++) {
+    for (isize i = 0; i < 1000; i++) {
         librg_entity *enemy = librg_entity_create(&ctx, 0);
 
         //librg_attach_foo(&ctx, enemy, NULL);
