@@ -1772,10 +1772,10 @@ extern "C" {
 
     void librg_network_start(librg_ctx *ctx, librg_address addr) {
         librg_dbg("[dbg] librg_network_start\n");
+        librg_table_init(&ctx->network.connected_peers, ctx->allocator);
 
+        ENetAddress address = {0};
         if (librg_is_server(ctx)) {
-            librg_table_init(&ctx->network.connected_peers, ctx->allocator);
-            ENetAddress address = {0};
 
             if (addr.host && zpl_strcmp(addr.host, "localhost") != 0) {
                 enet_address_set_host(&address, addr.host);
@@ -1790,7 +1790,6 @@ extern "C" {
             librg_assert_msg(ctx->network.host, "could not start server at provided port");
         }
         else {
-            ENetAddress address = {0};
             const char *ipv6lclhst = "::1";
 
             if (!addr.host || zpl_strcmp(addr.host, "localhost") == 0) {
@@ -2220,7 +2219,6 @@ extern "C" {
     /* Execution side: CLIENT */
     LIBRG_INTERNAL void librg__callback_connection_accept(librg_message *msg) {
         librg_dbg("[dbg] librg__connection_accept\n");
-        librg_table_init(&msg->ctx->network.connected_peers, msg->ctx->allocator);
 
         f32 server_delay = librg_data_rf32(msg->data);
         f64 client_diff  = (zpl_time_now() - librg_data_rf64(msg->data)) / 2.0;
