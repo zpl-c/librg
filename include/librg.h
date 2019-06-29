@@ -2007,7 +2007,7 @@ extern "C" {
     }
 
     void librg__timesync_stop(librg_ctx *ctx) {
-        if (librg_is_client(ctx)) {
+        if (librg_is_client(ctx) && ctx->timesync.timer && ctx->timesync.timer->enabled) {
             zpl_timer_stop(ctx->timesync.timer);
         }
     }
@@ -2032,6 +2032,7 @@ extern "C" {
 
     void librg__buffer_free(librg_ctx *ctx) {
         if (librg_is_server(ctx)) return;
+        if (!ctx->buffer_timer || !ctx->buffer_timer->enabled) return;
         zpl_timer_stop(ctx->buffer_timer);
 
         for (isize i = 0; i < ctx->buffer.capacity; ++i) {
