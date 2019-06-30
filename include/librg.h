@@ -504,6 +504,7 @@ typedef struct librg_event {
 
     u64 flags;  /* flags for that event */
     void *user_data; /* optional: user information */
+    u16 type;
 } librg_event;
 
 /**
@@ -669,6 +670,7 @@ typedef struct librg_message {
     librg_packet *packet;
 
     void *user_data; /* optional: user information */
+    u16 type;
 } librg_message;
 
 /**
