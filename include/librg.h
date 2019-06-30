@@ -496,6 +496,7 @@ enum librg_event_flags {
 };
 
 typedef struct librg_event {
+    u32 id; /* librg event id, that is being triggered */
     struct librg_ctx *ctx;   /* librg context where event has been called */
     struct librg_data *data;  /* optional: data is used for built-in events */
     struct librg_entity *entity; /* optional: entity is used for built-in events */
@@ -504,7 +505,6 @@ typedef struct librg_event {
 
     u64 flags;  /* flags for that event */
     void *user_data; /* optional: user information */
-    u16 type;
 } librg_event;
 
 /**
@@ -663,6 +663,7 @@ LIBRG_GEN_DATA_READWRITE(b32);
  * and injected to each incoming message
  */
 typedef struct librg_message {
+    u32 id;
     struct librg_ctx  *ctx;
     struct librg_data *data;
 
@@ -670,7 +671,6 @@ typedef struct librg_message {
     librg_packet *packet;
 
     void *user_data; /* optional: user information */
-    u16 type;
 } librg_message;
 
 /**
@@ -1265,6 +1265,8 @@ extern "C" {
                     librg_message_id id = librg_data_rmid(&data);
                     f64 server_time = 0;
 
+                    msg.id = id;
+
                     if (id == LIBRG_ENTITY_UPDATE) {
                         server_time = librg_data_rf64(&data);
                         // librg_log("server_time: %f, client_predicted: %f, diff: %f\n", server_time, librg_time_now(ctx), librg_time_now(ctx) - server_time);
@@ -1487,6 +1489,7 @@ extern "C" {
         librg_message *msg = (librg_message *)zpl_alloc(ctx->allocator, sizeof(librg_message)); {
             librg_message_id id = LIBRG_CLIENT_STREAMER_ADD;
 
+            msg->id     = id;
             msg->peer   = peer;
             msg->packet = enet_packet_create_offset(
                 &entity, sizeof(librg_entity_id), sizeof(librg_message_id), ENET_PACKET_FLAG_RELIABLE
@@ -1562,7 +1565,11 @@ extern "C" {
     }
 
     void librg_event_trigger(librg_ctx *ctx, u64 id, librg_event *event) {
-        librg_assert(event); event->ctx = ctx;
+        librg_assert(event);
+
+        event->id = id;
+        event->ctx = ctx;
+
         librg_event_block *block = librg_event_pool_get(&ctx->events, id);
         if (!block) return;
 
@@ -2083,6 +2090,7 @@ extern "C" {
         librg_data_set_rpos(&data, sizeof(librg_message_id) + sizeof(f64));
 
         librg_message msg = {0}; {
+            msg.id      = LIBRG_ENTITY_UPDATE;
             msg.ctx     = ctx;
             msg.data    = &data;
             msg.peer    = snap->peer;
