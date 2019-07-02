@@ -299,7 +299,9 @@ int main(int argc, char *argv[]) {
     librg_event_add(&ctx, LIBRG_ENTITY_REMOVE, on_entity_remove);
     librg_event_add(&ctx, LIBRG_CLIENT_STREAMER_UPDATE, on_client_entity_update);
 
-    librg_network_start(&ctx, (librg_address_t) { .host = "localhost", .port = 7777 });
+    librg_message_send_all(&ctx, 42, NULL, 0);
+
+    // librg_network_start(&ctx, (librg_address_t) { .host = "localhost", .port = 7777 });
 
     bool loop = true;
 

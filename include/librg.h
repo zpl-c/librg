@@ -19,6 +19,9 @@
  * sdl2.h
  *
  * Version History:
+ * 4.1.2
+ * - Added connection check to message send
+ *
  * 4.1.1
  * - Added compile-time 'features':
  *     - Ability to enable/disable some librg compile-time features
@@ -128,7 +131,7 @@
 
 #define LIBRG_VERSION_MAJOR 4
 #define LIBRG_VERSION_MINOR 1
-#define LIBRG_VERSION_PATCH 1
+#define LIBRG_VERSION_PATCH 2
 #define LIBRG_VERSION_CREATE(major, minor, patch) (((major)<<16) | ((minor)<<8) | (patch))
 #define LIBRG_VERSION_GET_MAJOR(version) (((version)>>16)&0xFF)
 #define LIBRG_VERSION_GET_MINOR(version) (((version)>>8)&0xFF)
@@ -756,8 +759,8 @@ LIBRG_API void librg_message_send_instream_except (struct librg_ctx *ctx, librg_
  *     if reliable is 1 (true) - message will be sent using reliable methods, else using unreliable
  */
 
-LIBRG_API void librg_message_sendex               (struct librg_ctx *ctx, librg_message_id id, librg_peer *target, librg_peer *except, u16 channel, b8 reliable, void *data, usize size);
-LIBRG_API void librg_message_sendex_instream      (struct librg_ctx *ctx, librg_message_id id, librg_entity_id entity_id, librg_peer *except, u16 channel, b8 reliable, void *data, usize size);
+LIBRG_API b32 librg_message_sendex               (struct librg_ctx *ctx, librg_message_id id, librg_peer *target, librg_peer *except, u16 channel, b8 reliable, void *data, usize size);
+LIBRG_API b32 librg_message_sendex_instream      (struct librg_ctx *ctx, librg_message_id id, librg_entity_id entity_id, librg_peer *except, u16 channel, b8 reliable, void *data, usize size);
 
 // =======================================================================//
 // !
@@ -1900,7 +1903,9 @@ extern "C" {
         ctx->messages[id] = NULL;
     }
 
-    void librg_message_sendex(struct librg_ctx *ctx, librg_message_id id, librg_peer *target, librg_peer *except, u16 channel, b8 reliable, void *data, usize size) {
+    b32 librg_message_sendex(struct librg_ctx *ctx, librg_message_id id, librg_peer *target, librg_peer *except, u16 channel, b8 reliable, void *data, usize size) {
+        if (!librg_is_connected(ctx)) { return false; }
+
         librg_packet *packet = enet_packet_create_offset(
             data, size, sizeof(librg_message_id), reliable ? ENET_PACKET_FLAG_RELIABLE : 0
         );
@@ -1932,9 +1937,13 @@ extern "C" {
         if (packet->referenceCount == 0) {
             enet_packet_destroy(packet);
         }
+
+        return true;
     }
 
-    void librg_message_sendex_instream(struct librg_ctx *ctx, librg_message_id id, librg_entity_id entity_id, librg_peer *except, u16 channel, b8 reliable, void *data, usize size) {
+    b32 librg_message_sendex_instream(struct librg_ctx *ctx, librg_message_id id, librg_entity_id entity_id, librg_peer *except, u16 channel, b8 reliable, void *data, usize size) {
+        if (!librg_is_connected(ctx)) { return false; }
+
         librg_packet *packet = enet_packet_create_offset(
             data, size, sizeof(librg_message_id), reliable ? ENET_PACKET_FLAG_RELIABLE : 0
         );
@@ -1965,6 +1974,8 @@ extern "C" {
         if (packet->referenceCount == 0) {
             enet_packet_destroy(packet);
         }
+
+        return true;
     }
 
     librg_inline void librg_message_send_all(librg_ctx *ctx, librg_message_id id, void *data, usize size) {
