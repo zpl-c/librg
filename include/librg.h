@@ -24,14 +24,16 @@
  *     - Ability to enable/disable some librg compile-time features
  *     - Entity igore tables are now optional, and can be disabled
  *     - Implmented simple optional Virtual world feature for entities
+ *     - Implemented a feature to enable/disable octree culler (falls back to linear check)
  *     - Multiple features can be combined
  * - Added 'generation' to entity control lists:
  *     Setting, removing and setting control to the same entity again with same owner
  *     will now distinct between old and new controllers, and messages still coming
  *     from old control generation will be rejected in favor of new ones.
  * - Added guard to minimum sized packet in receive for both sides
- * - Added sperical culler handler, and ability to do runtime switch
- * - Streamed entities are now gonna be always returned in query for controlling peer
+ * - Added spherical culler handler, and ability to do runtime switch (LIBRG_USE_RADIUS_CULLING)
+ * - Added return codes to some functions @markatk
+ * - Streamed entities are now going to be always returned in query for controlling peer
  * - Fixed issue with host setting on the server side
  * - Fixed nullptr crash on empty host string for client on connect
  * - Removed experimental multithreading code
@@ -219,7 +221,7 @@ extern "C" {
 
 #define LIBRG_FEATURE_VIRTUAL_WORLDS 1      // enabled by default (define LIBRG_DISABLE_FEATURE_VIRTUAL_WORLDS before including to disable)
 #define LIBRG_FEATURE_ENTITY_VISIBILITY 1   // enabled by default (define LIBRG_DISABLE_FEATURE_ENTITY_VISIBILITY before including to disable)
-// #define LIBRG_FEATURE_OCTREE_CULLER 1    // disabled by default (define before including to enable)
+#define LIBRG_FEATURE_OCTREE_CULLER 1    // disabled by default (define LIBRG_DISABLE_FEATURE_OCTREE_CULLER before including to disable)
 
 #if defined(LIBRG_FEATURE_VIRTUAL_WORLDS) && defined(LIBRG_DISABLE_FEATURE_VIRTUAL_WORLDS)
 #undef LIBRG_FEATURE_VIRTUAL_WORLDS
