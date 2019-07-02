@@ -2457,8 +2457,8 @@ extern "C" {
             librg_data_read_safe(f32, y, msg->data);
             librg_data_read_safe(f32, z, msg->data);
 
-            if (librg_data_capacity(msg->data) < librg_data_get_rpos(msg->data) + size ||
-                librg_data_capacity(msg->data) < librg_data_get_rpos(msg->data) + sizeof(zpl_vec3)) {
+
+            if (librg_data_capacity(msg->data) < librg_data_get_rpos(msg->data) + size) {
                 librg_dbg("[dbg] invalid packet size on client streamer update\n");
                 return;
             }
