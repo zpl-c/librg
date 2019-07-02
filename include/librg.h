@@ -283,7 +283,7 @@ LIBRG_API void librg_release_ptr(void *ptr);
  * Main initialization method
  * MUST BE called in the begging of your application
  */
-LIBRG_API void librg_init(struct librg_ctx *ctx);
+LIBRG_API u32 librg_init(struct librg_ctx *ctx);
 /**
  * Should be called at the end of
  * execution of the program
@@ -606,13 +606,13 @@ LIBRG_API void  librg_data_set_wpos(struct librg_data *data, usize position);
 /**
  * Read and write methods for custom sized data
  */
-LIBRG_API void librg_data_rptr(struct librg_data *data, void *ptr, usize size);
+LIBRG_API b32 librg_data_rptr(struct librg_data *data, void *ptr, usize size);
 LIBRG_API void librg_data_wptr(struct librg_data *data, void *ptr, usize size);
 /**
  * Read and write methods for custom sized data
  * at particular position in memory
  */
-LIBRG_API void librg_data_rptr_at(struct librg_data *data, void *ptr, usize size, isize position);
+LIBRG_API b32 librg_data_rptr_at(struct librg_data *data, void *ptr, usize size, isize position);
 LIBRG_API void librg_data_wptr_at(struct librg_data *data, void *ptr, usize size, isize position);
 /**
  * A helprer macro for onliner methods
@@ -695,7 +695,7 @@ LIBRG_API b32 librg_is_client(struct librg_ctx *ctx);
  * For server mode - starts server
  * For client mode - starts client, and connects to provided host & port
  */
-LIBRG_API void librg_network_start(struct librg_ctx *ctx, librg_address address);
+LIBRG_API u32 librg_network_start(struct librg_ctx *ctx, librg_address address);
 /**
  * Disconnects (if connected), stops network
  * and releases resources
@@ -1108,7 +1108,7 @@ extern "C" {
         zpl_mfree(ptr);
     }
 
-    void librg_init(librg_ctx *ctx) {
+    u32 librg_init(librg_ctx *ctx) {
         librg_dbg("[dbg] librg_init\n");
 
         #define librg_set_default(expr, value) if (!expr) expr = value
@@ -1182,6 +1182,9 @@ extern "C" {
         // network
         u8 enet_init = enet_initialize();
         librg_assert_msg(enet_init == 0, "cannot initialize enet");
+        if (enet_init != 0) {
+            return -1;
+        }
 
         // add event handlers for our network stufz
         ctx->messages[LIBRG_CONNECTION_INIT]        = librg__callback_connection_init;
@@ -1195,6 +1198,8 @@ extern "C" {
         ctx->messages[LIBRG_CLIENT_STREAMER_ADD]    = librg__callback_entity_client_streamer_add;
         ctx->messages[LIBRG_CLIENT_STREAMER_REMOVE] = librg__callback_entity_client_streamer_remove;
         ctx->messages[LIBRG_CLIENT_STREAMER_UPDATE] = librg__callback_entity_client_streamer_update;
+
+        return 0;
     }
 
     void librg_free(librg_ctx *ctx) {
@@ -1309,6 +1314,9 @@ extern "C" {
         librg_assert(ctx);
         librg_assert(librg_is_server(ctx));
         librg_assert_msg(ctx->entity.count < ctx->max_entities, "reached max_entities limit");
+        if (ctx->entity.count >= ctx->max_entities) {
+            return NULL;
+        }
 
         ++ctx->entity.count;
 
@@ -1677,13 +1685,18 @@ extern "C" {
         librg_assert(data); data->write_pos = position;
     }
 
-    void librg_data_rptr_at(librg_data *data, void *ptr, usize size, isize position) {
+    b32 librg_data_rptr_at(librg_data *data, void *ptr, usize size, isize position) {
         librg_assert(data && data->rawptr && ptr);
 
         librg_assert_msg(position + size <= librg_data_capacity(data),
             "librg_data: trying to read from outside of the bounds");
+        if (position + size > librg_data_capacity(data)) {
+            return false;
+        }
 
         zpl_memcopy(ptr, (char *)data->rawptr + position, size);
+
+        return true;
     }
 
     void librg_data_wptr_at(librg_data *data, void *ptr, usize size, isize position) {
@@ -1696,10 +1709,15 @@ extern "C" {
         zpl_memcopy((char *)data->rawptr + position, ptr, size);
     }
 
-    void librg_data_rptr(librg_data *data, void *ptr, usize size) {
+    b32 librg_data_rptr(librg_data *data, void *ptr, usize size) {
         librg_assert(data && data->rawptr && ptr);
-        librg_data_rptr_at(data, ptr, size, librg_data_get_rpos(data));
+        if (!librg_data_rptr_at(data, ptr, size, librg_data_get_rpos(data))) {
+            return false;
+        }
+
         data->read_pos += size;
+
+        return true;
     }
 
     void librg_data_wptr(librg_data *data, void *ptr, usize size) {
@@ -1779,9 +1797,8 @@ extern "C" {
         return ctx->mode == LIBRG_MODE_CLIENT;
     }
 
-    void librg_network_start(librg_ctx *ctx, librg_address addr) {
+    u32 librg_network_start(librg_ctx *ctx, librg_address addr) {
         librg_dbg("[dbg] librg_network_start\n");
-        librg_table_init(&ctx->network.connected_peers, ctx->allocator);
 
         ENetAddress address = {0};
         if (librg_is_server(ctx)) {
@@ -1797,6 +1814,9 @@ extern "C" {
             // setup server host
             ctx->network.host = enet_host_create(&address, ctx->max_connections, librg_option_get(LIBRG_NETWORK_CHANNELS), 0, 0);
             librg_assert_msg(ctx->network.host, "could not start server at provided port");
+            if (!ctx->network.host) {
+                return -1;
+            }
         }
         else {
             const char *ipv6lclhst = "::1";
@@ -1812,14 +1832,22 @@ extern "C" {
             // TODO: add override for bandwidth
             ctx->network.host = enet_host_create(NULL, 1, librg_option_get(LIBRG_NETWORK_CHANNELS), 0, 0);
             librg_assert_msg(ctx->network.host, "could not start client");
+            if (!ctx->network.host) {
+                return -1;
+            }
 
             // create peer connecting to server
             librg_dbg("[dbg] connecting to server %s:%u\n", addr.host, addr.port);
             ctx->network.peer = enet_host_connect(ctx->network.host, &address, librg_option_get(LIBRG_NETWORK_CHANNELS), 0);
             librg_assert_msg(ctx->network.peer, "could not setup peer for provided address");
+            if (!ctx->network.peer) {
+                return -2;
+            }
         }
 
         ctx->network.last_address = addr;
+
+        return 0;
     }
 
     void librg_network_stop(librg_ctx *ctx) {
