@@ -128,7 +128,7 @@
 
 #define LIBRG_VERSION_MAJOR 4
 #define LIBRG_VERSION_MINOR 1
-#define LIBRG_VERSION_PATCH 0
+#define LIBRG_VERSION_PATCH 1
 #define LIBRG_VERSION_CREATE(major, minor, patch) (((major)<<16) | ((minor)<<8) | (patch))
 #define LIBRG_VERSION_GET_MAJOR(version) (((version)>>16)&0xFF)
 #define LIBRG_VERSION_GET_MINOR(version) (((version)>>8)&0xFF)
