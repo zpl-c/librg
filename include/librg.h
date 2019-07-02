@@ -1799,6 +1799,7 @@ extern "C" {
 
     u32 librg_network_start(librg_ctx *ctx, librg_address addr) {
         librg_dbg("[dbg] librg_network_start\n");
+        librg_table_init(&ctx->network.connected_peers, ctx->allocator);
 
         ENetAddress address = {0};
         if (librg_is_server(ctx)) {

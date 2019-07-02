@@ -288,7 +288,7 @@ int main(int argc, char *argv[]) {
     ctx.world_size      = zpl_vec3f(50000.0f, 50000.0f, 0.f);
     ctx.max_entities    = 16000;
 
-    librg_option_set(LIBRG_NETWORK_BUFFER_SIZE, 2);
+    // librg_option_set(LIBRG_NETWORK_BUFFER_SIZE, 2);
     librg_init(&ctx);
 
     librg_event_add(&ctx, LIBRG_CONNECTION_REQUEST, on_connect_request);
@@ -300,6 +300,7 @@ int main(int argc, char *argv[]) {
     librg_event_add(&ctx, LIBRG_CLIENT_STREAMER_UPDATE, on_client_entity_update);
 
     librg_network_start(&ctx, (librg_address_t) { .host = "localhost", .port = 7777 });
+    enet_peer_timeout(ctx.network.peer, 10, 5000, 10000);
 
     bool loop = true;
 
