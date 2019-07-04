@@ -1863,28 +1863,21 @@ extern "C" {
 
     void librg_network_stop(librg_ctx *ctx) {
         librg_dbg("[dbg] librg_network_stop\n");
+        ENetEvent event;
 
         if (!ctx->network.created) {
             return;
         }
 
-        // disconnect and emit event
-        if (ctx->network.peer) {
-            enet_peer_disconnect_now(ctx->network.peer, 0);
-            enet_peer_reset(ctx->network.peer);
-        }
-
-        ENetEvent event;
-        enet_host_service(ctx->network.host, &event, 100);
-
         if (librg_is_server(ctx)) {
             /* disconnect all users */
             for (librg_peer *currentPeer = ctx->network.host->peers; currentPeer < &ctx->network.host->peers[ctx->network.host->peerCount]; ++currentPeer) {
                 if (currentPeer->state != ENET_PEER_STATE_CONNECTED) continue;
-                enet_peer_disconnect_now(currentPeer, 0);
+                enet_peer_disconnect(currentPeer, 0);
             }
 
             librg_table_destroy(&ctx->network.connected_peers);
+            enet_host_service(ctx->network.host, &event, 100);
 
             // destroy all server entities that are currently created
             for (usize i = 0; i < ctx->max_entities; ++i) {
@@ -1898,7 +1891,8 @@ extern "C" {
                     librg__world_entity_destroy(ctx, i);
                 }
             }
-        } else {
+        }
+        else if (librg_is_client(ctx)) {
             librg_message msg = {0}; {
                 msg.ctx = ctx;
                 msg.peer = ctx->network.peer;
@@ -1906,6 +1900,10 @@ extern "C" {
 
             /* simulate a diconnect message */
             librg__callback_connection_disconnect(&msg);
+
+            enet_peer_disconnect(ctx->network.peer, 0);
+            enet_host_service(ctx->network.host, &event, 100);
+            enet_peer_reset(ctx->network.peer);
         }
 
         ctx->network.created = false;
