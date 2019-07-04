@@ -418,7 +418,6 @@ LIBRG_API void librg_entity_iterate(struct librg_ctx *ctx, u64 flags, librg_enti
 
 /**
  * Return entity type
- * @deprecated
  */
 LIBRG_API u32 librg_entity_type(struct librg_ctx *ctx, librg_entity_id entity_id);
 
@@ -477,6 +476,7 @@ enum librg_events {
     LIBRG_CONNECTION_REFUSE,
     LIBRG_CONNECTION_ACCEPT,
     LIBRG_CONNECTION_DISCONNECT,
+    LIBRG_CONNECTION_TIMEOUT,
     LIBRG_CONNECTION_TIMESYNC,
 
     LIBRG_ENTITY_CREATE,
@@ -883,6 +883,7 @@ typedef struct librg_ctx {
         librg_host *host;
         librg_table connected_peers;
         librg_address last_address;
+        b32 created;
     } network;
 
     struct {
@@ -1298,7 +1299,10 @@ extern "C" {
                 } break;
                 case ENET_EVENT_TYPE_CONNECT:    ctx->messages[LIBRG_CONNECTION_INIT](&msg); break;
                 case ENET_EVENT_TYPE_DISCONNECT: ctx->messages[LIBRG_CONNECTION_DISCONNECT](&msg); break;
-                case ENET_EVENT_TYPE_DISCONNECT_TIMEOUT: ctx->messages[LIBRG_CONNECTION_DISCONNECT](&msg); break;
+                case ENET_EVENT_TYPE_DISCONNECT_TIMEOUT: {
+                    msg.user_data = (void *)1; /* mark the timeout */
+                    ctx->messages[LIBRG_CONNECTION_DISCONNECT](&msg);
+                } break;
                 case ENET_EVENT_TYPE_NONE: break;
             }
         }
@@ -1408,7 +1412,6 @@ extern "C" {
         librg_entity_iteratex(ctx, flags, librg_lambda(entity), { callback(ctx, librg_entity_fetch(ctx, entity)); });
     }
 
-    // @deprected
     u32 librg_entity_type(librg_ctx *ctx, librg_entity_id id) {
         librg_assert(librg_entity_valid(ctx, id));
         return ctx->entity.list[id].type;
@@ -1801,7 +1804,6 @@ extern "C" {
 
     u32 librg_network_start(librg_ctx *ctx, librg_address addr) {
         librg_dbg("[dbg] librg_network_start\n");
-        librg_table_init(&ctx->network.connected_peers, ctx->allocator);
 
         ENetAddress address = {0};
         if (librg_is_server(ctx)) {
@@ -1848,7 +1850,12 @@ extern "C" {
             }
         }
 
+        if (librg_is_server(ctx)) {
+            librg_table_init(&ctx->network.connected_peers, ctx->allocator);
+        }
+
         ctx->network.last_address = addr;
+        ctx->network.created = true;
 
         return 0;
     }
@@ -1856,36 +1863,51 @@ extern "C" {
     void librg_network_stop(librg_ctx *ctx) {
         librg_dbg("[dbg] librg_network_stop\n");
 
+        if (!ctx->network.created) {
+            return;
+        }
+
+        // disconnect and emit event
         if (ctx->network.peer) {
-            ENetEvent event;
-
-            // disconnect and emit event
-            enet_peer_disconnect(ctx->network.peer, 0);
-            enet_host_service(ctx->network.host, &event, 100);
-
-            // reset our peer
             enet_peer_reset(ctx->network.peer);
+            enet_peer_disconnect(ctx->network.peer, 0);
         }
 
-        // destroy all the entities that are currently created
-        for (usize i = 0; i < ctx->max_entities; ++i) {
-            if (librg_entity_valid(ctx, i)) {
-                librg_event event = {0}; {
-                    event.entity = librg_entity_fetch(ctx, i);
-                    event.flags  = LIBRG_EVENT_LOCAL;
-                }
-
-                // skip local client entity
-                if (event.entity->flags & LIBRG_ENTITY_CLIENT) continue;
-
-                librg_event_trigger(ctx, LIBRG_ENTITY_REMOVE, &event);
-                librg__world_entity_destroy(ctx, i);
-            }
-        }
+        ENetEvent event;
+        enet_host_service(ctx->network.host, &event, 100);
 
         if (librg_is_server(ctx)) {
+            /* disconnect all users */
+            for (librg_peer *currentPeer = ctx->network.host->peers; currentPeer < &ctx->network.host->peers[ctx->network.host->peerCount]; ++currentPeer) {
+                if (currentPeer->state != ENET_PEER_STATE_CONNECTED) continue;
+                enet_peer_disconnect_now(currentPeer, 0);
+            }
+
             librg_table_destroy(&ctx->network.connected_peers);
+
+            // destroy all server entities that are currently created
+            for (usize i = 0; i < ctx->max_entities; ++i) {
+                if (librg_entity_valid(ctx, i)) {
+                    librg_event event = {0}; {
+                        event.entity = librg_entity_fetch(ctx, i);
+                        event.flags  = LIBRG_EVENT_LOCAL;
+                    }
+
+                    librg_event_trigger(ctx, LIBRG_ENTITY_REMOVE, &event);
+                    librg__world_entity_destroy(ctx, i);
+                }
+            }
+        } else {
+            librg_message msg = {0}; {
+                msg.ctx = ctx;
+                msg.peer = ctx->network.peer;
+            };
+
+            /* simulate a diconnect message */
+            librg__callback_connection_disconnect(&msg);
         }
+
+        ctx->network.created = false;
     }
 
     void librg_network_kick(librg_ctx *ctx, librg_peer *peer) {
@@ -2230,22 +2252,22 @@ extern "C" {
                 librg_data_wf64(&data, client_time);
                 librg_data_wf64(&data, zpl_time_now());
                 librg_data_went(&data, entity->id);
+
+                event.data   = &data;
+                event.entity = entity;
+                event.flags  = LIBRG_EVENT_LOCAL;
+
+                librg_event_trigger(msg->ctx, LIBRG_CONNECTION_ACCEPT, &event);
             });
-
-            event.data   = NULL;
-            event.entity = entity;
-            event.flags  = LIBRG_EVENT_LOCAL;
-
-            librg_event_trigger(msg->ctx, LIBRG_CONNECTION_ACCEPT, &event);
         }
         else {
             librg_dbg("[dbg] librg__connection_refuse\n");
-            librg_message_send_to(msg->ctx, LIBRG_CONNECTION_REFUSE, msg->peer, NULL, 0);
+            librg_send_to(msg->ctx, LIBRG_CONNECTION_REFUSE, msg->peer, librg_lambda(data), {
+                event.data   = &data;
+                event.flags  = LIBRG_EVENT_LOCAL;
 
-            event.data   = NULL;
-            event.flags  = LIBRG_EVENT_LOCAL;
-
-            librg_event_trigger(msg->ctx, LIBRG_CONNECTION_REFUSE, &event);
+                librg_event_trigger(msg->ctx, LIBRG_CONNECTION_REFUSE, &event);
+            });
         }
 
         #undef _LIBRG_METHOD
@@ -2276,6 +2298,7 @@ extern "C" {
         blob->position  = zpl_vec3f_zero();
 
         // add server peer to storage
+        librg_table_init(&msg->ctx->network.connected_peers, msg->ctx->allocator);
         librg_table_set(&msg->ctx->network.connected_peers, cast(u64)msg->peer, entity);
 
         // trigger damn events!
@@ -2294,45 +2317,75 @@ extern "C" {
 
     /* Execution side: SHARED */
     LIBRG_INTERNAL void librg__callback_connection_disconnect(librg_message *msg) {
-        librg_dbg("[dbg] librg__connection_disconnect\n");
+        librg_dbg("[dbg] librg__connection_disconnect; is timeout: %d\n", (int)msg->user_data);
 
-        if (!msg->ctx->network.connected_peers.hashes) {
+        /* we were connected, and now are disconnected */
+        if (librg_is_client(msg->ctx) && librg_is_connected(msg->ctx)) {
+            librg_entity_id *local = librg_table_get(&msg->ctx->network.connected_peers, cast(u64)msg->peer);
+
+            for (usize i = 0; i < msg->ctx->max_entities; ++i) {
+                if (!librg_entity_valid(msg->ctx, i)) continue;
+
+                /* skip our local entity from being inlcuded */
+                if (local && *local == i) continue;
+
+                librg_event event = {0}; {
+                    event.entity = librg_entity_fetch(msg->ctx, i);
+                    event.flags  = LIBRG_EVENT_LOCAL;
+                };
+
+                librg_event_trigger(msg->ctx, LIBRG_ENTITY_REMOVE, &event);
+                librg__world_entity_destroy(msg->ctx, i);
+            }
+
             librg_event event = {0}; {
+                event.ctx       = msg->ctx;
                 event.peer      = msg->peer;
                 event.data      = NULL;
                 event.entity    = NULL;
                 event.flags     = (LIBRG_EVENT_REJECTABLE);
-            }
+            };
 
-            librg_event_trigger(msg->ctx, LIBRG_CONNECTION_DISCONNECT, &event);
-            return;
-        }
-
-        librg_entity_id *entity = librg_table_get(&msg->ctx->network.connected_peers, cast(u64)msg->peer);
-        if (entity && librg_entity_valid(msg->ctx, *entity)) {
-            librg_entity *blob = librg_entity_fetch(msg->ctx, *entity);
-            librg_event event = {0}; {
-                event.peer      = msg->peer;
-                event.data      = msg->data;
-                event.entity    = blob;
-                event.flags     = (LIBRG_EVENT_REJECTABLE | LIBRG_EVENT_REMOTE);
+            if (msg->user_data) {
+                librg_event_trigger(msg->ctx, LIBRG_CONNECTION_TIMEOUT, &event);
             }
 
             librg_event_trigger(msg->ctx, LIBRG_CONNECTION_DISCONNECT, &event);
 
-            if (librg_is_server(msg->ctx)) {
-                librg_entity_destroy(msg->ctx, *entity);
-            } else {
-                librg__world_entity_destroy(msg->ctx, *entity);
-            }
-        }
-
-        if (librg_is_client(msg->ctx)) {
             librg_table_destroy(&msg->ctx->network.connected_peers);
             librg__timesync_stop(msg->ctx);
 
             if (librg_option_get(LIBRG_NETWORK_BUFFER_SIZE) > 1) {
                 librg__buffer_free(msg->ctx);
+            }
+        }
+        /* we were NOT connected, and now are disconnected */
+        else if (librg_is_client(msg->ctx) && !librg_is_connected(msg->ctx)) {
+            librg_event event = {0}; {
+                event.ctx       = msg->ctx;
+                event.peer      = NULL;
+                event.data      = NULL;
+                event.entity    = NULL;
+                event.flags     = (LIBRG_EVENT_REJECTABLE);
+            };
+
+            librg_event_trigger(msg->ctx, LIBRG_CONNECTION_TIMEOUT, &event);
+        }
+        /* someone was connected, and now is disconnected */
+        else if (librg_is_server(msg->ctx)) {
+            librg_entity_id *entity = librg_table_get(&msg->ctx->network.connected_peers, cast(u64)msg->peer);
+
+            if (entity && librg_entity_valid(msg->ctx, *entity)) {
+                librg_entity *blob = librg_entity_fetch(msg->ctx, *entity);
+                librg_event event = {0}; {
+                    event.peer      = msg->peer;
+                    event.data      = msg->data;
+                    event.entity    = blob;
+                    event.flags     = (LIBRG_EVENT_REJECTABLE | LIBRG_EVENT_REMOTE);
+                }
+
+                librg_event_trigger(msg->ctx, LIBRG_CONNECTION_DISCONNECT, &event);
+                librg_entity_destroy(msg->ctx, *entity);
             }
         }
     }
