@@ -39,7 +39,7 @@ int main(int argc, char **argv) {
     librg_event_add(&ctx, LIBRG_CONNECTION_REQUEST, on_connect_request);
     librg_event_add(&ctx, LIBRG_CONNECTION_ACCEPT, on_connect_accept);
     librg_event_add(&ctx, LIBRG_CONNECTION_DISCONNECT, on_disconnect);
-    librg_event_add(&ctx, LIBRG_CONNECTION_DISCONNECT, on_timeout);
+    librg_event_add(&ctx, LIBRG_CONNECTION_TIMEOUT, on_timeout);
 
     librg_network_start(&ctx, (librg_address) { .port = 7999 });
 

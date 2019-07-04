@@ -884,6 +884,7 @@ typedef struct librg_ctx {
         librg_table connected_peers;
         librg_address last_address;
         b32 created;
+        b32 connected;
     } network;
 
     struct {
@@ -1791,7 +1792,7 @@ extern "C" {
 
 #if 1
     b32 librg_is_connected(librg_ctx *ctx) {
-        return ctx->network.peer && ctx->network.peer->state == ENET_PEER_STATE_CONNECTED;
+        return ctx->network.connected;
     }
 
     b32 librg_is_server(librg_ctx *ctx) {
@@ -1869,8 +1870,8 @@ extern "C" {
 
         // disconnect and emit event
         if (ctx->network.peer) {
+            enet_peer_disconnect_now(ctx->network.peer, 0);
             enet_peer_reset(ctx->network.peer);
-            enet_peer_disconnect(ctx->network.peer, 0);
         }
 
         ENetEvent event;
@@ -2292,6 +2293,7 @@ extern "C" {
         librg_entity *blob = &msg->ctx->entity.list[entity];
 
         msg->ctx->entity.count++;
+        msg->ctx->network.connected = true;
 
         blob->type      = librg_option_get(LIBRG_DEFAULT_CLIENT_TYPE);
         blob->flags     = (LIBRG_ENTITY_ALIVE | LIBRG_ENTITY_CLIENT);
@@ -2358,6 +2360,8 @@ extern "C" {
             if (librg_option_get(LIBRG_NETWORK_BUFFER_SIZE) > 1) {
                 librg__buffer_free(msg->ctx);
             }
+
+            msg->ctx->network.connected = false;
         }
         /* we were NOT connected, and now are disconnected */
         else if (librg_is_client(msg->ctx) && !librg_is_connected(msg->ctx)) {
@@ -2382,6 +2386,10 @@ extern "C" {
                     event.data      = msg->data;
                     event.entity    = blob;
                     event.flags     = (LIBRG_EVENT_REJECTABLE | LIBRG_EVENT_REMOTE);
+                }
+
+                if (msg->user_data) {
+                    librg_event_trigger(msg->ctx, LIBRG_CONNECTION_TIMEOUT, &event);
                 }
 
                 librg_event_trigger(msg->ctx, LIBRG_CONNECTION_DISCONNECT, &event);
