@@ -2327,7 +2327,14 @@ extern "C" {
                 if (!librg_entity_valid(msg->ctx, i)) continue;
 
                 /* skip our local entity from being inlcuded */
-                if (local && *local == i) continue;
+                if (local && *local == i) {
+                    /* reset controlled flag, otherwise it will be called while being disconnected */
+                    librg_entity *blob = librg_entity_fetch(msg->ctx, i);
+                    blob->flags &= ~LIBRG_ENTITY_CONTROLLED;
+                    blob->control_generation = 0;
+
+                    continue;
+                }
 
                 librg_event event = {0}; {
                     event.entity = librg_entity_fetch(msg->ctx, i);
