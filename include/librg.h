@@ -2331,6 +2331,7 @@ extern "C" {
                     /* reset controlled flag, otherwise it will be called while being disconnected */
                     librg_entity *blob = librg_entity_fetch(msg->ctx, i);
                     blob->flags &= ~LIBRG_ENTITY_CONTROLLED;
+                    blob->control_generation = 0;
 
                     continue;
                 }
