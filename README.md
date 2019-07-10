@@ -164,8 +164,8 @@ void myserver_onmessage2(librg_message *msg) {
 }
 
     // ...
-    librg_message_add(&ctx, MESSAGE_1, myserver_onmessage1);
-    librg_message_add(&ctx, MESSAGE_2, myserver_onmessage2);
+    librg_network_add(&ctx, MESSAGE_1, myserver_onmessage1);
+    librg_network_add(&ctx, MESSAGE_2, myserver_onmessage2);
     // ...
 
 
