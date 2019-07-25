@@ -2355,7 +2355,7 @@ extern "C" {
                 event.ctx       = msg->ctx;
                 event.peer      = msg->peer;
                 event.data      = NULL;
-                event.entity    = NULL;
+                event.entity    = local ? librg_entity_fetch(msg->ctx, *local) : NULL;
                 event.flags     = (LIBRG_EVENT_REJECTABLE);
             };
 
@@ -2364,6 +2364,11 @@ extern "C" {
             }
 
             librg_event_trigger(msg->ctx, LIBRG_CONNECTION_DISCONNECT, &event);
+
+            /* dont forget to clean up our entity*/
+            if (local) {
+                librg__world_entity_destroy(msg->ctx, *local);
+            }
 
             librg_table_destroy(&msg->ctx->network.connected_peers);
             librg__timesync_stop(msg->ctx);
