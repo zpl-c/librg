@@ -1875,6 +1875,8 @@ extern "C" {
             return;
         }
 
+        ctx->network.created = false;
+
         if (librg_is_server(ctx)) {
             /* disconnect all users */
             for (librg_peer *currentPeer = ctx->network.host->peers; currentPeer < &ctx->network.host->peers[ctx->network.host->peerCount]; ++currentPeer) {
@@ -1911,8 +1913,6 @@ extern "C" {
             enet_host_service(ctx->network.host, &event, 100);
             enet_peer_reset(ctx->network.peer);
         }
-
-        ctx->network.created = false;
     }
 
     void librg_network_kick(librg_ctx *ctx, librg_peer *peer) {
