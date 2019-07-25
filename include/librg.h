@@ -1503,6 +1503,11 @@ extern "C" {
         librg_message *msg = (librg_message *)zpl_alloc(ctx->allocator, sizeof(librg_message)); {
             librg_message_id id = LIBRG_CLIENT_STREAMER_ADD;
 
+            librg_data data = {0};
+            librg_data_init(&data);
+            librg_data_went(&data, entity);
+            librg_data_wu8(&data, blob->control_generation);
+
             msg->id     = id;
             msg->peer   = peer;
             msg->packet = enet_packet_create_offset(
@@ -1510,6 +1515,7 @@ extern "C" {
             );
 
             zpl_memcopy(msg->packet->data, &id, sizeof(librg_message_id));
+            librg_data_free(&data);
         }
 
         zpl_array_append(ctx->entity.add_control_queue, msg);
@@ -2523,6 +2529,7 @@ extern "C" {
     /* Execution side: CLIENT */
     LIBRG_INTERNAL void librg__callback_entity_client_streamer_add(librg_message *msg) {
         librg_entity_id entity = librg_data_rent(msg->data);
+        u8 received_generation = librg_data_ru8(msg->data);
 
         if (!librg_entity_valid(msg->ctx, entity)) {
             librg_dbg("[dbg] trying to add unknown entity to clientstream!\n");
@@ -2533,7 +2540,7 @@ extern "C" {
 
         if (!(blob->flags & LIBRG_ENTITY_CONTROLLED)) {
             blob->flags |= LIBRG_ENTITY_CONTROLLED;
-            blob->control_generation++;
+            blob->control_generation = received_generation;
 
             LIBRG_MESSAGE_TO_EVENT(event, msg); event.entity = blob;
             librg_event_trigger(msg->ctx, LIBRG_CLIENT_STREAMER_ADD, &event);
