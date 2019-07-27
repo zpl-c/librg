@@ -19,6 +19,9 @@
  * sdl2.h
  *
  * Version History:
+ * 4.1.5
+ *  - Fix to data send
+ *
  * 4.1.4
  *  - Fixed issue with async flow inconsitensies of control_generations
  *  - Fixed boolean validation in disconnection flow
@@ -133,7 +136,7 @@
 
 #define LIBRG_VERSION_MAJOR 4
 #define LIBRG_VERSION_MINOR 1
-#define LIBRG_VERSION_PATCH 3
+#define LIBRG_VERSION_PATCH 5
 #define LIBRG_VERSION_CREATE(major, minor, patch) (((major)<<16) | ((minor)<<8) | (patch))
 #define LIBRG_VERSION_GET_MAJOR(version) (((version)>>16)&0xFF)
 #define LIBRG_VERSION_GET_MINOR(version) (((version)>>8)&0xFF)
@@ -1516,7 +1519,7 @@ extern "C" {
             msg->id     = id;
             msg->peer   = peer;
             msg->packet = enet_packet_create_offset(
-                &entity, sizeof(librg_entity_id), sizeof(librg_message_id), ENET_PACKET_FLAG_RELIABLE
+                data.rawptr, librg_data_get_wpos(&data), sizeof(librg_message_id), ENET_PACKET_FLAG_RELIABLE
             );
 
             zpl_memcopy(msg->packet->data, &id, sizeof(librg_message_id));
