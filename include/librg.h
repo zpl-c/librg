@@ -1490,7 +1490,7 @@ extern "C" {
             librg_entity *blob = librg_entity_fetch(ctx, entity);
 
             if (!(blob->flags & LIBRG_ENTITY_VISIBILITY)) {
-                return true;
+                return LIBRG_DEFAULT_VISIBILITY;
             }
 
             u32 *visibility = librg_table_get(&blob->visibility, target);
