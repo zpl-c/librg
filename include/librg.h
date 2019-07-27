@@ -3257,7 +3257,7 @@ extern "C" {
         }
 
         if (librg_is_server(ctx)) {
-            librg_entity_visibility_set(ctx, entity->id, true);
+            librg_entity_visibility_set(ctx, entity->id, LIBRG_DEFAULT_VISIBILITY);
         }
         #endif
 
