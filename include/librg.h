@@ -19,6 +19,11 @@
  * sdl2.h
  *
  * Version History:
+ * 4.1.4
+ *  - Fixed issue with async flow inconsitensies of control_generations
+ *  - Fixed boolean validation in disconnection flow
+ *  - Added proxying of user_data from msg to evt in disconnect event
+ *
  * 4.1.1
  * - Added compile-time 'features':
  *     - Ability to enable/disable some librg compile-time features
