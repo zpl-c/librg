@@ -3257,7 +3257,13 @@ extern "C" {
         }
 
         if (librg_is_server(ctx)) {
+            /* remove from global visibility */
             librg_entity_visibility_set(ctx, entity->id, LIBRG_DEFAULT_VISIBILITY);
+
+            /* remove from relation visibilities */
+            librg_entity_iteratex(ctx, LIBRG_ENTITY_VISIBILITY, librg_lambda(relation), {
+                librg_entity_visibility_set_for(ctx, relation, entity->id, LIBRG_DEFAULT_VISIBILITY);
+            });
         }
         #endif
 
