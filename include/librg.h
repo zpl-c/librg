@@ -2357,6 +2357,7 @@ extern "C" {
                 event.data      = NULL;
                 event.entity    = local ? librg_entity_fetch(msg->ctx, *local) : NULL;
                 event.flags     = (LIBRG_EVENT_REJECTABLE);
+                event.user_data = msg->user_data;
             };
 
             if (msg->user_data) {
