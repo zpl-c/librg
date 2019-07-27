@@ -2262,13 +2262,13 @@ extern "C" {
                 librg_data_wf64(&data, client_time);
                 librg_data_wf64(&data, zpl_time_now());
                 librg_data_went(&data, entity->id);
-
-                event.data   = &data;
-                event.entity = entity;
-                event.flags  = LIBRG_EVENT_LOCAL;
-
-                librg_event_trigger(msg->ctx, LIBRG_CONNECTION_ACCEPT, &event);
             });
+
+            event.data   = NULL;
+            event.entity = entity;
+            event.flags  = LIBRG_EVENT_LOCAL;
+
+            librg_event_trigger(msg->ctx, LIBRG_CONNECTION_ACCEPT, &event);
         }
         else {
             librg_dbg("[dbg] librg__connection_refuse\n");
