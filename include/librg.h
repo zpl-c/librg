@@ -117,7 +117,7 @@
  *
  * License notice:
  *
- * Copyright 2017-2018 Vladyslav Hrytsenko
+ * Copyright 2017-2019 Vladyslav Hrytsenko
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -134,9 +134,9 @@
 #ifndef LIBRG_INCLUDE_H
 #define LIBRG_INCLUDE_H
 
-#define LIBRG_VERSION_MAJOR 4
-#define LIBRG_VERSION_MINOR 1
-#define LIBRG_VERSION_PATCH 5
+#define LIBRG_VERSION_MAJOR 5
+#define LIBRG_VERSION_MINOR 0
+#define LIBRG_VERSION_PATCH 0
 #define LIBRG_VERSION_CREATE(major, minor, patch) (((major)<<16) | ((minor)<<8) | (patch))
 #define LIBRG_VERSION_GET_MAJOR(version) (((version)>>16)&0xFF)
 #define LIBRG_VERSION_GET_MINOR(version) (((version)>>8)&0xFF)
@@ -321,7 +321,7 @@ enum librg_entity_flag {
     LIBRG_ENTITY_NONE       = 0,        /* general flag, all destroyed/non-created entities have it */
     LIBRG_ENTITY_ALIVE      = (1 << 0), /* general flag, all created entities have it */
     LIBRG_ENTITY_CLIENT     = (1 << 1), /* flag describing entities created for client peer */
-    LIBRG_ENTITY_IGNORING   = (1 << 2), /* flag showing that entity has ignore overrides */
+    LIBRG_ENTITY_VISIBILITY = (1 << 2), /* flag showing that entity has visibility overrides */
     LIBRG_ENTITY_QUERIED    = (1 << 3), /* flag showing that entity has a cached culler query */
     LIBRG_ENTITY_CONTROLLED = (1 << 4), /* flag showing if the entity is controlled(streamed) by some peer */
     LIBRG_ENTITY_UNUSED     = (1 << 5), /* flag showing whether the entity's space is unused */
@@ -340,7 +340,7 @@ typedef struct librg_entity {
     struct librg_space *stream_branch;
 
     #ifdef LIBRG_FEATURE_ENTITY_VISIBILITY
-    librg_table ignored;
+    librg_table visibility;
     #endif
 
     #ifdef LIBRG_FEATURE_VIRTUAL_WORLDS
@@ -431,6 +431,12 @@ LIBRG_API u32 librg_entity_type(struct librg_ctx *ctx, librg_entity_id entity_id
 
 #ifdef LIBRG_FEATURE_ENTITY_VISIBILITY
 
+    typedef enum {
+        LIBRG_DEFAULT_VISIBILITY,
+        LIBRG_ALWAYS_VISIBLE,
+        LIBRG_ALWAYS_INVISIBLE,
+    } librg_visibility;
+
     /**
      * A complex api allowing to change visibility of the entities via specific set of rules.
      *
@@ -441,11 +447,11 @@ LIBRG_API u32 librg_entity_type(struct librg_ctx *ctx, librg_entity_id entity_id
      * however extends also to specify entity inivisibilty for other specific entity.
      */
 
-    LIBRG_API void librg_entity_visibility_set(struct librg_ctx *ctx, librg_entity_id entity_id, b32 state);
-    LIBRG_API b32 librg_entity_visibility_get(struct librg_ctx *ctx, librg_entity_id entity_id);
+    LIBRG_API void librg_entity_visibility_set(struct librg_ctx *ctx, librg_entity_id entity_id, librg_visibility state);
+    LIBRG_API librg_visibility librg_entity_visibility_get(struct librg_ctx *ctx, librg_entity_id entity_id);
 
-    LIBRG_API void librg_entity_visibility_set_for(struct librg_ctx *ctx, librg_entity_id entity_id, librg_entity_id target, b32 state);
-    LIBRG_API b32 librg_entity_visibility_get_for(struct librg_ctx *ctx, librg_entity_id entity_id, librg_entity_id target);
+    LIBRG_API void librg_entity_visibility_set_for(struct librg_ctx *ctx, librg_entity_id entity_id, librg_entity_id target, librg_visibility state);
+    LIBRG_API librg_visibility librg_entity_visibility_get_for(struct librg_ctx *ctx, librg_entity_id entity_id, librg_entity_id target);
 #endif
 
 #ifdef LIBRG_FEATURE_VIRTUAL_WORLDS
@@ -900,7 +906,7 @@ typedef struct librg_ctx {
         u32 cursor;
 
         #ifdef LIBRG_FEATURE_ENTITY_VISIBILITY
-        librg_table ignored;
+        librg_table visibility;
         #endif
 
         struct librg_entity *list;
@@ -1171,7 +1177,7 @@ extern "C" {
         librg__space_init(&ctx->world, ctx->allocator, dimension, world, ctx->min_branch_size, librg_option_get(LIBRG_MAX_ENTITIES_PER_BRANCH));
 
         #ifdef LIBRG_FEATURE_ENTITY_VISIBILITY
-        librg_table_init(&ctx->entity.ignored, ctx->allocator);
+        librg_table_init(&ctx->entity.visibility, ctx->allocator);
         #endif
 
         // events
@@ -1239,7 +1245,7 @@ extern "C" {
         librg__space_clear(&ctx->world);
 
         #ifdef LIBRG_FEATURE_ENTITY_VISIBILITY
-        librg_table_destroy(&ctx->entity.ignored);
+        librg_table_destroy(&ctx->entity.visibility);
         #endif
 
         for (isize i = 0; i < LIBRG_DATA_STREAMS_AMOUNT; ++i) {
@@ -1383,12 +1389,41 @@ extern "C" {
         // reset array to 0
         zpl_array_count(blob->last_query) = 0;
 
-        // add all currently streamed entities automatically
+        /* add all currently streamed entities automatically */
         librg_entity_iteratex(ctx, LIBRG_ENTITY_CONTROLLED, librg_lambda(controlled), {
             if (blob->client_peer && librg_entity_control_get(ctx, controlled) == blob->client_peer) {
                 zpl_array_append(blob->last_query, controlled);
             }
         });
+
+        #ifdef LIBRG_FEATURE_ENTITY_VISIBILITY
+
+        /* add related visible entities */
+        if (blob->flags & LIBRG_ENTITY_VISIBILITY) {
+            for (int i = 0; i < zpl_array_count(blob->visibility.entries); ++i) {
+                #ifdef LIBRG_FEATURE_VIRTUAL_WORLDS
+                if (librg_entity_world_get(ctx, blob->id) != librg_entity_world_get(ctx, blob->visibility.entries[i].key)) continue;
+                #endif
+
+                if (blob->visibility.entries[i].value == LIBRG_ALWAYS_VISIBLE) {
+                    zpl_array_append(blob->last_query, blob->visibility.entries[i].key);
+                }
+            }
+        }
+
+        /* add global visible entities */
+        for (int i = 0; i < zpl_array_count(ctx->entity.visibility.entries); ++i) {
+            #ifdef LIBRG_FEATURE_VIRTUAL_WORLDS
+            if (librg_entity_world_get(ctx, blob->id) != librg_entity_world_get(ctx, ctx->entity.visibility.entries[i].key)) continue;
+            #endif
+
+            if (ctx->entity.visibility.entries[i].value == LIBRG_ALWAYS_VISIBLE) {
+                if (librg_entity_visibility_get_for(ctx, blob->id, ctx->entity.visibility.entries[i].key) != LIBRG_ALWAYS_INVISIBLE) {
+                    zpl_array_append(blob->last_query, ctx->entity.visibility.entries[i].key);
+                }
+            }
+        }
+        #endif
 
         zpl_aabb3 search_bounds; {
             search_bounds.centre    = blob->position;
@@ -1427,39 +1462,39 @@ extern "C" {
     }
 
     #ifdef LIBRG_FEATURE_ENTITY_VISIBILITY
-        void librg_entity_visibility_set(librg_ctx *ctx, librg_entity_id entity, b32 state) {
+        void librg_entity_visibility_set(librg_ctx *ctx, librg_entity_id entity, librg_visibility state) {
             librg_assert(librg_is_server(ctx) && librg_entity_valid(ctx, entity));
-            librg_table_set(&ctx->entity.ignored, entity, (u32)!state);
+            librg_table_set(&ctx->entity.visibility, entity, (u32)state);
         }
 
-        void librg_entity_visibility_set_for(librg_ctx *ctx, librg_entity_id entity, librg_entity_id target, b32 state) {
+        void librg_entity_visibility_set_for(librg_ctx *ctx, librg_entity_id entity, librg_entity_id target, librg_visibility state) {
             librg_assert(librg_is_server(ctx) && librg_entity_valid(ctx, entity));
             librg_entity *blob = librg_entity_fetch(ctx, entity);
 
-            if (!(blob->flags & LIBRG_ENTITY_IGNORING)) {
-                blob->flags |= LIBRG_ENTITY_IGNORING;
-                librg_table_init(&blob->ignored, ctx->allocator);
+            if (!(blob->flags & LIBRG_ENTITY_VISIBILITY)) {
+                blob->flags |= LIBRG_ENTITY_VISIBILITY;
+                librg_table_init(&blob->visibility, ctx->allocator);
             }
 
-            librg_table_set(&blob->ignored, target, (u32)!state);
+            librg_table_set(&blob->visibility, target, (u32)state);
         }
 
-        b32 librg_entity_visibility_get(librg_ctx *ctx, librg_entity_id entity) {
+        librg_visibility librg_entity_visibility_get(librg_ctx *ctx, librg_entity_id entity) {
             librg_assert(librg_is_server(ctx) && librg_entity_valid(ctx, entity));
-            u32 *ignored = librg_table_get(&ctx->entity.ignored, entity);
-            return !(ignored && *ignored);
+            u32 *visibility = librg_table_get(&ctx->entity.visibility, entity);
+            return (librg_visibility)(visibility ? *visibility : LIBRG_DEFAULT_VISIBILITY);
         }
 
-        b32 librg_entity_visibility_get_for(librg_ctx *ctx, librg_entity_id entity, librg_entity_id target) {
+        librg_visibility librg_entity_visibility_get_for(librg_ctx *ctx, librg_entity_id entity, librg_entity_id target) {
             librg_assert(librg_is_server(ctx));
             librg_entity *blob = librg_entity_fetch(ctx, entity);
 
-            if (!(blob->flags & LIBRG_ENTITY_IGNORING)) {
+            if (!(blob->flags & LIBRG_ENTITY_VISIBILITY)) {
                 return true;
             }
 
-            u32 *ignored = librg_table_get(&blob->ignored, target);
-            return !(ignored && *ignored);
+            u32 *visibility = librg_table_get(&blob->visibility, target);
+            return (librg_visibility)(visibility ? *visibility : LIBRG_DEFAULT_VISIBILITY);
         }
     #endif
 
@@ -3147,7 +3182,28 @@ extern "C" {
                 librg_entity *blob = librg_entity_fetch(ctx, target);
                 #endif
 
-                b32 inside = false; if (!use_radius) {
+                #ifdef LIBRG_FEATURE_VIRTUAL_WORLDS
+                if (librg_entity_world_get(ctx, target) != librg_entity_world_get(ctx, entity)) continue;
+                #endif
+
+                #ifdef LIBRG_FEATURE_ENTITY_VISIBILITY
+                librg_visibility g_vis = librg_entity_visibility_get(ctx, target);
+                librg_visibility l_vis = librg_entity_visibility_get_for(ctx, entity, target);
+
+                /* relation visibility always has the highest priority */
+                if (l_vis == LIBRG_ALWAYS_INVISIBLE) {
+                    continue;
+                }
+
+                /* global visibility has a lower priority */
+                if (g_vis == LIBRG_ALWAYS_INVISIBLE) {
+                    continue;
+                }
+                #endif
+
+                b32 inside = false;
+
+                if (!use_radius) {
                     inside = librg__space_contains(c->dimensions, bounds, blob->position.e);
                 } else {
                     zpl_vec3 diff;
@@ -3156,15 +3212,6 @@ extern "C" {
                 }
 
                 if (inside) {
-                    #ifdef LIBRG_FEATURE_ENTITY_VISIBILITY
-                    if (!librg_entity_visibility_get(ctx, target)) continue;
-                    if (!librg_entity_visibility_get_for(ctx, target, entity)) continue;
-                    #endif
-
-                    #ifdef LIBRG_FEATURE_VIRTUAL_WORLDS
-                    if (librg_entity_world_get(ctx, target) != librg_entity_world_get(ctx, entity)) continue;
-                    #endif
-
                     zpl_array_append(*out_entities, target);
                 }
             }
@@ -3205,8 +3252,8 @@ extern "C" {
         }
 
         #ifdef LIBRG_FEATURE_ENTITY_VISIBILITY
-        if (entity->flags & LIBRG_ENTITY_IGNORING) {
-            librg_table_destroy(&entity->ignored);
+        if (entity->flags & LIBRG_ENTITY_VISIBILITY) {
+            librg_table_destroy(&entity->visibility);
         }
 
         if (librg_is_server(ctx)) {

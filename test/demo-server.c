@@ -1,6 +1,4 @@
 #define LIBRG_DEBUG
-#define LIBRG_DISABLE_FEATURE_ENTITY_VISIBILITY
-#define LIBRG_FEATURE_VIRUAL_WORLDS
 #define LIBRG_IMPLEMENTATION
 #include <librg.h>
 
@@ -63,7 +61,7 @@ void on_connect_accepted(librg_event *event) {
         event->entity->position.z
     );
 
-    event->entity->stream_range = 1000.0f;
+    event->entity->stream_range = 250.0f;
 
     hero hero_ = {0};
     hero_.stream.max_hp = 100;
@@ -93,6 +91,15 @@ void on_connect_accepted(librg_event *event) {
     event->entity->user_data = zpl_malloc(sizeof(hero_));
     *(hero *)event->entity->user_data = hero_;
 
+    librg_entity_world_set(event->ctx, hero_.follower1->id, 5);
+
+    // librg_entity_visibility_set_for(event->ctx, event->entity->id, hero_.follower1->id, LIBRG_ALWAYS_INVISIBLE);
+    // librg_entity_visibility_set_for(event->ctx, event->entity->id, hero_.follower2->id, LIBRG_ALWAYS_INVISIBLE);
+    // librg_entity_visibility_set_for(event->ctx, event->entity->id, hero_.follower3->id, LIBRG_ALWAYS_INVISIBLE);
+
+    librg_entity_visibility_set(event->ctx, hero_.follower1->id, LIBRG_ALWAYS_VISIBLE);
+    librg_entity_visibility_set(event->ctx, hero_.follower2->id, LIBRG_ALWAYS_VISIBLE);
+    librg_entity_visibility_set(event->ctx, hero_.follower3->id, LIBRG_ALWAYS_VISIBLE);
 
     librg_entity_control_set(event->ctx, event->entity->id, event->entity->client_peer);
 }

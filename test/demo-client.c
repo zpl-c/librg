@@ -1,7 +1,5 @@
 #define LIBRG_DEBUG
 #define LIBRG_IMPLEMENTATION
-#define LIBRG_DISABLE_FEATURE_ENTITY_VISIBILITY
-#define LIBRG_FEATURE_VIRUAL_WORLDS
 #include <librg.h>
 #include <SDL.h>
 
