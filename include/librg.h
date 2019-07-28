@@ -19,6 +19,21 @@
  * sdl2.h
  *
  * Version History:
+ * 5.0.1
+ *  - Fixed entity visiblity states after disconnection
+ *
+ * 5.0.0
+ *  - Changed API for visibility feature:
+ *    - Instead of booleans setting whether or not entity would be included in the query or not
+ *      a multiple constant-based states were inroduced:
+ *        - LIBRG_VISIBILITY_DEFAULT - the original state of visibility, entity is only visible if it is in the stream range
+ *        - LIBRG_ALWAYS_VISIBLE - the entity is visible disregarding if it is the stream range or not
+ *        - LIBRG_ALWAYS_INVISIBLE - opposite of the above, entity will be always invisible
+ *      Entity visibility can be set on per entity-to-entity or global levels. The entity-to-entity relation has a bigger
+ *      priority, so f.e. setting entity to be LIBRG_ALWAYS_VISIBLE on relation level, will override global visibility.
+ *   - Aditionally, if the virtual world feature is enabled, it gains main priotity over visibility, thus entities located in 2 different
+ *     virtual worlds will not be able to see each other in spite of visibility settings.
+ *
  * 4.1.5
  *  - Fix to data send
  *
@@ -136,7 +151,7 @@
 
 #define LIBRG_VERSION_MAJOR 5
 #define LIBRG_VERSION_MINOR 0
-#define LIBRG_VERSION_PATCH 0
+#define LIBRG_VERSION_PATCH 1
 #define LIBRG_VERSION_CREATE(major, minor, patch) (((major)<<16) | ((minor)<<8) | (patch))
 #define LIBRG_VERSION_GET_MAJOR(version) (((version)>>16)&0xFF)
 #define LIBRG_VERSION_GET_MINOR(version) (((version)>>8)&0xFF)
