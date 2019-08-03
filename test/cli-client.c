@@ -21,7 +21,7 @@ void on_entity_create(librg_event *event) {
 }
 
 void on_entity_update(librg_event *event) {
-    // librg_log("update %d\n", event->entity->id);
+    // librg_log("update %d for client %x\n", event->entity->id, event->);
     // ...
 }
 

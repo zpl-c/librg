@@ -32,10 +32,16 @@ void on_connect_accepted(librg_event *event) {
 
     footime = 4;
     peer = event->peer;
+
+    enet_peer_timeout(event->peer, 10, 2000, 3000);
 }
 
 void on_connect_refused(librg_event *event) {
     librg_log("on_connect_refused\n");
+}
+
+void on_connect_disconnect(librg_event *event) {
+    librg_log("entity %d peer disconnected: %x\n", event->entity->id, event->peer);
 }
 
 void on_entity_create(librg_event *event) {
@@ -43,6 +49,11 @@ void on_entity_create(librg_event *event) {
 }
 
 void on_entity_update(librg_event *event) {
+    librg_log("update ent %d for client %x\n", event->entity->id, event->peer);
+}
+
+void on_entity_remove(librg_event *event) {
+    librg_log("remove ent %d for client %x\n", event->entity->id, event->peer);
 }
 
 void measure(void *userptr) {
@@ -59,7 +70,7 @@ void measure(void *userptr) {
     lastdl = ctx->network.host->totalReceivedData;
     lastup = ctx->network.host->totalSentData;
 
-    librg_dbg("librg_update: took %f ms. Current used bandwidth D/U: (%f / %f) mbps. \r", ctx->last_update, dl, up);
+    // librg_dbg("librg_update: took %f ms. Current used bandwidth D/U: (%f / %f) mbps. \r", ctx->last_update, dl, up);
 
     if (peer && --footime < 1) {
         librg_dbg("\npeer %x becoming streamer of the entity 2\n", peer);
@@ -77,7 +88,7 @@ void measure(void *userptr) {
 
 void on_update(librg_event *e) {
     if (e->entity->id == batid) {
-        zpl_printf("update for our bat came\n");
+        // zpl_printf("update for our bat came\n");
     }
 }
 
@@ -93,7 +104,7 @@ int main() {
 
     librg_ctx ctx     = {0};
 
-    ctx.tick_delay      = 64;
+    ctx.tick_delay      = 1000;
     ctx.mode            = LIBRG_MODE_SERVER;
     ctx.world_size      = zpl_vec3f(5000.0f, 5000.0f, 0.f);
     ctx.min_branch_size = zpl_vec3f(-1, -1, -1);
@@ -105,24 +116,26 @@ int main() {
     librg_event_add(&ctx, LIBRG_CONNECTION_REQUEST, on_connect_request);
     librg_event_add(&ctx, LIBRG_CONNECTION_ACCEPT, on_connect_accepted);
     librg_event_add(&ctx, LIBRG_CONNECTION_REFUSE, on_connect_refused);
+    librg_event_add(&ctx, LIBRG_CONNECTION_DISCONNECT, on_connect_disconnect);
     librg_event_add(&ctx, LIBRG_CLIENT_STREAMER_UPDATE, on_update);
 
     librg_event_add(&ctx, LIBRG_ENTITY_CREATE, on_entity_create);
     librg_event_add(&ctx, LIBRG_ENTITY_UPDATE, on_entity_update);
+    librg_event_add(&ctx, LIBRG_ENTITY_REMOVE, on_entity_remove);
 
     librg_network_start(&ctx, (librg_address) { .port = 7779 });
 
-    for (isize i = 0; i < 1; i++) {
-        librg_entity *enemy = librg_entity_create(&ctx, 0);
+    // for (isize i = 0; i < 1; i++) {
+    //     librg_entity *enemy = librg_entity_create(&ctx, 0);
 
-        //librg_attach_foo(&ctx, enemy, NULL);
-        // enemy->position.x = (float)(2000 - rand() % 4000);
-        // enemy->position.x = (float)(2000 - rand() % 4000);
-        enemy->position.x = 10;
-        enemy->position.y = 10;
+    //     //librg_attach_foo(&ctx, enemy, NULL);
+    //     // enemy->position.x = (float)(2000 - rand() % 4000);
+    //     // enemy->position.x = (float)(2000 - rand() % 4000);
+    //     enemy->position.x = 10;
+    //     enemy->position.y = 10;
 
-        batid = enemy->id;
-    }
+    //     batid = enemy->id;
+    // }
 
     zpl_timer *tick_timer = zpl_timer_add(ctx.timers);
     tick_timer->user_data = (void *)&ctx; /* provide ctx as a argument to timer */
