@@ -1518,7 +1518,7 @@ extern "C" {
             librg_entity *blob = librg_entity_fetch(ctx, entity);
 
             /* prevent any operations on the same entity*/
-            if (entity == target) return LIBRG_VISIBILITY_DEFAULT;
+            if (entity == target) return LIBRG_DEFAULT_VISIBILITY;
 
             if (!(blob->flags & LIBRG_ENTITY_VISIBILITY)) {
                 return LIBRG_DEFAULT_VISIBILITY;
