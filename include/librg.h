@@ -1509,10 +1509,6 @@ extern "C" {
 
         librg_visibility librg_entity_visibility_get(librg_ctx *ctx, librg_entity_id entity) {
             librg_assert(librg_is_server(ctx) && librg_entity_valid(ctx, entity));
-
-            /* prevent any operations on the same entity*/
-            if (entity == target) return LIBRG_VISIBILITY_DEFAULT;
-
             u32 *visibility = librg_table_get(&ctx->entity.visibility, entity);
             return (librg_visibility)(visibility ? *visibility : LIBRG_DEFAULT_VISIBILITY);
         }
@@ -1520,6 +1516,9 @@ extern "C" {
         librg_visibility librg_entity_visibility_get_for(librg_ctx *ctx, librg_entity_id entity, librg_entity_id target) {
             librg_assert(librg_is_server(ctx));
             librg_entity *blob = librg_entity_fetch(ctx, entity);
+
+            /* prevent any operations on the same entity*/
+            if (entity == target) return LIBRG_VISIBILITY_DEFAULT;
 
             if (!(blob->flags & LIBRG_ENTITY_VISIBILITY)) {
                 return LIBRG_DEFAULT_VISIBILITY;
