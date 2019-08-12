@@ -2397,7 +2397,7 @@ extern "C" {
 
     /* Execution side: SHARED */
     LIBRG_INTERNAL void librg__callback_connection_disconnect(librg_message *msg) {
-        librg_dbg("[dbg] librg__connection_disconnect; is timeout: %d\n", (int)msg->user_data);
+        librg_dbg("[dbg] librg__connection_disconnect; is timeout: %lld\n", (i64) msg->user_data);
 
         /* we were connected, and now are disconnected */
         if (librg_is_client(msg->ctx) && librg_is_connected(msg->ctx)) {
