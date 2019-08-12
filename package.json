@@ -1,6 +1,6 @@
 {
   "name": "librg.c",
-  "version": "5.0.2",
+  "version": "5.0.3",
   "description": "Pure C library for building simple and elegant cross-platform multiplayer client-server solutions.",
   "main": "include/librg.h",
   "directories": {

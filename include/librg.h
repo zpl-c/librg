@@ -19,6 +19,9 @@
  * sdl2.h
  *
  * Version History:
+ * 5.0.3
+ *  - Minor fixes by @markatk
+ *
  * 5.0.2
  *  - Fixed issue related to visiblity destruction
  *
@@ -154,7 +157,7 @@
 
 #define LIBRG_VERSION_MAJOR 5
 #define LIBRG_VERSION_MINOR 0
-#define LIBRG_VERSION_PATCH 1
+#define LIBRG_VERSION_PATCH 3
 #define LIBRG_VERSION_CREATE(major, minor, patch) (((major)<<16) | ((minor)<<8) | (patch))
 #define LIBRG_VERSION_GET_MAJOR(version) (((version)>>16)&0xFF)
 #define LIBRG_VERSION_GET_MINOR(version) (((version)>>8)&0xFF)
