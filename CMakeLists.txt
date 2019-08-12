@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.0)
+cmake_minimum_required(VERSION 3.1.3)
 project(librg)
 
 find_package(Threads)
@@ -17,13 +17,9 @@ endif()
 add_library(librg INTERFACE)
 
 # add those compile flags badboys
-if (UNIX)
-    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -std=gnu99")
-    set(CMAKE_CXX_FLAGS "${CMAKE_C_FLAGS} -std=c++11")
-else()
-    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -std=c99")
-    set(CMAKE_CXX_FLAGS "${CMAKE_C_FLAGS} -std=c++11")
-endif()
+set(CMAKE_C_STANDARD 99)
+set(CMAKE_CXX_STANDARD 11)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 # proxy our includes to outside world
 target_include_directories(librg INTERFACE include
