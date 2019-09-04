@@ -157,7 +157,7 @@
 
 #define LIBRG_VERSION_MAJOR 5
 #define LIBRG_VERSION_MINOR 0
-#define LIBRG_VERSION_PATCH 3
+#define LIBRG_VERSION_PATCH 4
 #define LIBRG_VERSION_CREATE(major, minor, patch) (((major)<<16) | ((minor)<<8) | (patch))
 #define LIBRG_VERSION_GET_MAJOR(version) (((version)>>16)&0xFF)
 #define LIBRG_VERSION_GET_MINOR(version) (((version)>>8)&0xFF)
@@ -1418,6 +1418,13 @@ extern "C" {
             }
         });
 
+        #define LIBRG__PUSH_ENTITY_CONDITIONAL(ARR, VAL) do { \
+            bool found = false; \
+            for (int x = 0; x < zpl_array_count(ARR); x++) \
+                if (ARR[x] == VAL) found = true; \
+            if (!found) zpl_array_append(ARR, VAL); \
+        } while (0)
+
         #ifdef LIBRG_FEATURE_ENTITY_VISIBILITY
 
         /* add related visible entities */
@@ -1430,7 +1437,7 @@ extern "C" {
                 if (blob->visibility.entries[i].value == LIBRG_ALWAYS_VISIBLE) {
                     if (librg_entity_valid(ctx, blob->visibility.entries[i].key) &&
                         !(librg_entity_fetch(ctx, blob->visibility.entries[i].key)->flags & LIBRG_ENTITY_MARKED_REMOVAL)) {
-                        zpl_array_append(blob->last_query, blob->visibility.entries[i].key);
+                        LIBRG__PUSH_ENTITY_CONDITIONAL(blob->last_query, blob->visibility.entries[i].key);
                     }
                 }
             }
@@ -1446,7 +1453,7 @@ extern "C" {
                 if (librg_entity_visibility_get_for(ctx, blob->id, ctx->entity.visibility.entries[i].key) != LIBRG_ALWAYS_INVISIBLE) {
                     if (librg_entity_valid(ctx, ctx->entity.visibility.entries[i].key) &&
                         !(librg_entity_fetch(ctx, ctx->entity.visibility.entries[i].key)->flags & LIBRG_ENTITY_MARKED_REMOVAL)) {
-                        zpl_array_append(blob->last_query, ctx->entity.visibility.entries[i].key);
+                        LIBRG__PUSH_ENTITY_CONDITIONAL(blob->last_query, ctx->entity.visibility.entries[i].key);
                     }
                 }
             }
@@ -1460,6 +1467,8 @@ extern "C" {
 
         librg__world_entity_query(ctx, entity, &ctx->world, search_bounds, zpl_array_count(blob->last_query), &blob->last_query);
         *out_entities = blob->last_query;
+
+        #undef LIBRG__PUSH_ENTITY_CONDITIONAL
 
         return zpl_array_count(blob->last_query);
     }
@@ -3212,9 +3221,12 @@ extern "C" {
             if (target == entity) { continue; }
     #endif
             // iterate over pre-added controlled entities, to prevent duplications
+            bool isduplicate = false;
             for (int j = 0; j < controlled_amount; ++j) {
-                if (target == (*out_entities)[j]) { continue; }
+                if (target == (*out_entities)[j]) { isduplicate = true; }
             }
+
+            if (isduplicate) continue;
 
             if (librg_entity_valid(ctx, target)) {
                 #if defined(LIBRG_FEATURE_OCTREE_CULLER)
