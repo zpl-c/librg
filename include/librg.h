@@ -19,6 +19,10 @@
  * sdl2.h
  *
  * Version History:
+ *
+ * 5.0.5
+ *  - Fixes to selection and deduplication flow
+ *
  * 5.0.3
  *  - Minor fixes by @markatk
  *
@@ -157,7 +161,7 @@
 
 #define LIBRG_VERSION_MAJOR 5
 #define LIBRG_VERSION_MINOR 0
-#define LIBRG_VERSION_PATCH 4
+#define LIBRG_VERSION_PATCH 5
 #define LIBRG_VERSION_CREATE(major, minor, patch) (((major)<<16) | ((minor)<<8) | (patch))
 #define LIBRG_VERSION_GET_MAJOR(version) (((version)>>16)&0xFF)
 #define LIBRG_VERSION_GET_MINOR(version) (((version)>>8)&0xFF)
@@ -1081,7 +1085,7 @@ extern "C" {
 
     LIBRG_INTERNAL void librg__world_update(void *);
 
-    LIBRG_INTERNAL void librg__world_entity_query(librg_ctx *ctx, librg_entity_id entity, librg_space *c, zpl_aabb3 bounds, usize controlled_amount, librg_entity_id **out_entities);
+    LIBRG_INTERNAL void librg__world_entity_query(librg_ctx *ctx, librg_entity_id entity, librg_space *c, zpl_aabb3 bounds, librg_entity_id **out_entities);
     LIBRG_INTERNAL b32 librg__world_entity_destroy(librg_ctx *ctx, librg_entity_id id);
 
     /* space stuff */
@@ -1407,23 +1411,18 @@ extern "C" {
         }
 
         // reset array to 0
+        zpl_array(librg_entity_id) temp_array;
+        zpl_array_init(temp_array, ctx->allocator);
         zpl_array_count(blob->last_query) = 0;
 
         /* add all currently streamed entities automatically */
         librg_entity_iteratex(ctx, LIBRG_ENTITY_CONTROLLED, librg_lambda(controlled), {
             if (blob->client_peer && librg_entity_control_get(ctx, controlled) == blob->client_peer) {
                 if (librg_entity_valid(ctx, controlled) && !(librg_entity_fetch(ctx, controlled)->flags & LIBRG_ENTITY_MARKED_REMOVAL)) {
-                    zpl_array_append(blob->last_query, controlled);
+                    zpl_array_append(temp_array, controlled);
                 }
             }
         });
-
-        #define LIBRG__PUSH_ENTITY_CONDITIONAL(ARR, VAL) do { \
-            bool found = false; \
-            for (int x = 0; x < zpl_array_count(ARR); x++) \
-                if (ARR[x] == VAL) found = true; \
-            if (!found) zpl_array_append(ARR, VAL); \
-        } while (0)
 
         #ifdef LIBRG_FEATURE_ENTITY_VISIBILITY
 
@@ -1437,7 +1436,7 @@ extern "C" {
                 if (blob->visibility.entries[i].value == LIBRG_ALWAYS_VISIBLE) {
                     if (librg_entity_valid(ctx, blob->visibility.entries[i].key) &&
                         !(librg_entity_fetch(ctx, blob->visibility.entries[i].key)->flags & LIBRG_ENTITY_MARKED_REMOVAL)) {
-                        LIBRG__PUSH_ENTITY_CONDITIONAL(blob->last_query, blob->visibility.entries[i].key);
+                        zpl_array_append(temp_array, blob->visibility.entries[i].key);
                     }
                 }
             }
@@ -1453,7 +1452,7 @@ extern "C" {
                 if (librg_entity_visibility_get_for(ctx, blob->id, ctx->entity.visibility.entries[i].key) != LIBRG_ALWAYS_INVISIBLE) {
                     if (librg_entity_valid(ctx, ctx->entity.visibility.entries[i].key) &&
                         !(librg_entity_fetch(ctx, ctx->entity.visibility.entries[i].key)->flags & LIBRG_ENTITY_MARKED_REMOVAL)) {
-                        LIBRG__PUSH_ENTITY_CONDITIONAL(blob->last_query, ctx->entity.visibility.entries[i].key);
+                        zpl_array_append(temp_array, ctx->entity.visibility.entries[i].key);
                     }
                 }
             }
@@ -1465,10 +1464,26 @@ extern "C" {
             search_bounds.half_size = zpl_vec3f(blob->stream_range, blob->stream_range, blob->stream_range);
         };
 
-        librg__world_entity_query(ctx, entity, &ctx->world, search_bounds, zpl_array_count(blob->last_query), &blob->last_query);
-        *out_entities = blob->last_query;
+        librg__world_entity_query(ctx, entity, &ctx->world, search_bounds, &temp_array);
 
-        #undef LIBRG__PUSH_ENTITY_CONDITIONAL
+        /* remove duplicate entities */
+        for (int i = 0; i < zpl_array_count(temp_array); ++i) {
+            bool isduplicate = false;
+
+            for (int j = 0; j < zpl_array_count(blob->last_query); ++j) {
+                if (temp_array[i] == blob->last_query[j]) {
+                    isduplicate = true;
+                    break;
+                }
+            }
+
+            if (!isduplicate) {
+                zpl_array_append(blob->last_query, temp_array[i]);
+            }
+        }
+
+        zpl_array_free(temp_array);
+        *out_entities = blob->last_query;
 
         return zpl_array_count(blob->last_query);
     }
@@ -3200,7 +3215,7 @@ extern "C" {
 
 
 
-    void librg__world_entity_query(librg_ctx *ctx, librg_entity_id entity, librg_space *c, zpl_aabb3 bounds, usize controlled_amount, librg_entity_id **out_entities) {
+    void librg__world_entity_query(librg_ctx *ctx, librg_entity_id entity, librg_space *c, zpl_aabb3 bounds, librg_entity_id **out_entities) {
     #if defined(LIBRG_FEATURE_OCTREE_CULLER)
         if (c->nodes == NULL) return;
         if (!librg__space_intersects(c->dimensions, c->boundary, bounds)) return;
@@ -3220,14 +3235,6 @@ extern "C" {
             if (!librg_entity_valid(ctx, target)) { continue; }
             if (target == entity) { continue; }
     #endif
-            // iterate over pre-added controlled entities, to prevent duplications
-            bool isduplicate = false;
-            for (int j = 0; j < controlled_amount; ++j) {
-                if (target == (*out_entities)[j]) { isduplicate = true; }
-            }
-
-            if (isduplicate) continue;
-
             if (librg_entity_valid(ctx, target)) {
                 #if defined(LIBRG_FEATURE_OCTREE_CULLER)
                 librg_entity *blob = c->nodes[i].blob;
@@ -3277,7 +3284,7 @@ extern "C" {
         if (spaces_count == 0) return;
 
         for (i32 i = 0; i < spaces_count; ++i) {
-            librg__world_entity_query(ctx, entity, (c->spaces+i), bounds, controlled_amount, out_entities);
+            librg__world_entity_query(ctx, entity, (c->spaces+i), bounds, out_entities);
         }
     #endif
     }
