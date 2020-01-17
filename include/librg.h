@@ -20,6 +20,9 @@
  *
  * Version History:
  *
+ * 5.0.6
+ * - Fix forced_inline on librg__space_insert
+ * 
  * 5.0.5
  *  - Fixes to selection and deduplication flow
  *
@@ -3101,7 +3104,7 @@ extern "C" {
         c->free_nodes = NULL;
     }
 
-    librg_inline librg_space *librg__space_insert(librg_ctx *ctx, librg_space *space, librg_space_node node) {
+    librg_space *librg__space_insert(librg_ctx *ctx, librg_space *space, librg_space_node node) {
         if (!librg__space_contains(space->dimensions, space->boundary, node.blob->position.e)) return NULL;
 
         if (space->nodes == NULL) {
