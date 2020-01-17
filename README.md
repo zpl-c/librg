@@ -1,15 +1,15 @@
 <div align="center">
-    <a href="https://github.com/librg/librg"><img src="https://user-images.githubusercontent.com/2182108/46903598-f6e48380-cedf-11e8-8b05-c89e80f60b73.png" alt="librg" /></a>
+    <a href="https://github.com/zpl-c/librg"><img src="https://user-images.githubusercontent.com/2182108/46903598-f6e48380-cedf-11e8-8b05-c89e80f60b73.png" alt="librg" /></a>
 </div>
 
 <div align="center">
-    <a href="https://travis-ci.org/librg/librg"><img src="https://travis-ci.org/librg/librg.svg?branch=master" alt="Build status" /></a>
+    <a href="https://travis-ci.org/zpl-c/librg"><img src="https://travis-ci.org/zpl-c/librg.svg?branch=master" alt="Build status" /></a>
     <a href="https://ci.appveyor.com/project/inlife/librg"><img src="https://ci.appveyor.com/api/projects/status/5axr8wa5iyc5xkn8?svg=true" alt="Build status" /></a>
     <a href="https://www.npmjs.com/package/librg.c"><img src="https://img.shields.io/npm/v/librg.c.svg?maxAge=3600" alt="NPM version" /></a>
-    <a href="https://david-dm.org/librg/librg"><img src="https://img.shields.io/david/librg/librg.svg?maxAge=3600" alt="Dependencies" /></a>
+    <a href="https://david-dm.org/zpl-c/librg"><img src="https://img.shields.io/david/zpl-c/librg.svg?maxAge=3600" alt="Dependencies" /></a>
     <a href="https://kiwiirc.com/client/irc.handmade.network:+7777/?nick=guest|?#librg"><img src="https://img.shields.io/badge/IRC-%23librg-blue.svg" alt="IRC server"/></a>
     <a href="https://discord.gg/2fZVEym"><img src="https://discordapp.com/api/guilds/354670964400848898/embed.png" alt="Discord server" /></a>
-    <a href="LICENSE"><img src="https://img.shields.io/github/license/librg/librg.svg" alt="license" /></a>
+    <a href="LICENSE"><img src="https://img.shields.io/github/license/zpl-c/librg.svg" alt="license" /></a>
 </div>
 
 <br />
@@ -233,14 +233,14 @@ There are multiple way of how you can embed the library:
         <sub><i>(maybe you will not like the `node_modules` folder, however you can move it or rename it, if you are *not planning* to fetch any udpates via npm)</i></sub>
 
 * manual:
-    * downloading/copying only [librg.h](https://raw.githubusercontent.com/librg/librg/master/include/librg.h) file, and doing same for each dependency.
+    * downloading/copying only [librg.h](https://raw.githubusercontent.com/zpl-c/librg/master/include/librg.h) file, and doing same for each dependency.
     * downloading/cloning repos for the librg and for each other dependency.
 
 Essentially, what you will need to have in the result is a set of single-header libraries. Which you can just put in the same folder and point the compiler include ther.
 
 ## Structure
 
-The library is built with **single header-only file design**. So everything librg provides is located in [includes/librg.h](https://github.com/librg/librg/blob/master/include/librg.h) file.  
+The library is built with **single header-only file design**. So everything librg provides is located in [includes/librg.h](https://github.com/zpl-c/librg/blob/master/include/librg.h) file.  
 However it has **dependencies**. All of them are also single header-only libraries.
 
 ### List
@@ -276,7 +276,7 @@ There is also the **[scripts](scripts/)** folder with shell scripts, which are u
 ## Testing
 
 We started testing the library for different platforms. This table provides some sort of description for compatibility.
-If you have tested it, and it compiles, or it perhaps stopped compiling, please feel free to describe the issue in the [issues](https://github.com/librg/librg/issues).
+If you have tested it, and it compiles, or it perhaps stopped compiling, please feel free to describe the issue in the [issues](https://github.com/zpl-c/librg/issues).
 
 | *Compiler* / Target   | Windows               | Linux                 | macOS                 | iOS                   | Android               |
 |:-:|:-:|:-:|:-:|:-:|:-:    |
