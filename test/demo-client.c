@@ -357,6 +357,12 @@ int main(int argc, char *argv[]) {
         render(&ctx);
     }
 
+    // librg_entity results[256] = {0};
+    // librg_entity_query(ctx, 15, &results, 256);
+
+    // librg_chunk chunks[15] = {1,2,3,4,5,65,67};
+    // librg_entity_fetch_chunkarray(ctx, chunks, 15, &results, 256);
+
     librg_network_stop(&ctx);
     librg_free(&ctx);
     free_sdl();
