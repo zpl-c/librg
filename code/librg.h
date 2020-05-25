@@ -11,14 +11,6 @@
 
 #define LIBRG_API
 
-typedef void librg_ctx;
-typedef int32_t librg_chunk;
-typedef int32_t librg_owner;
-
-#ifndef librg_entity_id
-typedef librg_entity_id int32_t;
-#endif
-
 enum librg_errors {
     LIBRG_INVALID_ENTITY    = -1,
     LIBRG_INVALID_CLIENT    = -2,
@@ -47,16 +39,8 @@ typedef enum librg_entity_refreshing {
     LIBRG_CUBIC, /* float argument, cubicly decrease update inverval based on distance step (argument) */
 };
 
-typedef struct {
-    librg_ctx   *ctx;
-    void        *data;
-    size_t       size;
-    uint32_t     flags;
-    librg_owner client;
-    librg_entity_id entity;
-} librg_event;
-
-typedef int (librg_event_callback)(librg_event *event);
+typedef void librg_ctx;
+typedef int librg_chunk;
 
 LIBRG_API librg_ctx *   librg_context_create();
 LIBRG_API int           librg_context_destroy(librg_ctx *);
@@ -64,48 +48,52 @@ LIBRG_API int           librg_context_valid(librg_ctx *);
 LIBRG_API int           librg_context_userdata_set(librg_ctx *, void *data);
 LIBRG_API void *        librg_context_userdata_get(librg_ctx *);
 
+/* configuration */
 LIBRG_API int           librg_config_chunksize_set(librg_ctx *, uint16_t x, uint16_t y, uint16_t z);
 LIBRG_API int           librg_config_chunksize_get(librg_ctx *, uint16_t *x, uint16_t *y, uint16_t *z);
 LIBRG_API int           librg_config_worldsize_set(librg_ctx *, uint16_t x, uint16_t y, uint16_t z);
 LIBRG_API int           librg_config_worldsize_get(librg_ctx *, uint16_t *x, uint16_t *y, uint16_t *z);
-LIBRG_API int           librg_config_entitylimit_set(librg_ctx *, size_t limit);
-LIBRG_API size_t        librg_config_entitylimit_get(librg_ctx *);
 
-LIBRG_API int           librg_world_write(librg_ctx *, librg_owner owner, char *buffer, size_t limit);
-LIBRG_API int           librg_world_read(librg_ctx *, librg_owner owner, char *buffer, size_t size);
+/* world data methods */
+LIBRG_API int           librg_world_write(librg_ctx *, int owner_id, char *buffer, size_t limit, void *userdata);
+LIBRG_API int           librg_world_read(librg_ctx *, int owner_id, char *buffer, size_t size, void *userdata);
+LIBRG_API size_t        librg_world_query(librg_ctx *, int entity_id, int **entity_ids, size_t buffer_limit);
+LIBRG_API size_t        librg_world_fetch_all(librg_ctx *, int **entity_ids, size_t buffer_limit);
+LIBRG_API size_t        librg_world_fetch_chunk(librg_ctx *, librg_chunk, int **entity_ids, size_t buffer_limit);
+LIBRG_API size_t        librg_world_fetch_chunkarray(librg_ctx *, librg_chunk *, size_t chunk_amount, int **entity_ids, size_t buffer_limit);
+LIBRG_API size_t        librg_world_fetch_owner(librg_ctx *, int owner_id, int **entity_ids, size_t buffer_limit);
+LIBRG_API size_t        librg_world_fetch_ownerarray(librg_ctx *, int *owner_ids, size_t owner_amount, int **entity_ids, size_t buffer_limit);
 
-LIBRG_API int           librg_event_add(librg_ctx *, librg_event_id, librg_event_callback);
+/* event system */
+typedef int (*librg_event_fn) (librg_ctx *ctx, int owner_id, int entity_id, char *buffer, size_t size, void *userdata);
+
+LIBRG_API int           librg_event_set(librg_ctx *, librg_event_id, librg_event_fn);
 LIBRG_API int           librg_event_remove(librg_ctx *, librg_event_id);
-LIBRG_API int           librg_event_reject(librg_ctx *, librg_event *);
 
-LIBRG_API int           librg_entity_add(librg_ctx *, librg_entity_id);
-LIBRG_API int           librg_entity_remove(librg_ctx *, librg_entity_id);
-LIBRG_API int           librg_entity_valid(librg_ctx *, librg_entity_id);
-LIBRG_API int           librg_entity_userdata_set(librg_ctx *, librg_entity_id, void *data);
-LIBRG_API void *        librg_entity_userdata_get(librg_ctx *, librg_entity_id);
+/* basic entity manipulation */
+LIBRG_API int           librg_entity_set(librg_ctx *, int entity_id);
+LIBRG_API int           librg_entity_remove(librg_ctx *, int entity_id);
+LIBRG_API int           librg_entity_valid(librg_ctx *, int entity_id);
+LIBRG_API int           librg_entity_userdata_set(librg_ctx *, int entity_id, void *data);
+LIBRG_API void *        librg_entity_userdata_get(librg_ctx *, int entity_id);
 
-LIBRG_API size_t        librg_entity_query(librg_ctx *, librg_entity_id, librg_entity **results, size_t buffer_limit);
-LIBRG_API size_t        librg_entity_fetch_all(librg_ctx *, librg_entity **results, size_t buffer_limit);
-LIBRG_API size_t        librg_entity_fetch_chunk(librg_ctx *, librg_chunk, librg_entity **results, size_t buffer_limit);
-LIBRG_API size_t        librg_entity_fetch_chunkarray(librg_ctx *, librg_chunk *, size_t chunk_amount, librg_entity **results, size_t buffer_limit);
+/* simple entity data methods */
+LIBRG_API int           librg_entity_type_set(librg_ctx *, int entity_id, int type);
+LIBRG_API int           librg_entity_type_get(librg_ctx *, int entity_id);
+LIBRG_API int           librg_entity_chunk_set(librg_ctx *, int entity_id, librg_chunk);
+LIBRG_API librg_chunk   librg_entity_chunk_get(librg_ctx *, int entity_id);
+LIBRG_API int           librg_entity_owner_set(librg_ctx *, int entity_id, int owner_id, int8_t observed_range);
+LIBRG_API int           librg_entity_owner_get(librg_ctx *, int entity_id);
+LIBRG_API int           librg_entity_dimension_set(librg_ctx *, int entity_id, int32_t dimension);
+LIBRG_API int32_t       librg_entity_dimension_get(librg_ctx *, int entity_id);
 
-LIBRG_API int           librg_entity_type_set(librg_ctx *, librg_entity_id, int type);
-LIBRG_API int           librg_entity_type_get(librg_ctx *, librg_entity_id);
-LIBRG_API int           librg_entity_chunk_set(librg_ctx *, librg_entity_id, librg_chunk);
-LIBRG_API librg_chunk   librg_entity_chunk_get(librg_ctx *, librg_entity_id);
-LIBRG_API int           librg_entity_chunkarray_set(librg_ctx *, librg_entity_id, librg_chunk *, size_t chunk_amount);
-LIBRG_API size_t        librg_entity_chunkarray_get(librg_ctx *, librg_entity_id, librg_chunk **results);
-LIBRG_API int           librg_entity_owner_set(librg_ctx *, librg_entity_id, librg_owner, int observer);
-LIBRG_API librg_owner   librg_entity_owner_get(librg_ctx *, librg_entity_id);
-LIBRG_API int           librg_entity_chunkrange_set(librg_ctx *, librg_entity_id, int8_t range);
-LIBRG_API int8_t        librg_entity_chunkrange_get(librg_ctx *, librg_entity_id);
-LIBRG_API int           librg_entity_refresh_set(librg_ctx *, librg_entity_id, int type, float value);
-LIBRG_API int           librg_entity_refresh_get(librg_ctx *, librg_entity_id, int *type, float *value);
-LIBRG_API int           librg_entity_dimension_set(librg_ctx *, librg_entity_id, int32_t dimension);
-LIBRG_API int32_t       librg_entity_dimension_get(librg_ctx *, librg_entity_id);
+/* advanced entity data methods */
+LIBRG_API int           librg_entity_chunkarray_set(librg_ctx *, int entity_id, librg_chunk *, size_t chunk_amount);
+LIBRG_API size_t        librg_entity_chunkarray_get(librg_ctx *, int entity_id, librg_chunk **results);
+LIBRG_API int           librg_entity_refresh_set(librg_ctx *, int entity_id, int type, float value); // ??
+LIBRG_API int           librg_entity_refresh_get(librg_ctx *, int entity_id, int *type, float *value);
 
-LIBRG_API librg_entity  librg_entity_from_client(librg_ctx *, librg_owner);
-LIBRG_API librg_owner   librg_client_from_entity(librg_ctx *, librg_entity_id);
+/* utils */
 LIBRG_API librg_chunk   librg_chunk_from_realpos(librg_ctx *, double x, double y, double z);
 LIBRG_API librg_chunk   librg_chunk_from_chunkpos(librg_ctx *, int16_t chunk_x, int16_t chunk_y, int16_t chunk_z);
 
@@ -118,7 +106,7 @@ int main() {
     librg_config_worldsize_set(ctx, 256, 256, 256);
 
     /* called by a librg_world_write, to encode the data for a child */
-    librg_event_add(ctx, LIBRG_PARENT_CREATE, [](librg_event *e) {
+    librg_event_set(ctx, LIBRG_PARENT_CREATE, [](librg_event *e) {
         /* returning > 0 - amount of data we've written */
         /* return 0 - no data written */
         /* return < 0 - return an error, will be pased to the parent world_write call */
@@ -126,23 +114,23 @@ int main() {
     });
 
     /* called by librg_world_read, to decode the data from a parent */
-    librg_event_add(ctx, LIBRG_CHILD_CREATE, [](librg_event *e) {
+    librg_event_set(ctx, LIBRG_CHILD_CREATE, [](librg_event *e) {
         /* return 0 - ok */
         /* return < 0 - return an error, will be pased to the parent world_read call */
         return 0;
     });
 
     /* create a few simple entities */
-    librg_entity_add(ctx, 13);
+    librg_entity_set(ctx, 13);
     librg_entity_type_set(ctx, 13, LIBRG_STATIC); /*static entity - no update events will ever be generated for it*/
 
     /* additionaly, set a refresh rate */
-    librg_entity_add(ctx, 14);
+    librg_entity_set(ctx, 14);
     librg_entity_type_set(ctx, 15, LIBRG_DYNAMIC); /* dynamic entity - entity always will be kept updated (default value) */
     librg_entity_refresh_set(ctx, 14, LIBRG_LINEAR, 20.0f); /*amount of updates shown to a specific observer*/
                                                             /*will divided by 2, every 20.0f units depending how far they are*/
     /* add an observer entity */
-    librg_entity_add(ctx, 15);
+    librg_entity_set(ctx, 15);
     librg_entity_owner_set(ctx, 15, 100, 1); /* set owner and, mark it as observable */
     librg_entity_chunkrange_set(ctx, 15, 5); /* chunk range sets a viewable range by our observer */
     /* owner id can be anything, a ID from a newtork connection, a random number, or a ptr to a instance of a class */
