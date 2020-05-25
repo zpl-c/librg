@@ -55,9 +55,9 @@ LIBRG_API int           librg_config_worldsize_set(librg_ctx *, uint16_t x, uint
 LIBRG_API int           librg_config_worldsize_get(librg_ctx *, uint16_t *x, uint16_t *y, uint16_t *z);
 
 /* world data methods */
-LIBRG_API int           librg_world_write(librg_ctx *, int owner_id, char *buffer, size_t limit, void *userdata);
+LIBRG_API int           librg_world_write(librg_ctx *, int owner_id, char *buffer, size_t buffer_limit, void *userdata);
 LIBRG_API int           librg_world_read(librg_ctx *, int owner_id, char *buffer, size_t size, void *userdata);
-LIBRG_API size_t        librg_world_query(librg_ctx *, int entity_id, int **entity_ids, size_t buffer_limit);
+LIBRG_API size_t        librg_world_query(librg_ctx *, int owner_id, int **entity_ids, size_t buffer_limit);
 LIBRG_API size_t        librg_world_fetch_all(librg_ctx *, int **entity_ids, size_t buffer_limit);
 LIBRG_API size_t        librg_world_fetch_chunk(librg_ctx *, librg_chunk, int **entity_ids, size_t buffer_limit);
 LIBRG_API size_t        librg_world_fetch_chunkarray(librg_ctx *, librg_chunk *, size_t chunk_amount, int **entity_ids, size_t buffer_limit);
