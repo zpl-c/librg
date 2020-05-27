@@ -9,7 +9,7 @@ LIBRG_BEGIN_C_DECLS
 
 // =======================================================================//
 // !
-// ! Implementation compile-time configuration
+// ! Macro based helpers, and functions available for redefintion
 // !
 // =======================================================================//
 
@@ -32,18 +32,6 @@ LIBRG_BEGIN_C_DECLS
 #endif
 #endif
 
-/* defines how many max chunks an entity */
-/* can be located in simultaneously */
-#ifndef LIBRG_ENTITY_MAXCHUNKS
-#define LIBRG_ENTITY_MAXCHUNKS 8
-#endif
-
-/* defines how many max chunks an owner */
-/* can see in a single query */
-#ifndef LIBRG_QUERY_MAXCHUNKS
-#define LIBRG_QUERY_MAXCHUNKS 256
-#endif
-
 #ifndef LIBRG_MIN
 #define LIBRG_MIN(a, b) ((a) < (b) ? (a) : (b))
 #endif
@@ -52,6 +40,24 @@ LIBRG_BEGIN_C_DECLS
 #define LIBRG_MAX(a, b) ((a) > (b) ? (a) : (b))
 #endif
 
+// =======================================================================//
+// !
+// ! Compile-time static configuration settings
+// !
+// =======================================================================//
+
+
+/* defines how many max chunks an entity */
+/* can be located in simultaneously */
+#ifndef LIBRG_ENTITY_MAXCHUNKS
+#define LIBRG_ENTITY_MAXCHUNKS 8
+#endif
+
+/* defines how many max entity ids could be used  */
+/* inside of the librg_world_write call */
+#ifndef LIBRG_WORLDWRITE_MAXQUERY
+#define LIBRG_WORLDWRITE_MAXQUERY 4096
+#endif
 
 // =======================================================================//
 // !

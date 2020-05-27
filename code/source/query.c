@@ -19,11 +19,21 @@ enum {
 // !
 // =======================================================================//
 
-// int8_t librg_world_read(librg_world *, int64_t owner_id, char *buffer, size_t size, void *userdata) {
+// size_t librg_world_write(librg_world *world, int64_t owner_id, char *buffer, size_t buffer_limit, void *userdata) {
+//     LIBRG_ASSERT(world); if (!world) return LIBRG_WORLD_INVALID;
+//     librg_world_t *wld = (librg_world_t *)world;
 
+//     int64_t results[LIBRG_WORLDWRITE_MAXQUERY] = {0};
+//     size_t amount = librg_world_query(world, owner_id, results, LIBRG_WORLDWRITE_MAXQUERY);
+
+//     for (int i = 0; i < amount; ++i) {
+//         int64_t entity_id = results[i];
+//     }
+
+//     return 0;
 // }
 
-// size_t librg_world_write(librg_world *, int64_t owner_id, char *buffer, size_t buffer_limit, void *userdata) {
+// int8_t librg_world_read(librg_world *, int64_t owner_id, char *buffer, size_t size, void *userdata) {
 
 // }
 
@@ -169,11 +179,6 @@ size_t librg_world_query(librg_world *world, int64_t owner_id, int64_t *entity_i
             dim_chunks = librg_table_dim_get(&dimensions, entity->dimension);
             librg_table_i64_init(dim_chunks, wld->allocator);
         }
-
-        // size_t chunk_count = 0;
-        // librg_chunk visible_chunks[LIBRG_QUERY_MAXCHUNKS] = {0};
-
-        // TODO: add sphere building for view range
 
         /* add entity chunks to the total visible chunks */
         for (int k = 0; k < LIBRG_ENTITY_MAXCHUNKS; ++k) {
