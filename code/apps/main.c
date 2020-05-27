@@ -111,31 +111,35 @@ int main() {
     assert(librg_world_valid(world));
 
     librg_config_chunksize_set(world, 16, 16, 16);
-    librg_config_chunkamount_set(world, 7, 7, 7);
+    librg_config_chunkamount_set(world, 16, 16, 16);
     librg_config_chunkoffset_set(world, LIBRG_OFFSET_MID, LIBRG_OFFSET_MID, LIBRG_OFFSET_MID);
 
     librg_event_set(world, LIBRG_WRITE_CREATE, _parent_create);
     librg_event_set(world, LIBRG_READ_CREATE, _child_create);
 
     const int myId = 24;
+    const int observerRadius = 3;
     const librg_chunk chunkId = librg_chunk_from_chunkpos(world, 0, 0, 0);
 
     librg_entity_track(world, myId);
     printf("setting chunk to: %lld\n", chunkId);
     librg_entity_chunk_set(world, myId, chunkId);
-    librg_entity_owner_set(world, myId, 1, 2);
+    librg_entity_owner_set(world, myId, 1, observerRadius);
 
-    for (int i=0;i<100;i++) {
+    const int totalEnts = 40000;
+    for (int i=0;i<totalEnts;i++) {
         if (librg_entity_track(world, i) == LIBRG_OK) {
-            librg_entity_chunk_set(world, i, librg_chunk_from_chunkpos(world, i, 0, 0));
+            librg_entity_chunk_set(world, i, librg_chunk_from_chunkpos(world, -3+(i%6), -2+(i%4), -1+(i%2)));
         }
     }
 
-    int64_t results[255] = {0};
-    int amount = librg_world_query(world, 1, results, 255);
-    printf("query found: %d results\n", amount);
-    for (int i=0; i<amount; i++) printf("result #%d: %lld\n", i, results[i]);
+    printf("> querying...\n");
 
+    f64 tstart = zpl_time_now();
+    int64_t results[65655] = {0};
+    int amount = librg_world_query(world, 1, results, 65655);
+    printf("query found %d results of %d in (%.3f ms)\n", amount, totalEnts, zpl_time_now() - tstart);
+    // for (int i=0; i<amount; i++) printf("result #%d: %lld\n", i, results[i]);
 
     librg_entity_untrack(world, myId);
     librg_world_destroy(world);

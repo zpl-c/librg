@@ -228,7 +228,7 @@ size_t librg_world_query(librg_world *world, int64_t owner_id, int64_t *entity_i
     librg_table_dim_destroy(&dimensions);
     librg_table_i64_destroy(&results);
 
-    return count;
+    return LIBRG_MIN(buffer_limit, count);
 
 }
 
