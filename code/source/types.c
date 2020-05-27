@@ -13,8 +13,6 @@ LIBRG_BEGIN_C_DECLS
 // !
 // =======================================================================//
 
-#define LIBRG_ASSERT(x)
-
 /* allows to define a custom allocator */
 #ifndef LIBRG_MEM_ALLOC
 #define LIBRG_MEM_ALLOC(size) zpl_malloc(size)
@@ -23,6 +21,15 @@ LIBRG_BEGIN_C_DECLS
 /* allows to define a custom de-allocator */
 #ifndef LIBRG_MEM_FREE
 #define LIBRG_MEM_FREE(ptr) zpl_mfree(ptr)
+#endif
+
+/* allows to define a custom assert handler */
+#ifndef LIBRG_ASSERT
+#if defined(_DEBUG) || defined(LIBRG_DEBUG)
+#define LIBRG_ASSERT(x) ZPL_ASSERT(x)
+#else
+#define LIBRG_ASSERT(x)
+#endif
 #endif
 
 /* defines how many max chunks an entity */

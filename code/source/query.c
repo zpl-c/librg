@@ -15,7 +15,7 @@ enum {
 
 // =======================================================================//
 // !
-// ! World data/query methods
+// ! World data (de)serialization methods
 // !
 // =======================================================================//
 
@@ -27,11 +27,96 @@ enum {
 
 // }
 
+// =======================================================================//
+// !
+// ! Simple general fetching methods
+// !
+// =======================================================================//
+
+size_t librg_world_fetch_all(librg_world *world, int64_t *entity_ids, size_t buffer_limit) {
+    LIBRG_ASSERT(world); if (!world) return LIBRG_WORLD_INVALID;
+    librg_world_t *wld = (librg_world_t *)world;
+
+    size_t count = 0;
+    size_t total_count = zpl_array_count(wld->entity_map.entries);
+
+    for (size_t i=0; i < zpl_min(buffer_limit, total_count); ++i) {
+        entity_ids[count++] = wld->entity_map.entries[i].key;
+    }
+
+    return count;
+}
+
+size_t librg_world_fetch_chunk(librg_world *world, librg_chunk chunk, int64_t *entity_ids, size_t buffer_limit) {
+    return librg_world_fetch_chunkarray(world, (librg_chunk[]){chunk}, 1, entity_ids, buffer_limit);
+}
+
+size_t librg_world_fetch_chunkarray(librg_world *world, librg_chunk *chunks, size_t chunk_amount, int64_t *entity_ids, size_t buffer_limit) {
+    LIBRG_ASSERT(world); if (!world) return LIBRG_WORLD_INVALID;
+    librg_world_t *wld = (librg_world_t *)world;
+
+    size_t count = 0;
+    size_t total_count = zpl_array_count(wld->entity_map.entries);
+
+    for (size_t i=0; i < zpl_min(buffer_limit, total_count); ++i) {
+        uint64_t entity_id = wld->entity_map.entries[i].key;
+        librg_entity_t *entity = &wld->entity_map.entries[i].value;
+
+        for (size_t k = 0; k < chunk_amount; ++k) {
+            librg_chunk chunk = chunks[k];
+
+            for (size_t j=0; j < LIBRG_ENTITY_MAXCHUNKS; ++j) {
+                if (entity->chunks[j] == chunk) {
+                    entity_ids[count++] = entity_id;
+                    break;
+                }
+
+                /* immidiately exit if chunk is invalid (the rest will also be invalid) */
+                if (entity->chunks[j] == LIBRG_CHUNK_INVALID) {
+                    break;
+                }
+            }
+        }
+    }
+
+    return count;
+}
+
+size_t librg_world_fetch_owner(librg_world *world, int64_t owner_id, int64_t *entity_ids, size_t buffer_limit) {
+    return librg_world_fetch_ownerarray(world, (int64_t[]){owner_id}, 1, entity_ids, buffer_limit);
+}
+
+size_t librg_world_fetch_ownerarray(librg_world *world, int64_t *owner_ids, size_t owner_amount, int64_t *entity_ids, size_t buffer_limit) {
+    LIBRG_ASSERT(world); if (!world) return LIBRG_WORLD_INVALID;
+    librg_world_t *wld = (librg_world_t *)world;
+
+    size_t count = 0;
+    size_t total_count = zpl_array_count(wld->entity_map.entries);
+
+    for (size_t i=0; i < zpl_min(buffer_limit, total_count); ++i) {
+        uint64_t entity_id = wld->entity_map.entries[i].key;
+        librg_entity_t *entity = &wld->entity_map.entries[i].value;
+
+        for (size_t k = 0; k < owner_amount; ++k) {
+            int64_t owner_id = owner_ids[k];
+            if (entity->owner_id == owner_id) entity_ids[count++] = entity_id;
+        }
+    }
+
+    return count;
+}
+
+// =======================================================================//
+// !
+// ! Main owner entity query method
+// !
+// =======================================================================//
+
+ZPL_TABLE(static inline, librg_table_dim, librg_table_dim_, librg_table_i64);
+
 // static LIBRG_ALWAYS_INLINE size_t librg_util_chunkrange(int8_t radius, ) {
 
 // }
-
-ZPL_TABLE(static inline, librg_table_dim, librg_table_dim_, librg_table_i64);
 
 size_t librg_world_query(librg_world *world, int64_t owner_id, int64_t *entity_ids, size_t buffer_limit) {
     LIBRG_ASSERT(world); if (!world) return LIBRG_WORLD_INVALID;
@@ -129,79 +214,6 @@ size_t librg_world_query(librg_world *world, int64_t owner_id, int64_t *entity_i
 
     return count;
 
-}
-
-size_t librg_world_fetch_all(librg_world *world, int64_t *entity_ids, size_t buffer_limit) {
-    LIBRG_ASSERT(world); if (!world) return LIBRG_WORLD_INVALID;
-    librg_world_t *wld = (librg_world_t *)world;
-
-    size_t count = 0;
-    size_t total_count = zpl_array_count(wld->entity_map.entries);
-
-    for (size_t i=0; i < zpl_min(buffer_limit, total_count); ++i) {
-        entity_ids[count++] = wld->entity_map.entries[i].key;
-    }
-
-    return count;
-}
-
-size_t librg_world_fetch_chunk(librg_world *world, librg_chunk chunk, int64_t *entity_ids, size_t buffer_limit) {
-    return librg_world_fetch_chunkarray(world, (librg_chunk[]){chunk}, 1, entity_ids, buffer_limit);
-}
-
-size_t librg_world_fetch_chunkarray(librg_world *world, librg_chunk *chunks, size_t chunk_amount, int64_t *entity_ids, size_t buffer_limit) {
-    LIBRG_ASSERT(world); if (!world) return LIBRG_WORLD_INVALID;
-    librg_world_t *wld = (librg_world_t *)world;
-
-    size_t count = 0;
-    size_t total_count = zpl_array_count(wld->entity_map.entries);
-
-    for (size_t i=0; i < zpl_min(buffer_limit, total_count); ++i) {
-        uint64_t entity_id = wld->entity_map.entries[i].key;
-        librg_entity_t *entity = &wld->entity_map.entries[i].value;
-
-        for (size_t k = 0; k < chunk_amount; ++k) {
-            librg_chunk chunk = chunks[k];
-
-            for (size_t j=0; j < LIBRG_ENTITY_MAXCHUNKS; ++j) {
-                if (entity->chunks[j] == chunk) {
-                    entity_ids[count++] = entity_id;
-                    break;
-                }
-
-                /* immidiately exit if chunk is invalid (the rest will also be invalid) */
-                if (entity->chunks[j] == LIBRG_CHUNK_INVALID) {
-                    break;
-                }
-            }
-        }
-    }
-
-    return count;
-}
-
-size_t librg_world_fetch_owner(librg_world *world, int64_t owner_id, int64_t *entity_ids, size_t buffer_limit) {
-    return librg_world_fetch_ownerarray(world, (int64_t[]){owner_id}, 1, entity_ids, buffer_limit);
-}
-
-size_t librg_world_fetch_ownerarray(librg_world *world, int64_t *owner_ids, size_t owner_amount, int64_t *entity_ids, size_t buffer_limit) {
-    LIBRG_ASSERT(world); if (!world) return LIBRG_WORLD_INVALID;
-    librg_world_t *wld = (librg_world_t *)world;
-
-    size_t count = 0;
-    size_t total_count = zpl_array_count(wld->entity_map.entries);
-
-    for (size_t i=0; i < zpl_min(buffer_limit, total_count); ++i) {
-        uint64_t entity_id = wld->entity_map.entries[i].key;
-        librg_entity_t *entity = &wld->entity_map.entries[i].value;
-
-        for (size_t k = 0; k < owner_amount; ++k) {
-            int64_t owner_id = owner_ids[k];
-            if (entity->owner_id == owner_id) entity_ids[count++] = entity_id;
-        }
-    }
-
-    return count;
 }
 
 LIBRG_END_C_DECLS

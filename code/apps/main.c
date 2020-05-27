@@ -1,8 +1,25 @@
 #include <assert.h>
+// #include <stdlib.h>
+// #include <stdio.h>
+
+// void *myalloc(size_t size) {
+//     void *ptr = malloc(size);
+//     printf("allocating mem[%zd]: 0x%llx\n", size, (uint64_t)ptr);
+//     return ptr;
+// }
+
+// void myfree(void *ptr) {
+//     printf("freeing mem: 0x%llx\n", (uint64_t)ptr);
+//     free(ptr);
+//     return;
+// }
+
+// #define LIBRG_MEM_ALLOC(x) myalloc(x)
+// #define LIBRG_MEM_FREE(x) myfree(x)
 
 #define LIBRG_IMPL
+#define LIBRG_DEBUG
 #include "librg.h"
-
 
 /* usage */
 #if 0
@@ -93,8 +110,8 @@ int main() {
     librg_world *world = librg_world_create();
     assert(librg_world_valid(world));
 
-    librg_config_worldsize_set(world, 9, 9, 9);
     librg_config_chunksize_set(world, 16, 16, 16);
+    librg_config_chunkamount_set(world, 9, 9, 9);
     librg_config_chunkoffset_set(world, LIBRG_OFFSET_MID, LIBRG_OFFSET_MID, LIBRG_OFFSET_MID);
 
     librg_event_set(world, LIBRG_WRITE_CREATE, _parent_create);
@@ -103,6 +120,7 @@ int main() {
     const int myId = 24;
 
     librg_entity_track(world, myId);
+    librg_entity_chunk_set(world, myId, 3);
     librg_entity_owner_set(world, myId, 423, 1);
 
     for (int i=0;i<100;i++) {
@@ -110,29 +128,13 @@ int main() {
         librg_entity_chunk_set(world, i, i);
     }
 
-    assert(librg_entity_tracked(world, myId) == LIBRG_TRUE);
-
-    librg_entity_userdata_set(world, myId, (void *)124);
-    assert(librg_entity_userdata_get(world, myId) == (void *)124);
-
-    librg_entity_type_set(world, myId, LIBRG_ENTITY_STATIC);
-    assert(librg_entity_type_get(world, myId) == LIBRG_ENTITY_STATIC);
-
-    // librg_entity_chunk_set(world, myId, librg_chunk_from_realpos(world, 0.f, 0.f, 0.f));
-    librg_entity_chunk_set(world, myId, 3);
-    printf("entity chunk: %lld\n", librg_entity_chunk_get(world, myId));
-
     int64_t results[255] = {0};
     int amount = librg_world_query(world, 423, results, 255);
     printf("query found: %d results\n", amount);
     for (int i=0; i<amount; i++) printf("result #%d: %lld\n", i, results[i]);
 
-    librg_entity_dimension_set(world, myId, 1);
-    assert(librg_entity_dimension_get(world, myId) == 1);
 
     librg_entity_untrack(world, myId);
-    assert(librg_entity_tracked(world, myId) == LIBRG_FALSE);
-
     librg_world_destroy(world);
     return 0;
 }

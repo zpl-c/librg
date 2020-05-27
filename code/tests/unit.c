@@ -1,4 +1,5 @@
 #define LIBRG_IMPL
+#define LIBRG_DEBUG
 #include <librg.h>
 
 static int _g_modules = 0;
