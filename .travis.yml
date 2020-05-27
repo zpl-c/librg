@@ -7,6 +7,7 @@ compiler: clang
 
 script:
     - make test
+    - LEVEL=-O3 make test
 
 after_failure:
     - curl -v -H User-Agent:bot -H Content-Type:application/json -d '{"content":"**librg** '$TRAVIS_OS_NAME' build has failed! :no_entry:"}' https://discordapp.com/api/webhooks/$DISCORD_WEBHOOK_CHANNEL_ID/$DISCORD_WEBHOOK_TOKEN

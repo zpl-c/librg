@@ -1,7 +1,7 @@
-CC=gcc
-CXX=g++
+CC=${CC:-gcc}
+CXX=${CXX:-g++}
 STDC=-std=gnu11
-LEVEL=-g
+LEVEL=${LEVEL:--g}
 
 ifeq ($(OS),Windows_NT)
 	CFLAGS += -DWIN32
