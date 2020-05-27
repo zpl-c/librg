@@ -1,26 +1,39 @@
 {
   "name": "librg.c",
   "version": "5.0.6",
+  "author": "Inlife",
   "description": "Pure C library for building simple and elegant cross-platform multiplayer client-server solutions.",
+  "homepage": "https://github.com/reguider/librg#readme",
+  "license": "Apache-2.0",
   "main": "include/librg.h",
-  "directories": {
-    "test": "test"
-  },
-  "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
-  },
   "repository": {
     "type": "git",
     "url": "git+https://github.com/reguider/librg.git"
   },
-  "author": "Inlife",
-  "license": "Apache-2.0",
-  "bugs": {
-    "url": "https://github.com/reguider/librg/issues"
+  "scripts": {
+    "release": "release-it",
+    "release-patch": "release-it patch --ci",
+    "release-minor": "release-it minor --ci",
+    "release-major": "release-it major --ci",
+    "release-patch-pre": "release-it patch --preRelease=pre --ci",
+    "release-minor-pre": "release-it minor --preRelease=pre --ci",
+    "release-major-pre": "release-it major --preRelease=pre --ci"
   },
-  "homepage": "https://github.com/reguider/librg#readme",
-  "dependencies": {
-    "enet.c": "^2.1.3",
-    "zpl.c": "^9.4.5"
+  "devDependencies": {
+    "release-it": "^13.6.1"
+  },
+  "release-it": {
+    "npm": {
+      "publish": true
+    },
+    "github": {
+      "release": true,
+      "assets": [
+        "misc/deploy/librg.h"
+      ]
+    },
+    "plugins": {
+      "./misc/packager.js": {}
+    }
   }
 }

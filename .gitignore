@@ -1,5 +1,6 @@
 # Folders
 build/*
+misc/deploy/
 node_modules/
 build-win/*
 build-lin/*
