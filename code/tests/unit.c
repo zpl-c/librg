@@ -65,14 +65,14 @@ static int _g_errors = 0;
 #endif
 
 /* TEST CATEGORIES */
-#include "unit/context.h"
+#include "unit/general.h"
 #include "unit/entity.h"
-#include "unit/world.h"
+#include "unit/query.h"
 
 #define MODULE_LIST \
-    X(context) \
+    X(general) \
     X(entity) \
-    X(world)
+    X(query)
 
 int main() {
     int err = 0, cnt = 0;

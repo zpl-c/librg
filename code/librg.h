@@ -46,9 +46,9 @@
 #include <stddef.h>
 
 #include "header/types.h"
-#include "header/context.h"
-#include "header/world.h"
+#include "header/general.h"
 #include "header/entity.h"
+#include "header/query.h"
 
 /* Implementation part */
 #if defined(LIBRG_IMPLEMENTATION) && !defined(LIBRG_IMPLEMENTATION_DONE)
@@ -61,39 +61,10 @@
     #include "vendor/zpl.h"
 #endif
 
-// =======================================================================//
-// !
-// ! Implementation compile-time configuration
-// !
-// =======================================================================//
-
-#define LIBRG_ASSERT(x)
-
-/* allows to define a custom allocator */
-#ifndef LIBRG_MEM_ALLOC
-#define LIBRG_MEM_ALLOC(size) zpl_malloc(size)
-#endif
-
-/* allows to define a custom de-allocator */
-#ifndef LIBRG_MEM_FREE
-#define LIBRG_MEM_FREE(ptr) zpl_mfree(ptr)
-#endif
-
-/* defines how many max chunks an entity */
-/* can be located in simultaneously */
-#ifndef LIBRG_ENTITY_MAXCHUNKS
-#define LIBRG_ENTITY_MAXCHUNKS 8
-#endif
-
-/* defines how many max chunks an owner */
-/* can see in a single query */
-#ifndef LIBRG_QUERY_MAXCHUNKS
-#define LIBRG_QUERY_MAXCHUNKS 256
-#endif
-
-#include "source/context.c"
-#include "source/world.c"
+#include "source/types.c"
+#include "source/general.c"
 #include "source/entity.c"
+#include "source/query.c"
 
 #endif // LIBRG_IMPLEMENTATION
 
