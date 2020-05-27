@@ -68,9 +68,9 @@ static int _g_errors = 0;
 #endif
 
 /* TEST CATEGORIES */
-#include "unit/general.h"
-#include "unit/entity.h"
-#include "unit/query.h"
+#include "cases/general.h"
+#include "cases/entity.h"
+#include "cases/query.h"
 
 #define MODULE_LIST \
     X(general) \

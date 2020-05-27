@@ -39,7 +39,7 @@ all: clean apps test
 
 test: clean code/tests/unit
 	@echo '> Building unit tests'
-	./build/unit
+	build/unit
 
 apps: $(APPS)
 	@echo '> Building apps'
