@@ -40,7 +40,7 @@ size_t librg_world_fetch_all(librg_world *world, int64_t *entity_ids, size_t buf
     size_t count = 0;
     size_t total_count = zpl_array_count(wld->entity_map.entries);
 
-    for (size_t i=0; i < zpl_min(buffer_limit, total_count); ++i) {
+    for (size_t i=0; i < LIBRG_MIN(buffer_limit, total_count); ++i) {
         entity_ids[count++] = wld->entity_map.entries[i].key;
     }
 
@@ -58,7 +58,7 @@ size_t librg_world_fetch_chunkarray(librg_world *world, librg_chunk *chunks, siz
     size_t count = 0;
     size_t total_count = zpl_array_count(wld->entity_map.entries);
 
-    for (size_t i=0; i < zpl_min(buffer_limit, total_count); ++i) {
+    for (size_t i=0; i < LIBRG_MIN(buffer_limit, total_count); ++i) {
         uint64_t entity_id = wld->entity_map.entries[i].key;
         librg_entity_t *entity = &wld->entity_map.entries[i].value;
 
@@ -93,7 +93,7 @@ size_t librg_world_fetch_ownerarray(librg_world *world, int64_t *owner_ids, size
     size_t count = 0;
     size_t total_count = zpl_array_count(wld->entity_map.entries);
 
-    for (size_t i=0; i < zpl_min(buffer_limit, total_count); ++i) {
+    for (size_t i=0; i < LIBRG_MIN(buffer_limit, total_count); ++i) {
         uint64_t entity_id = wld->entity_map.entries[i].key;
         librg_entity_t *entity = &wld->entity_map.entries[i].value;
 
@@ -114,9 +114,22 @@ size_t librg_world_fetch_ownerarray(librg_world *world, int64_t *owner_ids, size
 
 ZPL_TABLE(static inline, librg_table_dim, librg_table_dim_, librg_table_i64);
 
-// static LIBRG_ALWAYS_INLINE size_t librg_util_chunkrange(int8_t radius, ) {
+static LIBRG_ALWAYS_INLINE void librg_util_chunkrange(librg_world *w, librg_table_i64 *ch, int cx, int cy, int cz, int8_t radius) {
+    int radius2 = radius * radius;
 
-// }
+    for (int z=-radius; z<=radius; z++) {
+        for (int y=-radius; y<=radius; y++) {
+            for (int x=-radius; x<=radius; x++) {
+                if(x*x+y*y+z*z <= radius2) {
+                    librg_chunk id = librg_chunk_from_chunkpos(w, cx+x, cy+y, cz+z);
+                    if (id != LIBRG_CHUNK_INVALID) librg_table_i64_set(ch, id, 1);
+                }
+            }
+        }
+    }
+
+    return;
+}
 
 size_t librg_world_query(librg_world *world, int64_t owner_id, int64_t *entity_ids, size_t buffer_limit) {
     LIBRG_ASSERT(world); if (!world) return LIBRG_WORLD_INVALID;
@@ -148,13 +161,13 @@ size_t librg_world_query(librg_world *world, int64_t owner_id, int64_t *entity_i
         if (entity->observed_radius == 0) continue;
 
         /* fetch, or create chunk set in this dimension if does not exist */
-        librg_table_i64 *chunks = librg_table_dim_get(&dimensions, entity->dimension);
+        librg_table_i64 *dim_chunks = librg_table_dim_get(&dimensions, entity->dimension);
 
-        if (!chunks) {
+        if (!dim_chunks) {
             librg_table_i64 _chunks = {0};
             librg_table_dim_set(&dimensions, entity->dimension, _chunks);
-            chunks = librg_table_dim_get(&dimensions, entity->dimension);
-            librg_table_i64_init(chunks, wld->allocator);
+            dim_chunks = librg_table_dim_get(&dimensions, entity->dimension);
+            librg_table_i64_init(dim_chunks, wld->allocator);
         }
 
         // size_t chunk_count = 0;
@@ -165,7 +178,10 @@ size_t librg_world_query(librg_world *world, int64_t owner_id, int64_t *entity_i
         /* add entity chunks to the total visible chunks */
         for (int k = 0; k < LIBRG_ENTITY_MAXCHUNKS; ++k) {
             if (entity->chunks[k] == LIBRG_CHUNK_INVALID) break;
-            librg_table_i64_set(chunks, entity->chunks[k], 1);
+
+            int16_t chx, chy, chz;
+            librg_chunk_to_chunkpos(world, entity->chunks[k], &chx, &chy, &chz);
+            librg_util_chunkrange(world, dim_chunks, chx, chy, chz, entity->observed_radius);
         }
     }
 
@@ -175,7 +191,7 @@ size_t librg_world_query(librg_world *world, int64_t owner_id, int64_t *entity_i
     size_t buffer_limit_extended = buffer_limit + owned_entities;
 
     /* iterate on all entities, and check if they are inside of the interested chunks */
-    for (size_t i=0; i < zpl_min(buffer_limit_extended, total_count); ++i) {
+    for (size_t i=0; i < LIBRG_MIN(buffer_limit_extended, total_count); ++i) {
         uint64_t entity_id = wld->entity_map.entries[i].key;
         librg_entity_t *entity = &wld->entity_map.entries[i].value;
         librg_table_i64 *chunks = librg_table_dim_get(&dimensions, entity->dimension);
@@ -202,7 +218,7 @@ size_t librg_world_query(librg_world *world, int64_t owner_id, int64_t *entity_i
 
     /* copy/transform results to a plain array */
     size_t count = zpl_array_count(results.entries);
-    for (size_t i = 0; i < zpl_min(buffer_limit, count); ++i)
+    for (size_t i = 0; i < LIBRG_MIN(buffer_limit, count); ++i)
         entity_ids[i] = results.entries[i].key;
 
     /* free up temp data */

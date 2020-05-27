@@ -3,9 +3,7 @@ MODULE(general, {
 
     IT("should be able to allocate and free an instance", {
         librg_world *world = librg_world_create();
-
         NEQUALS(world, NULL);
-
         r = librg_world_destroy(world);
         EQUALS(r, LIBRG_OK);
     });

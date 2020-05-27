@@ -181,7 +181,7 @@ int8_t librg_entity_chunkarray_set(librg_world *world, int64_t entity_id, librg_
     LIBRG_ASSERT(chunk_amount > 0 && chunk_amount < LIBRG_ENTITY_MAXCHUNKS);
 
     for (int i = 0; i < LIBRG_ENTITY_MAXCHUNKS; ++i) entity->chunks[i] = LIBRG_CHUNK_INVALID;
-    zpl_memcopy(entity->chunks, values, sizeof(librg_chunk) * zpl_min(chunk_amount, LIBRG_ENTITY_MAXCHUNKS));
+    zpl_memcopy(entity->chunks, values, sizeof(librg_chunk) * LIBRG_MIN(chunk_amount, LIBRG_ENTITY_MAXCHUNKS));
 
     return LIBRG_OK;
 
@@ -197,7 +197,7 @@ size_t librg_entity_chunkarray_get(librg_world *world, int64_t entity_id, librg_
     LIBRG_ASSERT(results);
     size_t count = 0;
 
-    for (size_t i = 0; i < zpl_min(buffer_limit, LIBRG_ENTITY_MAXCHUNKS); ++i) {
+    for (size_t i = 0; i < LIBRG_MIN(buffer_limit, LIBRG_ENTITY_MAXCHUNKS); ++i) {
         if (entity->chunks[i] != LIBRG_CHUNK_INVALID) {
             results[count++] = entity->chunks[i];
         }

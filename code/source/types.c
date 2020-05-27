@@ -26,7 +26,7 @@ LIBRG_BEGIN_C_DECLS
 /* allows to define a custom assert handler */
 #ifndef LIBRG_ASSERT
 #if defined(_DEBUG) || defined(LIBRG_DEBUG)
-#define LIBRG_ASSERT(x) ZPL_ASSERT(x)
+#define LIBRG_ASSERT(x) assert(x)
 #else
 #define LIBRG_ASSERT(x)
 #endif
@@ -42,6 +42,14 @@ LIBRG_BEGIN_C_DECLS
 /* can see in a single query */
 #ifndef LIBRG_QUERY_MAXCHUNKS
 #define LIBRG_QUERY_MAXCHUNKS 256
+#endif
+
+#ifndef LIBRG_MIN
+#define LIBRG_MIN(a, b) ((a) < (b) ? (a) : (b))
+#endif
+
+#ifndef LIBRG_MAX
+#define LIBRG_MAX(a, b) ((a) > (b) ? (a) : (b))
 #endif
 
 

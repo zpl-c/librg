@@ -1,5 +1,6 @@
 #define LIBRG_IMPL
 #define LIBRG_DEBUG
+#define LIBRG_ASSERT ZPL_ASSERT
 #include <librg.h>
 
 static int _g_modules = 0;

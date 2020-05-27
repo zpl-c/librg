@@ -1,6 +1,7 @@
 CC=gcc
 CXX=g++
 STDC=-std=gnu11
+LEVEL=-g
 
 ifeq ($(OS),Windows_NT)
 	CFLAGS += -DWIN32
@@ -24,8 +25,8 @@ else
 endif
 
 WARNS = -Wall -Wextra -Werror -Wno-missing-field-initializers -Wno-unused-value -Wno-unused-function -Wno-missing-braces
-CFLAGS += -g $(STDC) -Icode $(WARNS)
-CXXFLAGS += -g -std=c++11 -Icode $(WARNS)
+CFLAGS += $(LEVEL) $(STDC) -Icode $(WARNS)
+CXXFLAGS += $(LEVEL) -std=c++11 -Icode $(WARNS)
 
 APPS += $(patsubst %.c,%,$(wildcard code/apps/*.c))
 APPS += $(patsubst %.cc,%,$(wildcard code/apps/*.cc))

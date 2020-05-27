@@ -212,11 +212,31 @@ librg_chunk librg_chunk_from_chunkpos(librg_world *world, int16_t chunk_x, int16
 
     librg_chunk id = (chz * wld->worldsize.y * wld->worldsize.z) + (chy * wld->worldsize.y) + (chx);
 
-    if (id > (wld->worldsize.x * wld->worldsize.y * wld->worldsize.z)) {
+    if (id < 0 || id > (wld->worldsize.x * wld->worldsize.y * wld->worldsize.z)) {
         return LIBRG_CHUNK_INVALID;
     }
 
     return id;
+}
+
+int8_t librg_chunk_to_chunkpos(librg_world *world, librg_chunk id, int16_t *chunk_x, int16_t *chunk_y, int16_t *chunk_z) {
+    LIBRG_ASSERT(world); if (!world) return LIBRG_WORLD_INVALID;
+    librg_world_t *wld = (librg_world_t *)world;
+
+    if (id < 0 || id > (wld->worldsize.x * wld->worldsize.y * wld->worldsize.z)) {
+        return LIBRG_FAIL;
+    }
+
+    int16_t z = id / (wld->worldsize.z * wld->worldsize.y);
+    int16_t r1 = id % (wld->worldsize.z * wld->worldsize.y);
+    int16_t y = r1 / wld->worldsize.y;
+    int16_t x = r1 % wld->worldsize.y;
+
+    *chunk_x = x - librg_util_chunkoffset_line(0, wld->chunkoffset.x, wld->worldsize.x);
+    *chunk_y = y - librg_util_chunkoffset_line(0, wld->chunkoffset.y, wld->worldsize.y);
+    *chunk_z = z - librg_util_chunkoffset_line(0, wld->chunkoffset.z, wld->worldsize.z);
+
+    return LIBRG_OK;
 }
 
 librg_chunk librg_chunk_from_realpos(librg_world *world, double x, double y, double z) {

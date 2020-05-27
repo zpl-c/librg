@@ -258,4 +258,52 @@ MODULE(query, {
 
         librg_world_destroy(world);
     });
+
+    IT("should query entities using spherical check", {
+        librg_world *world = librg_world_create();
+
+        /* world of size 5 * 5 * 5 centered at middle */
+        librg_config_chunkamount_set(world, 5, 5, 5);
+        librg_config_chunkoffset_set(world, LIBRG_OFFSET_MID, LIBRG_OFFSET_MID, LIBRG_OFFSET_MID);
+
+        const int owner_id = 1;
+        const int observation_range = 2;
+
+        r = librg_entity_track(world, 1); EQUALS(r, LIBRG_OK);
+        r = librg_entity_owner_set(world, 1, owner_id, observation_range); EQUALS(r, LIBRG_OK);
+
+        for (int i = 1; i <= 10; ++i)
+            r = librg_entity_track(world, i); EQUALS(r, LIBRG_OK);
+
+        librg_entity_chunk_set(world, 1, librg_chunk_from_chunkpos(world, 0, 0, 0)); // observer in the middle
+
+        /* entities inside on each coodrinate */
+        librg_entity_chunk_set(world, 2, librg_chunk_from_chunkpos(world, 1, 0, 0));
+        librg_entity_chunk_set(world, 3, librg_chunk_from_chunkpos(world, 0, 1, 0));
+        librg_entity_chunk_set(world, 4, librg_chunk_from_chunkpos(world, 0, 0, 1));
+
+        /* entities inside, on the edges */
+        librg_entity_chunk_set(world, 5, librg_chunk_from_chunkpos(world, -1, -1, -1));
+        librg_entity_chunk_set(world, 6, librg_chunk_from_chunkpos(world, 0, 2, 0));
+        librg_entity_chunk_set(world, 7, librg_chunk_from_chunkpos(world, 0, 2, 0));
+
+        /* entities outside */
+        librg_entity_chunk_set(world, 8, librg_chunk_from_chunkpos(world, -5, -1, -1));
+        librg_entity_chunk_set(world, 9, librg_chunk_from_chunkpos(world, 0, 0, 3));
+        librg_entity_chunk_set(world, 10, librg_chunk_from_chunkpos(world, 2323, 0, 3));
+
+        int64_t results[16] = {0};
+        size_t amt = librg_world_query(world, owner_id, results, 16);
+
+        EQUALS(amt, 7);
+        EQUALS(results[0], 1); // own entity first
+        EQUALS(results[1], 2);
+        EQUALS(results[2], 3);
+        EQUALS(results[3], 4);
+        EQUALS(results[4], 5);
+        EQUALS(results[5], 6);
+        EQUALS(results[6], 7);
+
+        librg_world_destroy(world);
+    });
 });
