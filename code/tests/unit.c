@@ -71,11 +71,13 @@ static int _g_errors = 0;
 #include "cases/general.h"
 #include "cases/entity.h"
 #include "cases/query.h"
+#include "cases/packing.h"
 
 #define MODULE_LIST \
     X(general) \
     X(entity) \
-    X(query)
+    X(query) \
+    X(packing)
 
 int main() {
     int err = 0, cnt = 0;

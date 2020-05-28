@@ -39,9 +39,11 @@ typedef int64_t librg_chunk;
 #define LIBRG_VALID                     (+0x0001)
 #define LIBRG_INVALID                   (-0x0001)
 
+#define LIBRG_EVENT_REJECT              (-0x0001)
+
 #define LIBRG_WORLD_INVALID             (-0x0001)
-#define LIBRG_OWNER_INVALID             (-0x0001)
-#define LIBRG_CHUNK_INVALID             (-0x0002)
+#define LIBRG_OWNER_INVALID             (-0x0002)
+#define LIBRG_CHUNK_INVALID             (-0x0003)
 #define LIBRG_HANDLER_REPLACED          (-0x0002)
 #define LIBRG_HANDLER_EMPTY             (-0x0002)
 #define LIBRG_ENTITY_UNTRACKED          (-0x0002)

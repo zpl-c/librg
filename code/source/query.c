@@ -7,36 +7,6 @@
 
 LIBRG_BEGIN_C_DECLS
 
-enum {
-    LIBRG_OWNER_SET = LIBRG_READ_REMOVE+1,
-    LIBRG_OWNER_REMOVE,
-    LIBRG_OWNER_UPDATE,
-};
-
-// =======================================================================//
-// !
-// ! World data (de)serialization methods
-// !
-// =======================================================================//
-
-// size_t librg_world_write(librg_world *world, int64_t owner_id, char *buffer, size_t buffer_limit, void *userdata) {
-//     LIBRG_ASSERT(world); if (!world) return LIBRG_WORLD_INVALID;
-//     librg_world_t *wld = (librg_world_t *)world;
-
-//     int64_t results[LIBRG_WORLDWRITE_MAXQUERY] = {0};
-//     size_t amount = librg_world_query(world, owner_id, results, LIBRG_WORLDWRITE_MAXQUERY);
-
-//     for (int i = 0; i < amount; ++i) {
-//         int64_t entity_id = results[i];
-//     }
-
-//     return 0;
-// }
-
-// int8_t librg_world_read(librg_world *, int64_t owner_id, char *buffer, size_t size, void *userdata) {
-
-// }
-
 // =======================================================================//
 // !
 // ! Simple general fetching methods
@@ -61,7 +31,7 @@ size_t librg_world_fetch_chunk(librg_world *world, librg_chunk chunk, int64_t *e
     return librg_world_fetch_chunkarray(world, (librg_chunk[]){chunk}, 1, entity_ids, buffer_limit);
 }
 
-size_t librg_world_fetch_chunkarray(librg_world *world, librg_chunk *chunks, size_t chunk_amount, int64_t *entity_ids, size_t buffer_limit) {
+size_t librg_world_fetch_chunkarray(librg_world *world, const librg_chunk *chunks, size_t chunk_amount, int64_t *entity_ids, size_t buffer_limit) {
     LIBRG_ASSERT(world); if (!world) return LIBRG_WORLD_INVALID;
     librg_world_t *wld = (librg_world_t *)world;
 
@@ -96,7 +66,7 @@ size_t librg_world_fetch_owner(librg_world *world, int64_t owner_id, int64_t *en
     return librg_world_fetch_ownerarray(world, (int64_t[]){owner_id}, 1, entity_ids, buffer_limit);
 }
 
-size_t librg_world_fetch_ownerarray(librg_world *world, int64_t *owner_ids, size_t owner_amount, int64_t *entity_ids, size_t buffer_limit) {
+size_t librg_world_fetch_ownerarray(librg_world *world, const int64_t *owner_ids, size_t owner_amount, int64_t *entity_ids, size_t buffer_limit) {
     LIBRG_ASSERT(world); if (!world) return LIBRG_WORLD_INVALID;
     librg_world_t *wld = (librg_world_t *)world;
 
@@ -122,8 +92,6 @@ size_t librg_world_fetch_ownerarray(librg_world *world, int64_t *owner_ids, size
 // !
 // =======================================================================//
 
-ZPL_TABLE(static inline, librg_table_dim, librg_table_dim_, librg_table_i64);
-
 static LIBRG_ALWAYS_INLINE void librg_util_chunkrange(librg_world *w, librg_table_i64 *ch, int cx, int cy, int cz, int8_t radius) {
     int radius2 = radius * radius;
 
@@ -148,10 +116,10 @@ size_t librg_world_query(librg_world *world, int64_t owner_id, int64_t *entity_i
     size_t total_count = zpl_array_count(wld->entity_map.entries);
 
     librg_table_i64 results = {0};
-    librg_table_dim dimensions = {0};
+    librg_table_tbl dimensions = {0};
 
     librg_table_i64_init(&results, wld->allocator);
-    librg_table_dim_init(&dimensions, wld->allocator);
+    librg_table_tbl_init(&dimensions, wld->allocator);
 
     /* generate a map of visible chunks (only counting owned entities) */
     for (size_t i=0; i < total_count; ++i) {
@@ -171,12 +139,12 @@ size_t librg_world_query(librg_world *world, int64_t owner_id, int64_t *entity_i
         if (entity->observed_radius == 0) continue;
 
         /* fetch, or create chunk set in this dimension if does not exist */
-        librg_table_i64 *dim_chunks = librg_table_dim_get(&dimensions, entity->dimension);
+        librg_table_i64 *dim_chunks = librg_table_tbl_get(&dimensions, entity->dimension);
 
         if (!dim_chunks) {
             librg_table_i64 _chunks = {0};
-            librg_table_dim_set(&dimensions, entity->dimension, _chunks);
-            dim_chunks = librg_table_dim_get(&dimensions, entity->dimension);
+            librg_table_tbl_set(&dimensions, entity->dimension, _chunks);
+            dim_chunks = librg_table_tbl_get(&dimensions, entity->dimension);
             librg_table_i64_init(dim_chunks, wld->allocator);
         }
 
@@ -199,7 +167,7 @@ size_t librg_world_query(librg_world *world, int64_t owner_id, int64_t *entity_i
     for (size_t i=0; i < LIBRG_MIN(buffer_limit_extended, total_count); ++i) {
         uint64_t entity_id = wld->entity_map.entries[i].key;
         librg_entity_t *entity = &wld->entity_map.entries[i].value;
-        librg_table_i64 *chunks = librg_table_dim_get(&dimensions, entity->dimension);
+        librg_table_i64 *chunks = librg_table_tbl_get(&dimensions, entity->dimension);
 
         /* skip if there are no chunks in this dimension */
         if (!chunks) continue;
@@ -230,7 +198,7 @@ size_t librg_world_query(librg_world *world, int64_t owner_id, int64_t *entity_i
     for (int i = 0; i < zpl_array_count(dimensions.entries); ++i)
         librg_table_i64_destroy(&dimensions.entries[i].value);
 
-    librg_table_dim_destroy(&dimensions);
+    librg_table_tbl_destroy(&dimensions);
     librg_table_i64_destroy(&results);
 
     return LIBRG_MIN(buffer_limit, count);

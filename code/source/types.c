@@ -65,9 +65,19 @@ LIBRG_BEGIN_C_DECLS
 // !
 // =======================================================================//
 
+ZPL_TABLE(static inline, librg_table_i64, librg_table_i64_, int64_t);
+ZPL_TABLE(static inline, librg_table_tbl, librg_table_tbl_, librg_table_i64);
+
 typedef struct {
-    uint8_t type;
+    uint8_t type : 4;
+    uint8_t flag_owner_updated : 1;
+    uint8_t flag_unused_1 : 1;
+    uint8_t flag_unused_2 : 1;
+    uint8_t flag_unused_3 : 1;
+
     int8_t observed_radius;
+    uint16_t ownership_token;
+
     int32_t dimension;
     int64_t owner_id;
 
@@ -76,19 +86,20 @@ typedef struct {
     void *userdata;
 } librg_entity_t;
 
-ZPL_TABLE(static inline, librg_table_entity, librg_table_entity_, librg_entity_t);
-ZPL_TABLE(static inline, librg_table_i64, librg_table_i64_, int64_t);
+ZPL_TABLE(static inline, librg_table_ent, librg_table_ent_, librg_entity_t);
 
 typedef struct {
     uint8_t valid;
     zpl_allocator allocator;
+    zpl_random random;
 
     struct { uint16_t x, y, z; } worldsize;
     struct { uint16_t x, y, z; } chunksize;
     struct { int16_t x, y, z; } chunkoffset;
 
     librg_event_fn handlers[LIBRG_READ_REMOVE+1];
-    librg_table_entity entity_map;
+    librg_table_ent entity_map;
+    librg_table_tbl owner_map;
 
     void *userdata;
 } librg_world_t;

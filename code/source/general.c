@@ -59,7 +59,9 @@ librg_world *librg_world_create() {
     librg_config_chunkoffset_set((librg_world *)wld, LIBRG_OFFSET_MID, LIBRG_OFFSET_MID, LIBRG_OFFSET_MID);
 
     /* initialize internal structs */
-    librg_table_entity_init(&wld->entity_map, wld->allocator);
+    librg_table_ent_init(&wld->entity_map, wld->allocator);
+    librg_table_tbl_init(&wld->owner_map, wld->allocator);
+    zpl_random_init(&wld->random);
 
     return (librg_world *)wld;
 }
@@ -69,7 +71,12 @@ int8_t librg_world_destroy(librg_world *world) {
     librg_world_t *wld = (librg_world_t *)world;
 
     /* free up internal structs */
-    librg_table_entity_destroy(&wld->entity_map);
+    librg_table_ent_destroy(&wld->entity_map);
+
+    for (int i = 0; i < zpl_array_count(wld->owner_map.entries); ++i)
+        librg_table_i64_destroy(&wld->owner_map.entries[i].value);
+
+    librg_table_tbl_destroy(&wld->owner_map);
 
     /* mark it invalid */
     wld->valid = LIBRG_FALSE;

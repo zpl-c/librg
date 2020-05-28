@@ -65,6 +65,7 @@
 #include "source/general.c"
 #include "source/entity.c"
 #include "source/query.c"
+#include "source/packing.c"
 
 #endif // LIBRG_IMPLEMENTATION
 

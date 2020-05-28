@@ -50,7 +50,7 @@ LIBRG_API int32_t       librg_entity_dimension_get(librg_world *, int64_t entity
 // !
 // =======================================================================//
 
-LIBRG_API int8_t librg_entity_chunkarray_set(librg_world *, int64_t entity_id, librg_chunk *chunks, size_t chunk_amount);
+LIBRG_API int8_t librg_entity_chunkarray_set(librg_world *, int64_t entity_id, const librg_chunk *chunks, size_t chunk_amount);
 LIBRG_API size_t librg_entity_chunkarray_get(librg_world *, int64_t entity_id, LIBRG_OUT librg_chunk *chunks, size_t buffer_limit);
 LIBRG_API int8_t librg_entity_refresh_set(librg_world *, int64_t entity_id, int type, float value); // ??
 LIBRG_API int8_t librg_entity_refresh_get(librg_world *, int64_t entity_id, int *type, float *value);
