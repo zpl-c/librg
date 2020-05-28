@@ -71,7 +71,17 @@ world_write_action:
         size_t value_written = 0;
         size_t amount = 0;
 
-        /* newly created objects for a user */
+        // int64_t entity_id = LIBRG_ENTITY_INVALID;
+
+        // // add entity removes
+        // for (size_t i = 0; i < zpl_array_count(last_snapshot->entries); ++i) {
+        //     int64_t entity_id = last_snapshot->entries[i].key;
+
+        //     /* check if entity existed before */
+        //     int64_t not_existed = last_snapshot->entries[i].value;
+        //     if (not_existed == 2) continue;
+
+
         for (size_t i = 0; i < total; ++i) {
             int64_t entity_id = results[i];
             int64_t *existed_in_last = librg_table_i64_get(last_snapshot, entity_id);
@@ -80,14 +90,12 @@ world_write_action:
             if (action_id == LIBRG_WRITE_UPDATE && !!existed_in_last) {
                 /* make sure entity will be kept as updated, even if we can push it onto current buffer */
                 librg_table_i64_set(&next_snapshot, entity_id, 1);
+
+                /* mark entity as still alive, to prevent it from being removed */
+                librg_table_i64_set(last_snapshot, entity_id, 2);
             }
 
             if (condition && sz_value < buffer_limit) {
-                if (action_id == LIBRG_WRITE_UPDATE) {
-                    /* mark entity as still alive, to prevent it from being removed */
-                    librg_table_i64_set(last_snapshot, entity_id, 2);
-                }
-
                 librg_segval_t *val = (librg_segval_t*)(segend + value_written);
                 char *valend = (segend + value_written + sizeof(librg_segval_t));
 
@@ -133,6 +141,10 @@ world_write_action:
         action_id = LIBRG_WRITE_UPDATE;
         goto world_write_action;
     }
+    // else if (action_id == LIBRG_WRITE_UPDATE) {
+    //     action_id = LIBRG_WRITE_REMOVE;
+    //     goto world_write_action;
+    // }
 
     /* swap snapshot tables */
     librg_table_i64_destroy(last_snapshot);
