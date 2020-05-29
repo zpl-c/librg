@@ -1,4 +1,6 @@
 size_t dummy_2bytes(librg_world *world, librg_event *event) {
+    zpl_unused(world);
+
     event->buffer[0] = 9;
     event->buffer[1] = 9;
 
@@ -6,6 +8,8 @@ size_t dummy_2bytes(librg_world *world, librg_event *event) {
 }
 
 size_t dummy_2bytes_reject(librg_world *world, librg_event *event) {
+    zpl_unused(world);
+
     event->buffer[0] = 9;
     event->buffer[1] = 9;
 
@@ -13,6 +17,8 @@ size_t dummy_2bytes_reject(librg_world *world, librg_event *event) {
 }
 
 size_t dummy_size(librg_world *world, librg_event *event) {
+    zpl_unused(world);
+    zpl_unused(event);
     // printf("attempting to write create %lld with size limit of: %zd\n", event->entity_id, event->size);
     return 0;
 }
@@ -52,6 +58,21 @@ MODULE(packing, {
     // ! Create
     // !
     // =======================================================================//
+
+    IT("should write create for single entity", {
+        librg_world *world = librg_world_create();
+
+        r = librg_entity_track(world, 1); EQUALS(r, LIBRG_OK);
+        r = librg_entity_chunk_set(world, 1, 1); EQUALS(r, LIBRG_OK);
+        r = librg_entity_owner_set(world, 1, 1, 1); EQUALS(r, LIBRG_OK);
+        r = librg_event_set(world, LIBRG_WRITE_CREATE, dummy_size); EQUALS(r, LIBRG_OK);
+
+        char buffer[4096] = {0};
+        size_t amount = librg_world_write(world, 1, buffer, 4096, NULL);
+        size_t expected = SEGMENT_SIZE(1, 0); EQUALS(amount, expected);
+
+        r = librg_world_destroy(world); EQUALS(r, LIBRG_OK);
+    });
 
     IT("should write create section", {
         librg_world *world = librg_world_create();
@@ -232,6 +253,21 @@ MODULE(packing, {
         librg_world_write(world, 1, buffer, 4096, NULL);
         size_t amount = librg_world_write(world, 1, buffer, 4096, NULL);
         size_t expected = SEGMENT_SIZE(3, 0); EQUALS(amount, expected);
+
+        r = librg_world_destroy(world); EQUALS(r, LIBRG_OK);
+    });
+
+    IT("should write update for single entity", {
+        librg_world *world = librg_world_create();
+
+        r = librg_entity_track(world, 1); EQUALS(r, LIBRG_OK);
+        r = librg_entity_chunk_set(world, 1, 1); EQUALS(r, LIBRG_OK);
+        r = librg_entity_owner_set(world, 1, 1, 1); EQUALS(r, LIBRG_OK);
+
+        char buffer[4096] = {0};
+        librg_world_write(world, 1, buffer, 4096, NULL);
+        size_t amount = librg_world_write(world, 1, buffer, 4096, NULL);
+        size_t expected = SEGMENT_SIZE(1, 0); EQUALS(amount, expected);
 
         r = librg_world_destroy(world); EQUALS(r, LIBRG_OK);
     });

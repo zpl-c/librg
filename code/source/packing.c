@@ -49,7 +49,7 @@ size_t librg_world_write(librg_world *world, int64_t owner_id, char *buffer, siz
     librg_table_i64_init(&next_snapshot, wld->allocator);
 
     int64_t results[LIBRG_WORLDWRITE_MAXQUERY] = {0};
-    size_t total = librg_world_query(world, owner_id, results, LIBRG_WORLDWRITE_MAXQUERY);
+    size_t total_amount = librg_world_query(world, owner_id, results, LIBRG_WORLDWRITE_MAXQUERY);
     size_t total_written = 0;
 
     librg_event evt = {0};
@@ -61,17 +61,19 @@ size_t librg_world_write(librg_world *world, int64_t owner_id, char *buffer, siz
 
     uint8_t action_id = LIBRG_WRITE_CREATE;
 
-world_write_action:
+librg_lbl_ww:
 
     /* create and update */
     if (sz_total < buffer_limit) {
         librg_segment_t *seg = (librg_segment_t*)(buffer+total_written);
         char *segend = (buffer + sz_total);
 
-        size_t value_written = 0;
         size_t amount = 0;
+        size_t value_written = 0;
+        size_t iterations = total_amount;
 
-        // int64_t entity_id = LIBRG_ENTITY_INVALID;
+        int64_t entity_id = LIBRG_ENTITY_INVALID;
+        int32_t condition = 1;
 
         // // add entity removes
         // for (size_t i = 0; i < zpl_array_count(last_snapshot->entries); ++i) {
@@ -81,20 +83,33 @@ world_write_action:
         //     int64_t not_existed = last_snapshot->entries[i].value;
         //     if (not_existed == 2) continue;
 
+        /* for deletions we are iterating something else */
+        if (action_id == LIBRG_WRITE_REMOVE) {
+            iterations = zpl_array_count(last_snapshot->entries);
+        }
 
-        for (size_t i = 0; i < total; ++i) {
-            int64_t entity_id = results[i];
-            int64_t *existed_in_last = librg_table_i64_get(last_snapshot, entity_id);
-            int32_t condition = action_id == LIBRG_WRITE_CREATE ? !existed_in_last : !!existed_in_last;
+        for (size_t i = 0; i < iterations; ++i) {
+            /* preparation */
+            if (action_id == LIBRG_WRITE_CREATE) {
+                entity_id = results[i];
+                condition = librg_table_i64_get(last_snapshot, entity_id) == NULL; /* it did not exist */
+            }
+            else if (action_id == LIBRG_WRITE_UPDATE) {
+                entity_id = results[i];
+                condition = librg_table_i64_get(last_snapshot, entity_id) != NULL;  /* it did exist */
 
-            if (action_id == LIBRG_WRITE_UPDATE && !!existed_in_last) {
                 /* make sure entity will be kept as updated, even if we can push it onto current buffer */
                 librg_table_i64_set(&next_snapshot, entity_id, 1);
 
                 /* mark entity as still alive, to prevent it from being removed */
                 librg_table_i64_set(last_snapshot, entity_id, 2);
             }
+            else if (action_id == LIBRG_WRITE_REMOVE) {
+                entity_id = last_snapshot->entries[i].key;
+                condition = last_snapshot->entries[i].value != 2; /* it was not marked as updated */
+            }
 
+            /* data write */
             if (condition && sz_value < buffer_limit) {
                 librg_segval_t *val = (librg_segval_t*)(segend + value_written);
                 char *valend = (segend + value_written + sizeof(librg_segval_t));
@@ -136,15 +151,17 @@ world_write_action:
         }
     }
 
-    /* iterate it again for update */
     if (action_id == LIBRG_WRITE_CREATE) {
         action_id = LIBRG_WRITE_UPDATE;
-        goto world_write_action;
+        goto librg_lbl_ww;
     }
-    // else if (action_id == LIBRG_WRITE_UPDATE) {
-    //     action_id = LIBRG_WRITE_REMOVE;
-    //     goto world_write_action;
-    // }
+
+    /* iterate it again till all tasks are finished */
+    switch (action_id) {
+        case LIBRG_WRITE_CREATE: action_id = LIBRG_WRITE_UPDATE; goto librg_lbl_ww;
+        case LIBRG_WRITE_UPDATE: action_id = LIBRG_WRITE_REMOVE; goto librg_lbl_ww;
+        // case LIBRG_WRITE_REMOVE: action_id = LIBRG_WRITE_OWNER; goto librg_lbl_ww;
+    }
 
     /* swap snapshot tables */
     librg_table_i64_destroy(last_snapshot);
