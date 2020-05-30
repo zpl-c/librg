@@ -96,12 +96,12 @@ int main() {
 #endif
 /* impl part*/
 
-size_t _parent_create(librg_world *world, librg_event *event) {
+int16_t _parent_create(librg_world *world, librg_event *event) {
     printf("_parent_create %p %d\n", world, event->type);
     return 0;
 }
 
-size_t _child_create(librg_world *world, librg_event *event) {
+int16_t _child_create(librg_world *world, librg_event *event) {
     printf("_child_create %p %d\n", world, event->type);
     return 0;
 }

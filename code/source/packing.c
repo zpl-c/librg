@@ -73,15 +73,7 @@ librg_lbl_ww:
         size_t iterations = total_amount;
 
         int64_t entity_id = LIBRG_ENTITY_INVALID;
-        int32_t condition = 1;
-
-        // // add entity removes
-        // for (size_t i = 0; i < zpl_array_count(last_snapshot->entries); ++i) {
-        //     int64_t entity_id = last_snapshot->entries[i].key;
-
-        //     /* check if entity existed before */
-        //     int64_t not_existed = last_snapshot->entries[i].value;
-        //     if (not_existed == 2) continue;
+        int32_t condition = LIBRG_TRUE;
 
         /* for deletions we are iterating something else */
         if (action_id == LIBRG_WRITE_REMOVE) {
@@ -89,6 +81,9 @@ librg_lbl_ww:
         }
 
         for (size_t i = 0; i < iterations; ++i) {
+            int16_t action_rejected = LIBRG_TRUE;
+            int32_t data_size = 0;
+
             /* preparation */
             if (action_id == LIBRG_WRITE_CREATE) {
                 entity_id = results[i];
@@ -97,9 +92,6 @@ librg_lbl_ww:
             else if (action_id == LIBRG_WRITE_UPDATE) {
                 entity_id = results[i];
                 condition = librg_table_i64_get(last_snapshot, entity_id) != NULL;  /* it did exist */
-
-                /* make sure entity will be kept as updated, even if we can push it onto current buffer */
-                librg_table_i64_set(&next_snapshot, entity_id, 1);
 
                 /* mark entity as still alive, to prevent it from being removed */
                 librg_table_i64_set(last_snapshot, entity_id, 2);
@@ -114,8 +106,6 @@ librg_lbl_ww:
                 librg_segval_t *val = (librg_segval_t*)(segend + value_written);
                 char *valend = (segend + value_written + sizeof(librg_segval_t));
 
-                int32_t data_size = 0;
-
                 /* fill in event */
                 evt.entity_id = entity_id;
                 evt.type = action_id;
@@ -123,22 +113,34 @@ librg_lbl_ww:
                 evt.buffer = valend;
 
                 if (wld->handlers[action_id]) {
-                    data_size = wld->handlers[action_id](world, &evt);
+                    data_size = (int32_t)wld->handlers[action_id](world, &evt);
                 }
 
                 /* if user returned < 0, we consider that event rejected */
-                if (data_size < 0) {
-                    continue;
+                if (data_size >= 0) {
+                    /* fill in segval */
+                    val->id = entity_id;
+                    val->size = data_size;
+
+                    /* increase the total size written */
+                    value_written += sizeof(librg_segval_t) + val->size;
+                    action_rejected = LIBRG_FALSE;
+                    amount++;
                 }
+            }
 
-                /* fill in segval */
-                val->id = entity_id;
-                val->size = data_size;
-
-                /* increase the total size written */
-                value_written += sizeof(librg_segval_t) + val->size;
+            /* finaliztion */
+            if (action_id == LIBRG_WRITE_CREATE && !action_rejected) {
+                /* mark entity as created, so it can start updating */
                 librg_table_i64_set(&next_snapshot, entity_id, 1);
-                amount++;
+            }
+            else if (action_id == LIBRG_WRITE_UPDATE) {
+                /* consider entitry updated, without regards was it written or not */
+                librg_table_i64_set(&next_snapshot, entity_id, 1);
+            }
+            else if (action_id == LIBRG_WRITE_REMOVE && action_rejected) {
+                /* consider entity alive, till we are able to send it */
+                librg_table_i64_set(&next_snapshot, entity_id, 1);
             }
         }
 
