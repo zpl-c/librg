@@ -23,11 +23,11 @@ typedef enum librg_entity_refreshing {
 // !
 // =======================================================================//
 
-LIBRG_API int8_t librg_entity_track(librg_world *, int64_t entity_id);
-LIBRG_API int8_t librg_entity_untrack(librg_world *, int64_t entity_id);
-LIBRG_API int8_t librg_entity_tracked(librg_world *, int64_t entity_id);
-LIBRG_API int8_t librg_entity_userdata_set(librg_world *, int64_t entity_id, void *data);
-LIBRG_API void * librg_entity_userdata_get(librg_world *, int64_t entity_id);
+LIBRG_API int8_t  librg_entity_track(librg_world *, int64_t entity_id);
+LIBRG_API int8_t  librg_entity_untrack(librg_world *, int64_t entity_id);
+LIBRG_API int8_t  librg_entity_tracked(librg_world *, int64_t entity_id);
+LIBRG_API int8_t  librg_entity_foreign(librg_world *, int64_t entity_id);
+LIBRG_API int32_t librg_entity_count(librg_world *);
 
 // =======================================================================//
 // !
@@ -43,6 +43,8 @@ LIBRG_API int8_t        librg_entity_owner_set(librg_world *, int64_t entity_id,
 LIBRG_API int64_t       librg_entity_owner_get(librg_world *, int64_t entity_id);
 LIBRG_API int8_t        librg_entity_dimension_set(librg_world *, int64_t entity_id, int32_t dimension);
 LIBRG_API int32_t       librg_entity_dimension_get(librg_world *, int64_t entity_id);
+LIBRG_API int8_t        librg_entity_userdata_set(librg_world *, int64_t entity_id, void *data);
+LIBRG_API void *        librg_entity_userdata_get(librg_world *, int64_t entity_id);
 
 // =======================================================================//
 // !

@@ -39,6 +39,10 @@ int8_t librg_entity_untrack(librg_world *world, int64_t entity_id) {
 
     librg_entity_t *entity = librg_table_ent_get(&wld->entity_map, entity_id);
 
+    if (entity->flag_foreign == LIBRG_TRUE) {
+        return LIBRG_ENTITY_FOREIGN;
+    }
+
     if (entity->owner_id != LIBRG_OWNER_INVALID) {
         size_t owned = 0;
         size_t total = zpl_array_count(wld->entity_map.entries);
@@ -71,26 +75,23 @@ int8_t librg_entity_tracked(librg_world *world, int64_t entity_id) {
     return entity == NULL ? LIBRG_FALSE : LIBRG_TRUE;
 }
 
-int8_t librg_entity_userdata_set(librg_world *world, int64_t entity_id, void *data) {
+int8_t librg_entity_foreign(librg_world *world, int64_t entity_id) {
     LIBRG_ASSERT(world); if (!world) return LIBRG_WORLD_INVALID;
     librg_world_t *wld = (librg_world_t *)world;
 
     librg_entity_t *entity = librg_table_ent_get(&wld->entity_map, entity_id);
     if (entity == NULL) return LIBRG_ENTITY_UNTRACKED;
 
-    entity->userdata = data;
-    return LIBRG_OK;
+    return entity->flag_foreign == LIBRG_TRUE;
 }
 
-void *librg_entity_userdata_get(librg_world *world, int64_t entity_id) {
-    LIBRG_ASSERT(world); if (!world) return NULL;
+int32_t librg_entity_count(librg_world *world) {
+    LIBRG_ASSERT(world); if (!world) return LIBRG_WORLD_INVALID;
     librg_world_t *wld = (librg_world_t *)world;
 
-    librg_entity_t *entity = librg_table_ent_get(&wld->entity_map, entity_id);
-    if (entity == NULL) return NULL;
-
-    return entity->userdata;
+    return zpl_array_count(wld->entity_map.entries);
 }
+
 
 // =======================================================================//
 // !
@@ -201,6 +202,27 @@ int32_t librg_entity_dimension_get(librg_world *world, int64_t entity_id) {
     if (entity == NULL) return LIBRG_ENTITY_UNTRACKED;
 
     return entity->dimension;
+}
+
+int8_t librg_entity_userdata_set(librg_world *world, int64_t entity_id, void *data) {
+    LIBRG_ASSERT(world); if (!world) return LIBRG_WORLD_INVALID;
+    librg_world_t *wld = (librg_world_t *)world;
+
+    librg_entity_t *entity = librg_table_ent_get(&wld->entity_map, entity_id);
+    if (entity == NULL) return LIBRG_ENTITY_UNTRACKED;
+
+    entity->userdata = data;
+    return LIBRG_OK;
+}
+
+void *librg_entity_userdata_get(librg_world *world, int64_t entity_id) {
+    LIBRG_ASSERT(world); if (!world) return NULL;
+    librg_world_t *wld = (librg_world_t *)world;
+
+    librg_entity_t *entity = librg_table_ent_get(&wld->entity_map, entity_id);
+    if (entity == NULL) return NULL;
+
+    return entity->userdata;
 }
 
 // =======================================================================//

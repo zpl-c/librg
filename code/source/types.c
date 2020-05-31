@@ -71,7 +71,7 @@ ZPL_TABLE(static inline, librg_table_tbl, librg_table_tbl_, librg_table_i64);
 typedef struct {
     uint8_t type : 4;
     uint8_t flag_owner_updated : 1;
-    uint8_t flag_unused_1 : 1;
+    uint8_t flag_foreign : 1;
     uint8_t flag_unused_2 : 1;
     uint8_t flag_unused_3 : 1;
 
@@ -97,7 +97,7 @@ typedef struct {
     struct { uint16_t x, y, z; } chunksize;
     struct { int16_t x, y, z; } chunkoffset;
 
-    librg_event_fn handlers[LIBRG_READ_REMOVE+1];
+    librg_event_fn handlers[LIBRG_ERROR_REMOVE];
     librg_table_ent entity_map;
     librg_table_tbl owner_map;
 

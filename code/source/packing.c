@@ -9,15 +9,9 @@ LIBRG_BEGIN_C_DECLS
 
 // =======================================================================//
 // !
-// ! World data (de)packing methods
+// ! Primitives
 // !
 // =======================================================================//
-
-enum {
-    LIBRG_OWNER_SET = LIBRG_READ_REMOVE+1,
-    LIBRG_OWNER_REMOVE,
-    LIBRG_OWNER_UPDATE,
-};
 
 LIBRG_PRAGMA(pack(push, 1));
 typedef struct {
@@ -35,6 +29,13 @@ LIBRG_PRAGMA(pack(pop));
 
 LIBRG_STATIC_ASSERT(sizeof(librg_segval_t) == 10, "packed librg_segval_t should have a valid size");
 LIBRG_STATIC_ASSERT(sizeof(librg_segment_t) == 8, "packed librg_segment_t should have a valid size");
+
+
+// =======================================================================//
+// !
+// ! World data packing method
+// !
+// =======================================================================//
 
 size_t librg_world_write(librg_world *world, int64_t owner_id, char *buffer, size_t buffer_limit, void *userdata) {
     LIBRG_ASSERT(world); if (!world) return LIBRG_WORLD_INVALID;
@@ -175,8 +176,106 @@ librg_lbl_ww:
     return total_written;
 }
 
-// int8_t librg_world_read(librg_world *, int64_t owner_id, char *buffer, size_t size, void *userdata) {
+// =======================================================================//
+// !
+// ! World data unpacking method
+// !
+// =======================================================================//
 
-// }
+int32_t librg_world_read(librg_world *world, int64_t owner_id, const char *buffer, size_t size, void *userdata) {
+    LIBRG_ASSERT(world); if (!world) return LIBRG_WORLD_INVALID;
+    librg_world_t *wld = (librg_world_t *)world;
+
+    librg_event evt = {0};
+    evt.owner_id = owner_id;
+    evt.userdata = userdata;
+
+    size_t total_read = 0;
+
+    #define sz_segment (total_read + sizeof(librg_segment_t))
+    #define sz_segval (sz_segment + segment_read + sizeof(librg_segval_t))
+
+    while ((size-total_read) > sizeof(librg_segment_t)) {
+        librg_segment_t *seg = (librg_segment_t*)(buffer+total_read);
+        size_t segment_read = 0;
+
+        /* immidiately exit if we will not be able to read the segment data */
+        if (sz_segment+seg->size > size || sz_segment + seg->amount * sizeof(librg_segval_t) > size) {
+            break;
+        }
+
+        for (int i = 0; i < seg->amount; ++i) {
+            librg_segval_t *val = (librg_segval_t*)(buffer+sz_segment+segment_read);
+            int8_t action_id = -1;
+
+            /* do preparation for entity processing */
+            if (seg->type == LIBRG_WRITE_CREATE) {
+                action_id = librg_entity_track(world, val->id) == LIBRG_OK
+                    ? LIBRG_READ_CREATE
+                    : LIBRG_ERROR_CREATE;
+
+            }
+            else if (seg->type == LIBRG_WRITE_UPDATE) {
+                action_id = (librg_entity_tracked(world, val->id) == LIBRG_TRUE
+                    && librg_entity_foreign(world, val->id) == LIBRG_TRUE) /* TODO: add owner check as well */
+                    ? LIBRG_READ_UPDATE
+                    : LIBRG_ERROR_UPDATE;
+            }
+            else if (seg->type == LIBRG_WRITE_REMOVE) {
+                action_id = librg_entity_tracked(world, val->id) == LIBRG_OK
+                    ? LIBRG_READ_REMOVE
+                    : LIBRG_ERROR_REMOVE;
+            }
+
+            if (action_id == -1) {
+                return LIBRG_READ_INVALID;
+            }
+
+            /* do the initial entity processing */
+            if (action_id == LIBRG_READ_CREATE) {
+                /* mark newly created entity as foreign */
+                librg_entity_t *entity = librg_table_ent_get(&wld->entity_map, val->id);
+                if (!entity) return LIBRG_READ_INVALID; else entity->flag_foreign = LIBRG_TRUE;
+            }
+
+            /* fill in event */
+            evt.entity_id = val->id;
+            evt.type = action_id;
+            evt.size = val->size;
+            evt.buffer = (char*)(buffer+sz_segval);
+
+            if (wld->handlers[action_id]) {
+                /*ignore response*/
+                wld->handlers[action_id](world, &evt);
+            }
+
+            /* do the afterwork processing */
+            if (action_id == LIBRG_READ_REMOVE) {
+                /* remove foreign mark from entity */
+                librg_entity_t *entity = librg_table_ent_get(&wld->entity_map, val->id);
+                if (!entity) return LIBRG_READ_INVALID; else entity->flag_foreign = LIBRG_FALSE;
+                librg_entity_untrack(world, val->id);
+            }
+
+            segment_read += sizeof(librg_segval_t) + val->size;
+        }
+
+        /* validate sizes of the data we read */
+        if (segment_read != seg->size) {
+            return LIBRG_READ_INVALID;
+        }
+
+        total_read += sizeof(librg_segment_t) + segment_read;
+    }
+
+    #undef sz_segment
+    #undef sz_segval
+
+    if (total_read != size) {
+        return size - total_read;
+    }
+
+    return LIBRG_OK;
+}
 
 LIBRG_END_C_DECLS

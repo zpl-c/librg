@@ -46,6 +46,10 @@ typedef enum librg_events {
     LIBRG_READ_CREATE,
     LIBRG_READ_UPDATE,
     LIBRG_READ_REMOVE,
+
+    LIBRG_ERROR_CREATE,
+    LIBRG_ERROR_UPDATE,
+    LIBRG_ERROR_REMOVE,
 } librg_event_id;
 
 typedef struct {
@@ -57,7 +61,7 @@ typedef struct {
     void      * userdata;       /* userpointer that is passed from librg_world_write/librg_world_read fns */
 } librg_event;
 
-typedef int16_t (*librg_event_fn)(librg_world *, librg_event *);
+typedef int32_t (*librg_event_fn)(librg_world *, librg_event *);
 
 LIBRG_API int8_t librg_event_set(librg_world *, librg_event_id, librg_event_fn);
 LIBRG_API int8_t librg_event_remove(librg_world *, librg_event_id);
