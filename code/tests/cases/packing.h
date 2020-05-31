@@ -26,7 +26,7 @@ int32_t dummy_0size(librg_world *world, librg_event *event) {
 int32_t dummy_markuserdata(librg_world *w, librg_event *e) {
     zpl_unused(w);
     if (e->userdata) *((int*)e->userdata) = 1;
-    return 255;
+    return 0;
 }
 
 /* helper macro to print a segment */
@@ -441,14 +441,18 @@ MODULE(packing, {
         r = librg_entity_chunk_set(world, 3, 1); EQUALS(r, LIBRG_OK);
 
         r = librg_entity_owner_set(world, 1, 1, 1); EQUALS(r, LIBRG_OK);
+        r = librg_event_set(world, LIBRG_WRITE_REMOVE, dummy_markuserdata); EQUALS(r, LIBRG_OK);
 
         char buffer[4096] = {0};
+        int value = 0;
 
         librg_world_write(world, 1, buffer, 4096, NULL);
         librg_entity_untrack(world, 2);
 
-        size_t amount = librg_world_write(world, 1, buffer, 4096, NULL);
+        size_t amount = librg_world_write(world, 1, buffer, 4096, &value);
         size_t expected = SEGMENT_SIZE(2, 0) + SEGMENT_SIZE(1, 0); EQUALS(amount, expected);
+
+        EQUALS(value, 1);
 
         amount = librg_world_write(world, 1, buffer, 4096, NULL);
         expected = SEGMENT_SIZE(2, 0); EQUALS(amount, expected);
@@ -775,6 +779,162 @@ MODULE(packing, {
         r = librg_world_read(world2, 1, buffer, amount, &value); EQUALS(r, LIBRG_OK);
 
         EQUALS(value, 1); /* value == 1 means the LIBRG_ERROR_UPDATE call was indeed executed */
+
+        r = librg_world_destroy(world1); EQUALS(r, LIBRG_OK);
+        r = librg_world_destroy(world2); EQUALS(r, LIBRG_OK);
+    });
+
+    // =======================================================================//
+    // !
+    // ! Reading remove
+    // !
+    // =======================================================================//
+
+    printf(" * READ:REMOVE\n");
+
+    IT("should read remove for single entity", {
+        librg_world *world1 = librg_world_create();
+        librg_world *world2 = librg_world_create();
+
+        r = librg_entity_track(world1, 1); EQUALS(r, LIBRG_OK);
+        r = librg_entity_track(world1, 2); EQUALS(r, LIBRG_OK);
+        r = librg_entity_chunk_set(world1, 1, 1); EQUALS(r, LIBRG_OK);
+        r = librg_entity_chunk_set(world1, 2, 1); EQUALS(r, LIBRG_OK);
+        r = librg_entity_owner_set(world1, 1, 1, 1); EQUALS(r, LIBRG_OK);
+
+        r = librg_event_set(world2, LIBRG_READ_REMOVE, dummy_markuserdata); EQUALS(r, LIBRG_OK);
+
+        int value = 0;
+        size_t amount = 0;
+        char buffer[4096] = {0};
+
+        amount = librg_world_write(world1, 1, buffer, 4096, NULL);
+        r = librg_entity_count(world2); EQUALS(r, 0);
+        r = librg_world_read(world2, 1, buffer, amount, &value); EQUALS(r, LIBRG_OK);
+        r = librg_entity_count(world2); EQUALS(r, 2);
+
+        amount = librg_world_write(world1, 1, buffer, 4096, NULL);
+        r = librg_world_read(world2, 1, buffer, amount, &value); EQUALS(r, LIBRG_OK);
+        r = librg_entity_count(world2); EQUALS(r, 2);
+
+        librg_entity_untrack(world1, 2);
+
+        amount = librg_world_write(world1, 1, buffer, 4096, NULL);
+        r = librg_entity_count(world2); EQUALS(r, 2);
+        r = librg_world_read(world2, 1, buffer, amount, &value); EQUALS(r, LIBRG_OK);
+        r = librg_entity_count(world2); EQUALS(r, 1);
+
+        EQUALS(value, 1); /* value == 1 means the LIBRG_READ_REMOVE call was indeed executed */
+
+        r = librg_world_destroy(world1); EQUALS(r, LIBRG_OK);
+        r = librg_world_destroy(world2); EQUALS(r, LIBRG_OK);
+    });
+
+    IT("should fail to read remove for single entity with extra data", {
+        librg_world *world1 = librg_world_create();
+        librg_world *world2 = librg_world_create();
+
+        r = librg_entity_track(world1, 1); EQUALS(r, LIBRG_OK);
+        r = librg_entity_track(world1, 2); EQUALS(r, LIBRG_OK);
+        r = librg_entity_chunk_set(world1, 1, 1); EQUALS(r, LIBRG_OK);
+        r = librg_entity_chunk_set(world1, 2, 1); EQUALS(r, LIBRG_OK);
+        r = librg_entity_owner_set(world1, 1, 1, 1); EQUALS(r, LIBRG_OK);
+
+        r = librg_event_set(world1, LIBRG_WRITE_REMOVE, dummy_2bytes); EQUALS(r, LIBRG_OK);
+        r = librg_event_set(world2, LIBRG_READ_REMOVE, dummy_2bytes); EQUALS(r, LIBRG_OK);
+
+        int value = 0;
+        size_t amount = 0;
+        char buffer[4096] = {0};
+
+        amount = librg_world_write(world1, 1, buffer, 4096, NULL);
+        r = librg_entity_count(world2); EQUALS(r, 0);
+        r = librg_world_read(world2, 1, buffer, amount, &value); EQUALS(r, LIBRG_OK);
+        r = librg_entity_count(world2); EQUALS(r, 2);
+
+        amount = librg_world_write(world1, 1, buffer, 4096, NULL);
+        r = librg_world_read(world2, 1, buffer, amount, &value); EQUALS(r, LIBRG_OK);
+        r = librg_entity_count(world2); EQUALS(r, 2);
+
+        librg_entity_untrack(world1, 2);
+
+        amount = librg_world_write(world1, 1, buffer, 4096, NULL);
+        r = librg_entity_count(world2); EQUALS(r, 2);
+        r = librg_world_read(world2, 1, buffer, amount, &value); EQUALS(r, LIBRG_OK);
+        r = librg_entity_count(world2); EQUALS(r, 1);
+
+        r = librg_world_destroy(world1); EQUALS(r, LIBRG_OK);
+        r = librg_world_destroy(world2); EQUALS(r, LIBRG_OK);
+    });
+
+    IT("should fail to read remove for single entity with invalid data", {
+        librg_world *world1 = librg_world_create();
+        librg_world *world2 = librg_world_create();
+
+        r = librg_entity_track(world1, 1); EQUALS(r, LIBRG_OK);
+        r = librg_entity_track(world1, 2); EQUALS(r, LIBRG_OK);
+        r = librg_entity_chunk_set(world1, 1, 1); EQUALS(r, LIBRG_OK);
+        r = librg_entity_chunk_set(world1, 2, 1); EQUALS(r, LIBRG_OK);
+        r = librg_entity_owner_set(world1, 1, 1, 1); EQUALS(r, LIBRG_OK);
+
+        int value = 0;
+        size_t amount = 0;
+        char buffer[4096] = {0};
+
+        amount = librg_world_write(world1, 1, buffer, 4096, NULL);
+        r = librg_entity_count(world2); EQUALS(r, 0);
+        r = librg_world_read(world2, 1, buffer, amount, &value); EQUALS(r, LIBRG_OK);
+        r = librg_entity_count(world2); EQUALS(r, 2);
+
+        amount = librg_world_write(world1, 1, buffer, 4096, NULL);
+        r = librg_world_read(world2, 1, buffer, amount, &value); EQUALS(r, LIBRG_OK);
+        r = librg_entity_count(world2); EQUALS(r, 2);
+
+        librg_entity_untrack(world1, 2);
+
+        amount = librg_world_write(world1, 1, buffer, 4096, NULL);
+        r = librg_entity_count(world2); EQUALS(r, 2);
+        r = librg_world_read(world2, 1, buffer, amount-2, &value); NEQUALS(r, LIBRG_OK);
+        r = librg_entity_count(world2); EQUALS(r, 2);
+
+        r = librg_world_destroy(world1); EQUALS(r, LIBRG_OK);
+        r = librg_world_destroy(world2); EQUALS(r, LIBRG_OK);
+    });
+
+    IT("should prevent foreign entity from be untracked manually", {
+        librg_world *world1 = librg_world_create();
+        librg_world *world2 = librg_world_create();
+
+        r = librg_entity_track(world1, 1); EQUALS(r, LIBRG_OK);
+        r = librg_entity_track(world1, 2); EQUALS(r, LIBRG_OK);
+        r = librg_entity_chunk_set(world1, 1, 1); EQUALS(r, LIBRG_OK);
+        r = librg_entity_chunk_set(world1, 2, 1); EQUALS(r, LIBRG_OK);
+        r = librg_entity_owner_set(world1, 1, 1, 1); EQUALS(r, LIBRG_OK);
+
+        r = librg_event_set(world2, LIBRG_READ_REMOVE, dummy_markuserdata); EQUALS(r, LIBRG_OK);
+
+        int value = 0;
+        size_t amount = 0;
+        char buffer[4096] = {0};
+
+        amount = librg_world_write(world1, 1, buffer, 4096, NULL);
+        r = librg_entity_count(world2); EQUALS(r, 0);
+        r = librg_world_read(world2, 1, buffer, amount, &value); EQUALS(r, LIBRG_OK);
+        r = librg_entity_count(world2); EQUALS(r, 2);
+
+        amount = librg_world_write(world1, 1, buffer, 4096, NULL);
+        r = librg_world_read(world2, 1, buffer, amount, &value); EQUALS(r, LIBRG_OK);
+        r = librg_entity_count(world2); EQUALS(r, 2);
+
+        r = librg_entity_untrack(world1, 2); EQUALS(r, LIBRG_OK);
+        r = librg_entity_untrack(world2, 2); NEQUALS(r, LIBRG_OK);
+
+        amount = librg_world_write(world1, 1, buffer, 4096, NULL);
+        r = librg_entity_count(world2); EQUALS(r, 2);
+        r = librg_world_read(world2, 1, buffer, amount, &value); EQUALS(r, LIBRG_OK);
+        r = librg_entity_count(world2); EQUALS(r, 1);
+
+        EQUALS(value, 1); /* value == 1 means the LIBRG_READ_REMOVE call was indeed executed */
 
         r = librg_world_destroy(world1); EQUALS(r, LIBRG_OK);
         r = librg_world_destroy(world2); EQUALS(r, LIBRG_OK);

@@ -97,7 +97,7 @@ typedef struct {
     struct { uint16_t x, y, z; } chunksize;
     struct { int16_t x, y, z; } chunkoffset;
 
-    librg_event_fn handlers[LIBRG_ERROR_REMOVE];
+    librg_event_fn handlers[LIBRG_ERROR_REMOVE+1];
     librg_table_ent entity_map;
     librg_table_tbl owner_map;
 

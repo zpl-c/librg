@@ -222,7 +222,7 @@ int32_t librg_world_read(librg_world *world, int64_t owner_id, const char *buffe
                     : LIBRG_ERROR_UPDATE;
             }
             else if (seg->type == LIBRG_WRITE_REMOVE) {
-                action_id = librg_entity_tracked(world, val->id) == LIBRG_OK
+                action_id = librg_entity_tracked(world, val->id) == LIBRG_TRUE
                     ? LIBRG_READ_REMOVE
                     : LIBRG_ERROR_REMOVE;
             }
