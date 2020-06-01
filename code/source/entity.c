@@ -25,7 +25,7 @@ int8_t librg_entity_track(librg_world *world, int64_t entity_id) {
 
     /* set defaults */
     librg_entity_chunk_set(world, entity_id, LIBRG_CHUNK_INVALID);
-    librg_entity_owner_set(world, entity_id, LIBRG_OWNER_INVALID, 0);
+    librg_entity_owner_set(world, entity_id, LIBRG_OWNER_INVALID);
 
     return LIBRG_OK;
 }
@@ -92,33 +92,11 @@ int32_t librg_entity_count(librg_world *world) {
     return zpl_array_count(wld->entity_map.entries);
 }
 
-
 // =======================================================================//
 // !
 // ! Main entity data methods
 // !
 // =======================================================================//
-
-int8_t librg_entity_type_set(librg_world *world, int64_t entity_id, uint8_t type) {
-    LIBRG_ASSERT(world); if (!world) return LIBRG_WORLD_INVALID;
-    librg_world_t *wld = (librg_world_t *)world;
-
-    librg_entity_t *entity = librg_table_ent_get(&wld->entity_map, entity_id);
-    if (entity == NULL) return LIBRG_ENTITY_UNTRACKED;
-
-    entity->type = type;
-    return LIBRG_OK;
-}
-
-int16_t librg_entity_type_get(librg_world *world, int64_t entity_id) {
-    LIBRG_ASSERT(world); if (!world) return LIBRG_WORLD_INVALID;
-    librg_world_t *wld = (librg_world_t *)world;
-
-    librg_entity_t *entity = librg_table_ent_get(&wld->entity_map, entity_id);
-    if (entity == NULL) return LIBRG_ENTITY_UNTRACKED;
-
-    return entity->type;
-}
 
 int8_t librg_entity_chunk_set(librg_world *world, int64_t entity_id, librg_chunk chunk) {
     LIBRG_ASSERT(world); if (!world) return LIBRG_WORLD_INVALID;
@@ -143,19 +121,26 @@ librg_chunk librg_entity_chunk_get(librg_world *world, int64_t entity_id) {
     return entity->chunks[0];
 }
 
-int8_t librg_entity_owner_set(librg_world *world, int64_t entity_id, int64_t owner_id, int8_t observed_chunk_radius) {
+int8_t librg_entity_owner_set(librg_world *world, int64_t entity_id, int64_t owner_id) {
     LIBRG_ASSERT(world); if (!world) return LIBRG_WORLD_INVALID;
     librg_world_t *wld = (librg_world_t *)world;
 
     librg_entity_t *entity = librg_table_ent_get(&wld->entity_map, entity_id);
     if (entity == NULL) return LIBRG_ENTITY_UNTRACKED;
 
+    if (entity->flag_foreign == LIBRG_TRUE) {
+        return LIBRG_ENTITY_FOREIGN;
+    }
+
     entity->owner_id = owner_id;
-    entity->observed_radius = observed_chunk_radius;
-    entity->flag_owner_updated = 1;
+    entity->flag_owner_updated = LIBRG_TRUE;
 
     if (entity->owner_id != LIBRG_OWNER_INVALID) {
-        entity->ownership_token = (uint16_t)(zpl_random_gen_u32(&wld->random) % ZPL_U16_MAX);
+        /* set new token, and make sure to prevent collisions */
+        uint16_t newtoken = 0;
+        do { newtoken = (uint16_t)(zpl_random_gen_u32(&wld->random) % ZPL_U16_MAX); }
+        while (newtoken == entity->ownership_token);
+        entity->ownership_token = newtoken;
 
         /* fetch or create a new subtable */
         librg_table_i64 *snapshot = librg_table_tbl_get(&wld->owner_map, owner_id);
@@ -181,6 +166,28 @@ int64_t librg_entity_owner_get(librg_world *world, int64_t entity_id) {
     if (entity == NULL) return LIBRG_ENTITY_UNTRACKED;
 
     return entity->owner_id;
+}
+
+
+int8_t librg_entity_radius_set(librg_world *world, int64_t entity_id, int8_t observed_chunk_radius) {
+    LIBRG_ASSERT(world); if (!world) return LIBRG_WORLD_INVALID;
+    librg_world_t *wld = (librg_world_t *)world;
+
+    librg_entity_t *entity = librg_table_ent_get(&wld->entity_map, entity_id);
+    if (entity == NULL) return LIBRG_ENTITY_UNTRACKED;
+
+    entity->observed_radius = observed_chunk_radius;
+    return LIBRG_OK;
+}
+
+int8_t librg_entity_radius_get(librg_world *world, int64_t entity_id) {
+    LIBRG_ASSERT(world); if (!world) return LIBRG_WORLD_INVALID;
+    librg_world_t *wld = (librg_world_t *)world;
+
+    librg_entity_t *entity = librg_table_ent_get(&wld->entity_map, entity_id);
+    if (entity == NULL) return LIBRG_ENTITY_UNTRACKED;
+
+    return entity->observed_radius;
 }
 
 int8_t librg_entity_dimension_set(librg_world *world, int64_t entity_id, int32_t dimension) {
@@ -225,12 +232,6 @@ void *librg_entity_userdata_get(librg_world *world, int64_t entity_id) {
     return entity->userdata;
 }
 
-// =======================================================================//
-// !
-// ! Advanced entity data methods
-// !
-// =======================================================================//
-
 int8_t librg_entity_chunkarray_set(librg_world *world, int64_t entity_id, const librg_chunk *values, size_t chunk_amount) {
     LIBRG_ASSERT(world); if (!world) return LIBRG_WORLD_INVALID;
     librg_world_t *wld = (librg_world_t *)world;
@@ -267,6 +268,29 @@ size_t librg_entity_chunkarray_get(librg_world *world, int64_t entity_id, librg_
 }
 
 #if 0
+// int8_t librg_entity_type_set(librg_world *world, int64_t entity_id, uint8_t type) {
+//     LIBRG_ASSERT(world); if (!world) return LIBRG_WORLD_INVALID;
+//     librg_world_t *wld = (librg_world_t *)world;
+
+//     librg_entity_t *entity = librg_table_ent_get(&wld->entity_map, entity_id);
+//     if (entity == NULL) return LIBRG_ENTITY_UNTRACKED;
+
+//     entity->type = type;
+//     return LIBRG_OK;
+// }
+
+// int16_t librg_entity_type_get(librg_world *world, int64_t entity_id) {
+//     LIBRG_ASSERT(world); if (!world) return LIBRG_WORLD_INVALID;
+//     librg_world_t *wld = (librg_world_t *)world;
+
+//     librg_entity_t *entity = librg_table_ent_get(&wld->entity_map, entity_id);
+//     if (entity == NULL) return LIBRG_ENTITY_UNTRACKED;
+
+//     return entity->type;
+// }
+
+
+
 int librg_entity_refresh_set(librg_world *, int64_t entity_id, int type, float value); // ? {
     return LIBRG_OK
 }

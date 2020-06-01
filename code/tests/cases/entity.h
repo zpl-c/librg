@@ -24,16 +24,16 @@ MODULE(entity, {
         librg_world_destroy(world);
     });
 
-    IT("should be able to properly set a type", {
-        librg_world *world = librg_world_create();
-        librg_entity_track(world, 15);
+    // IT("should be able to properly set a type", {
+    //     librg_world *world = librg_world_create();
+    //     librg_entity_track(world, 15);
 
-        r = librg_entity_type_set(world, 15, LIBRG_ENTITY_DYNAMIC); EQUALS(r, LIBRG_OK);
-        r = librg_entity_type_get(world, 15); EQUALS(r, LIBRG_ENTITY_DYNAMIC);
+    //     r = librg_entity_type_set(world, 15, LIBRG_ENTITY_DYNAMIC); EQUALS(r, LIBRG_OK);
+    //     r = librg_entity_type_get(world, 15); EQUALS(r, LIBRG_ENTITY_DYNAMIC);
 
-        librg_entity_untrack(world, 15);
-        librg_world_destroy(world);
-    });
+    //     librg_entity_untrack(world, 15);
+    //     librg_world_destroy(world);
+    // });
 
     IT("should be able to properly set a chunk", {
         librg_world *world = librg_world_create();
@@ -50,8 +50,19 @@ MODULE(entity, {
         librg_world *world = librg_world_create();
         librg_entity_track(world, 15);
 
-        r = librg_entity_owner_set(world, 15, 15, 0); EQUALS(r, LIBRG_OK);
+        r = librg_entity_owner_set(world, 15, 15); EQUALS(r, LIBRG_OK);
         r = librg_entity_owner_get(world, 15); EQUALS(r, 15);
+
+        librg_entity_untrack(world, 15);
+        librg_world_destroy(world);
+    });
+
+    IT("should be able to properly set a radius", {
+        librg_world *world = librg_world_create();
+        librg_entity_track(world, 15);
+
+        r = librg_entity_radius_set(world, 15, 15); EQUALS(r, LIBRG_OK);
+        r = librg_entity_radius_get(world, 15); EQUALS(r, 15);
 
         librg_entity_untrack(world, 15);
         librg_world_destroy(world);
@@ -110,9 +121,10 @@ MODULE(entity, {
         librg_world *world = librg_world_create();
 
         r = librg_entity_userdata_set(world, 15, (void *)15); NEQUALS(r, LIBRG_OK);
-        r = librg_entity_type_set(world, 15, LIBRG_ENTITY_DYNAMIC); NEQUALS(r, LIBRG_OK);
+        // r = librg_entity_type_set(world, 15, LIBRG_ENTITY_DYNAMIC); NEQUALS(r, LIBRG_OK);
         r = librg_entity_chunk_set(world, 15, 15); NEQUALS(r, LIBRG_OK);
-        r = librg_entity_owner_set(world, 15, 15, 15); NEQUALS(r, LIBRG_OK);
+        r = librg_entity_owner_set(world, 15, 15); NEQUALS(r, LIBRG_OK);
+        r = librg_entity_radius_set(world, 15, 15); NEQUALS(r, LIBRG_OK);
         r = librg_entity_dimension_set(world, 15, 15); NEQUALS(r, LIBRG_OK);
 
         librg_world_destroy(world);

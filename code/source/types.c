@@ -68,6 +68,16 @@ LIBRG_BEGIN_C_DECLS
 ZPL_TABLE(static inline, librg_table_i64, librg_table_i64_, int64_t);
 ZPL_TABLE(static inline, librg_table_tbl, librg_table_tbl_, librg_table_i64);
 
+enum  {
+    LIBRG_WRITE_OWNER = (LIBRG_ERROR_REMOVE+1),
+    LIBRG_READ_OWNER,
+    LIBRG_ERROR_OWNER,
+    LIBRG_PACKAGING_TOTAL,
+};
+
+LIBRG_PRIVATE int32_t librg_dummy_write_owner(librg_world *, librg_event *);
+LIBRG_PRIVATE int32_t librg_dummy_read_owner(librg_world *, librg_event *);
+
 typedef struct {
     uint8_t type : 4;
     uint8_t flag_owner_updated : 1;
@@ -97,7 +107,7 @@ typedef struct {
     struct { uint16_t x, y, z; } chunksize;
     struct { int16_t x, y, z; } chunkoffset;
 
-    librg_event_fn handlers[LIBRG_ERROR_REMOVE+1];
+    librg_event_fn handlers[LIBRG_PACKAGING_TOTAL];
     librg_table_ent entity_map;
     librg_table_tbl owner_map;
 

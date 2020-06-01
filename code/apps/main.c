@@ -21,6 +21,10 @@
 #define LIBRG_DEBUG
 #include "librg.h"
 
+// TODO: add text info header part for librg.h
+// TODO: add visibility features
+// TODO: add behavior support
+
 /* usage */
 #if 0
 int main() {
