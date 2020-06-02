@@ -21,6 +21,7 @@
     "release-major-pre": "release-it major --preRelease=pre --ci"
   },
   "devDependencies": {
+    "docsify-cli": "^4.4.0",
     "release-it": "^13.6.1"
   },
   "release-it": {

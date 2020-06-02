@@ -49,7 +49,7 @@ size_t librg_world_write(librg_world *world, int64_t owner_id, char *buffer, siz
     librg_table_i64 next_snapshot = {0};
     librg_table_i64_init(&next_snapshot, wld->allocator);
 
-    int64_t results[LIBRG_WORLDWRITE_MAXQUERY] = {0};
+    int64_t *results = LIBRG_MEM_ALLOC(LIBRG_WORLDWRITE_MAXQUERY * sizeof(int64_t));
     size_t total_amount = librg_world_query(world, owner_id, results, LIBRG_WORLDWRITE_MAXQUERY);
     size_t total_written = 0;
     librg_event evt = {0};
@@ -179,11 +179,6 @@ librg_lbl_ww:
         }
     }
 
-    if (action_id == LIBRG_WRITE_CREATE) {
-        action_id = LIBRG_WRITE_UPDATE;
-        goto librg_lbl_ww;
-    }
-
     /* iterate it again till all tasks are finished */
     switch (action_id) {
         case LIBRG_WRITE_CREATE: action_id = LIBRG_WRITE_UPDATE; goto librg_lbl_ww;
@@ -194,6 +189,7 @@ librg_lbl_ww:
     /* swap snapshot tables */
     librg_table_i64_destroy(last_snapshot);
     librg_table_tbl_set(&wld->owner_map, owner_id, next_snapshot);
+    LIBRG_MEM_FREE(results);
 
     #undef sz_total
     #undef sz_value

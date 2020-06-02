@@ -13,10 +13,10 @@ LIBRG_BEGIN_C_DECLS
 // =======================================================================//
 
 LIBRG_API librg_world * librg_world_create();
-LIBRG_API int8_t        librg_world_destroy(librg_world *);
-LIBRG_API int8_t        librg_world_valid(librg_world *);
-LIBRG_API int8_t        librg_world_userdata_set(librg_world *, void *data);
-LIBRG_API void *        librg_world_userdata_get(librg_world *);
+LIBRG_API int8_t        librg_world_destroy(librg_world *world);
+LIBRG_API int8_t        librg_world_valid(librg_world *world);
+LIBRG_API int8_t        librg_world_userdata_set(librg_world *world, void *data);
+LIBRG_API void *        librg_world_userdata_get(librg_world *world);
 
 // =======================================================================//
 // !
@@ -24,13 +24,12 @@ LIBRG_API void *        librg_world_userdata_get(librg_world *);
 // !
 // =======================================================================//
 
-LIBRG_API int8_t librg_config_chunkamount_set(librg_world *, uint16_t x, uint16_t y, uint16_t z);
-LIBRG_API int8_t librg_config_chunkamount_get(librg_world *, uint16_t *x, uint16_t *y, uint16_t *z);
-LIBRG_API int8_t librg_config_chunksize_set(librg_world *, uint16_t x, uint16_t y, uint16_t z);
-LIBRG_API int8_t librg_config_chunksize_get(librg_world *, uint16_t *x, uint16_t *y, uint16_t *z);
-LIBRG_API int8_t librg_config_chunkoffset_set(librg_world *, int16_t x, int16_t y, int16_t z);
-LIBRG_API int8_t librg_config_chunkoffset_get(librg_world *, int16_t *x, int16_t *y, int16_t *z);
-
+LIBRG_API int8_t librg_config_chunkamount_set(librg_world *world, uint16_t x, uint16_t y, uint16_t z);
+LIBRG_API int8_t librg_config_chunkamount_get(librg_world *world, uint16_t *x, uint16_t *y, uint16_t *z);
+LIBRG_API int8_t librg_config_chunksize_set(librg_world *world, uint16_t x, uint16_t y, uint16_t z);
+LIBRG_API int8_t librg_config_chunksize_get(librg_world *world, uint16_t *x, uint16_t *y, uint16_t *z);
+LIBRG_API int8_t librg_config_chunkoffset_set(librg_world *world, int16_t x, int16_t y, int16_t z);
+LIBRG_API int8_t librg_config_chunkoffset_get(librg_world *world, int16_t *x, int16_t *y, int16_t *z);
 
 // =======================================================================//
 // !
@@ -38,7 +37,7 @@ LIBRG_API int8_t librg_config_chunkoffset_get(librg_world *, int16_t *x, int16_t
 // !
 // =======================================================================//
 
-typedef enum librg_events {
+typedef enum {
     LIBRG_WRITE_CREATE,
     LIBRG_WRITE_UPDATE,
     LIBRG_WRITE_REMOVE,
@@ -61,10 +60,10 @@ typedef struct {
     void      * userdata;       /* userpointer that is passed from librg_world_write/librg_world_read fns */
 } librg_event;
 
-typedef int32_t (*librg_event_fn)(librg_world *, librg_event *);
+typedef int32_t (*librg_event_fn)(librg_world *world, librg_event *event);
 
-LIBRG_API int8_t librg_event_set(librg_world *, librg_event_id, librg_event_fn);
-LIBRG_API int8_t librg_event_remove(librg_world *, librg_event_id);
+LIBRG_API int8_t librg_event_set(librg_world *world, librg_event_id, librg_event_fn);
+LIBRG_API int8_t librg_event_remove(librg_world *world, librg_event_id);
 
 // =======================================================================//
 // !
@@ -72,8 +71,8 @@ LIBRG_API int8_t librg_event_remove(librg_world *, librg_event_id);
 // !
 // =======================================================================//
 
-LIBRG_API librg_chunk librg_chunk_from_realpos(librg_world *, double x, double y, double z);
-LIBRG_API librg_chunk librg_chunk_from_chunkpos(librg_world *, int16_t chunk_x, int16_t chunk_y, int16_t chunk_z);
-LIBRG_API int8_t      librg_chunk_to_chunkpos(librg_world *, librg_chunk id, int16_t *chunk_x, int16_t *chunk_y, int16_t *chunk_z);
+LIBRG_API librg_chunk librg_chunk_from_realpos(librg_world *world, double x, double y, double z);
+LIBRG_API librg_chunk librg_chunk_from_chunkpos(librg_world *world, int16_t chunk_x, int16_t chunk_y, int16_t chunk_z);
+LIBRG_API int8_t      librg_chunk_to_chunkpos(librg_world *world, librg_chunk id, int16_t *chunk_x, int16_t *chunk_y, int16_t *chunk_z);
 
 LIBRG_END_C_DECLS

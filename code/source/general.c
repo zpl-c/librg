@@ -71,8 +71,10 @@ int8_t librg_world_destroy(librg_world *world) {
     librg_world_t *wld = (librg_world_t *)world;
 
     /* free up internal structs */
-    for (int i = 0; i < zpl_array_count(wld->entity_map.entries); ++i)
+    for (int i = 0; i < zpl_array_count(wld->entity_map.entries); ++i) {
+        wld->entity_map.entries[i].value.flag_foreign = LIBRG_FALSE;
         librg_entity_untrack(world, wld->entity_map.entries[i].key);
+    }
 
     librg_table_ent_destroy(&wld->entity_map);
 
