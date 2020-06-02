@@ -18,7 +18,7 @@ MODULE(entity, {
         librg_entity_track(world, 15);
 
         r = librg_entity_userdata_set(world, 15, (void *)15); EQUALS(r, LIBRG_OK);
-        r = (int)librg_entity_userdata_get(world, 15); EQUALS(r, 15);
+        r = (int)(intptr_t)librg_entity_userdata_get(world, 15); EQUALS(r, 15);
 
         librg_entity_untrack(world, 15);
         librg_world_destroy(world);

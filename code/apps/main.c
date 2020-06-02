@@ -131,7 +131,7 @@ int main() {
     const librg_chunk chunkId = librg_chunk_from_chunkpos(world, 0, 0, 0);
 
     librg_entity_track(world, myId);
-    printf("setting chunk to: %lld\n", chunkId);
+    zpl_printf("setting chunk to: %lld\n", chunkId);
     librg_entity_chunk_set(world, myId, chunkId);
     librg_entity_owner_set(world, myId, 1);
     librg_entity_radius_set(world, myId, observerRadius);
@@ -143,7 +143,7 @@ int main() {
         }
     }
 
-    printf("> querying...\n");
+    zpl_printf("> querying...\n");
 
     #define RESSIZE 65655
     int64_t results[RESSIZE] = {0};
@@ -153,14 +153,14 @@ int main() {
 
     f64 tstart = zpl_time_now();
     int amount = librg_world_query(world, 1, results, RESSIZE);
-    printf("query found %d results of %d in (%.3f ms)\n", amount, totalEnts, zpl_time_now() - tstart);
-    // for (int i=0; i<amount; i++) printf("result #%d: %lld\n", i, results[i]);
+    zpl_printf("query found %d results of %d in (%.3f ms)\n", amount, totalEnts, zpl_time_now() - tstart);
+    // for (int i=0; i<amount; i++) zpl_printf("result #%d: %lld\n", i, results[i]);
 
-    printf("> encoding...\n");
+    zpl_printf("> encoding...\n");
 
     tstart = zpl_time_now();
     size_t actual = librg_world_write(world, 1, buffer, BUFSIZE, NULL);
-    printf("written %zu bytes in (%.3f ms)\n", actual, zpl_time_now() - tstart);
+    zpl_printf("written %zu bytes in (%.3f ms)\n", actual, zpl_time_now() - tstart);
 
     librg_world *w2 = librg_world_create();
 
@@ -169,7 +169,7 @@ int main() {
 
     tstart = zpl_time_now();
     int r = librg_world_read(w2, 1, buffer, actual, NULL);
-    printf("read %zu bytes, result: %d, entities: %d in (%.3f ms)\n", actual, r, librg_entity_count(w2), zpl_time_now() - tstart);
+    zpl_printf("read %zu bytes, result: %d, entities: %d in (%.3f ms)\n", actual, r, librg_entity_count(w2), zpl_time_now() - tstart);
 
     librg_entity_untrack(world, myId);
     librg_world_destroy(world);
