@@ -16,6 +16,7 @@ LIBRG_BEGIN_C_DECLS
 LIBRG_PRAGMA(pack(push, 1));
 typedef struct {
     uint64_t id;
+    uint16_t token;
     uint16_t size;
 } librg_segval_t;
 
@@ -27,22 +28,8 @@ typedef struct {
 } librg_segment_t;
 LIBRG_PRAGMA(pack(pop));
 
-LIBRG_STATIC_ASSERT(sizeof(librg_segval_t) == 10, "packed librg_segval_t should have a valid size");
+LIBRG_STATIC_ASSERT(sizeof(librg_segval_t) == 12, "packed librg_segval_t should have a valid size");
 LIBRG_STATIC_ASSERT(sizeof(librg_segment_t) == 8, "packed librg_segment_t should have a valid size");
-
-/* helper function to write ownership token */
-int32_t librg_dummy_write_owner(librg_world *w, librg_event *e) {
-    zpl_unused(w); LIBRG_ASSERT(e && e->userdata);
-    zpl_memcopy(e->buffer, (char *)e->userdata, sizeof(uint16_t));
-    return sizeof(uint16_t);
-}
-
-/* helper function to read ownership token */
-int32_t librg_dummy_read_owner(librg_world *w, librg_event *e) {
-    zpl_unused(w); LIBRG_ASSERT(e && e->userdata);
-    zpl_memcopy((uint16_t*)e->userdata, e->buffer, sizeof(uint16_t));
-    return 0;
-}
 
 // =======================================================================//
 // !
@@ -105,7 +92,8 @@ librg_lbl_ww:
             }
             else if (action_id == LIBRG_WRITE_UPDATE) {
                 entity_id   = results[i];  /* it did exist */
-                condition   = librg_table_i64_get(last_snapshot, entity_id) != NULL;
+                entity_blob = librg_table_ent_get(&wld->entity_map, entity_id);
+                condition   = librg_table_i64_get(last_snapshot, entity_id) != NULL || librg_entity_foreign(world, entity_id) == LIBRG_TRUE;
 
                 /* mark entity as still alive, to prevent it from being removed */
                 librg_table_i64_set(last_snapshot, entity_id, 2);
@@ -137,11 +125,7 @@ librg_lbl_ww:
                 evt.owner_id = owner_id;
                 evt.userdata = userdata;
 
-                /* overwrite and pass our token to the write call */
-                if (action_id == LIBRG_WRITE_OWNER) {
-                    evt.userdata = entity_blob ? &entity_blob->ownership_token : NULL;
-                }
-
+                /* call event handlers */
                 if (wld->handlers[action_id]) {
                     data_size = (int32_t)wld->handlers[action_id](world, &evt);
                 }
@@ -151,6 +135,15 @@ librg_lbl_ww:
                     /* fill in segval */
                     val->id = entity_id;
                     val->size = data_size;
+
+                    if (action_id == LIBRG_WRITE_OWNER) {
+                        val->token = entity_blob->ownership_token;
+                    }
+                    else if (action_id == LIBRG_WRITE_UPDATE && entity_blob->flag_foreign) {
+                        val->token = entity_blob->ownership_token;
+                    } else {
+                        val->token = 0;
+                    }
 
                     /* increase the total size written */
                     value_written += sizeof(librg_segval_t) + val->size;
@@ -236,28 +229,34 @@ int32_t librg_world_read(librg_world *world, int64_t owner_id, const char *buffe
 
         for (int i = 0; i < seg->amount; ++i) {
             librg_segval_t *val = (librg_segval_t*)(buffer+sz_segment+segment_read);
+            librg_entity_t *entity_blob = librg_table_ent_get(&wld->entity_map, val->id);
             int8_t action_id = -1;
-            int32_t action_value = 0;
 
             /* do preparation for entity processing */
             if (seg->type == LIBRG_WRITE_CREATE) {
+                /* attempt to create an entity */
                 action_id = (librg_entity_track(world, val->id) == LIBRG_OK)
                     ? LIBRG_READ_CREATE
                     : LIBRG_ERROR_CREATE;
-
             }
             else if (seg->type == LIBRG_WRITE_UPDATE) {
+                /* try to check if entity exists, and if it is foreign OR owner and token are correct */
                 action_id = (librg_entity_tracked(world, val->id) == LIBRG_TRUE
-                    && librg_entity_foreign(world, val->id) == LIBRG_TRUE) /* TODO: add owner check as well */
+                    && (entity_blob->flag_foreign
+                        || (entity_blob->owner_id == owner_id
+                            && entity_blob->ownership_token == val->token)))
                     ? LIBRG_READ_UPDATE
                     : LIBRG_ERROR_UPDATE;
             }
             else if (seg->type == LIBRG_WRITE_REMOVE) {
-                action_id = (librg_entity_tracked(world, val->id) == LIBRG_TRUE)
+                /* attempt to check if it does exist and only foreign */
+                action_id = (librg_entity_tracked(world, val->id) == LIBRG_TRUE
+                    && librg_entity_foreign(world, val->id) == LIBRG_TRUE)
                     ? LIBRG_READ_REMOVE
                     : LIBRG_ERROR_REMOVE;
             }
             else if (seg->type == LIBRG_WRITE_OWNER) {
+                /* attempt to check if it does exist and only foreign */
                 action_id = (librg_entity_tracked(world, val->id) == LIBRG_TRUE
                     && librg_entity_foreign(world, val->id) == LIBRG_TRUE)
                     ? LIBRG_READ_OWNER
@@ -283,11 +282,7 @@ int32_t librg_world_read(librg_world *world, int64_t owner_id, const char *buffe
             evt.owner_id = owner_id;
             evt.userdata = userdata;
 
-            /* pass temp action_value storage to read our token */
-            if (action_id == LIBRG_READ_OWNER) {
-                evt.userdata = (void*)(&action_value);
-            }
-
+            /* call event handlers */
             if (wld->handlers[action_id]) {
                 /*ignore response*/
                 wld->handlers[action_id](world, &evt);
@@ -307,7 +302,7 @@ int32_t librg_world_read(librg_world *world, int64_t owner_id, const char *buffe
                 /* immidiately mark entity as owned, set up & override additional info */
                 entity->flag_foreign = LIBRG_FALSE; /* unmark it temp, while owner is set */
                 librg_entity_owner_set(world, val->id, owner_id);
-                entity->ownership_token = (uint16_t)(action_value);
+                entity->ownership_token = val->token;
                 entity->flag_owner_updated = LIBRG_FALSE;
                 entity->flag_foreign = LIBRG_TRUE;
             }

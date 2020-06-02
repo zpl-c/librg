@@ -38,24 +38,19 @@ int32_t dummy_markuserdata(librg_world *w, librg_event *e) {
 #define SEGMENT_SIZE(amount, data) \
     (sizeof(librg_segment_t) + ((sizeof(librg_segval_t) + data) * amount))
 
-#define SEGMENT_CMP(a, b, n) do { for (size_t i=0;i<n;i++) EQUALS(a[i], b[i]); } while(0)
+#define CREATE_SEGMENT SEGMENT_SIZE
+#define UPDATE_SEGMENT SEGMENT_SIZE
+#define REMOVE_SEGMENT SEGMENT_SIZE
+#define OWNER_SEGMENT(a) SEGMENT_SIZE(a, 0)
 
-char create_expected_buffer[] = {
-    0x00, 0x00, 0x03, 0x00, 0x24, 0x00, 0x00, 0x00, 0x01,
-    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0x00,
-    0x09, 0x09, 0x02, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-    0x00, 0x02, 0x00, 0x09, 0x09, 0x03, 0x00, 0x00, 0x00,
-    0x00, 0x00, 0x00, 0x00, 0x02, 0x00, 0x09, 0x09, 0x09,
-    0x00, 0x01, 0x00, 0x0c, 0x00, 0x00, 0x00, 0x01, 0x00,
-    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0x00,
+#define SEGMENT_CMP(a, b, n) do { for (size_t i=0;i<n;i++) if (a[i] != '?') EQUALS(a[i], b[i]); } while(0)
+
+char expected_buffer_create[] = {
+    0x00, 0x00, 0x03, 0x00, 0x2a, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0x00, 0x09, 0x09, 0x02, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0x00, 0x09, 0x09, 0x03, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0x00, 0x09, 0x09, 0x09, 0x00, 0x01, 0x00, 0x0c, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, '?', '?', 0x00, 0x00,
 };
 
-char update_expected_buffer[] = {
-    0x01, 0x00, 0x03, 0x00, 0x24, 0x00, 0x00, 0x00, 0x01,
-    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0x00,
-    0x09, 0x09, 0x02, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-    0x00, 0x02, 0x00, 0x09, 0x09, 0x03, 0x00, 0x00, 0x00,
-    0x00, 0x00, 0x00, 0x00, 0x02, 0x00, 0x09, 0x09, 0x00,
+char expected_buffer_update[] = {
+    0x01, 0x00, 0x03, 0x00, 0x2a, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0x00, 0x09, 0x09, 0x02, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0x00, 0x09, 0x09, 0x03, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0x00, 0x09, 0x09,
 };
 
 MODULE(packing, {
@@ -80,7 +75,7 @@ MODULE(packing, {
 
         char buffer[4096] = {0};
         size_t amount = librg_world_write(world, 1, buffer, 4096, NULL);
-        size_t expected = SEGMENT_SIZE(1, 0) + SEGMENT_SIZE(1, 2); EQUALS(amount, expected);
+        size_t expected = CREATE_SEGMENT(1, 0) + OWNER_SEGMENT(1); EQUALS(amount, expected);
 
         r = librg_world_destroy(world); EQUALS(r, LIBRG_OK);
     });
@@ -102,7 +97,7 @@ MODULE(packing, {
 
         char buffer[4096] = {0};
         size_t amount = librg_world_write(world, 1, buffer, 4096, NULL);
-        size_t expected = SEGMENT_SIZE(3, 0) + SEGMENT_SIZE(1, 2); EQUALS(amount, expected);
+        size_t expected = CREATE_SEGMENT(3, 0) + OWNER_SEGMENT(1); EQUALS(amount, expected);
 
 
         r = librg_world_destroy(world); EQUALS(r, LIBRG_OK);
@@ -125,9 +120,9 @@ MODULE(packing, {
 
         char buffer[4096] = {0};
         size_t amount = librg_world_write(world, 1, buffer, 4096, NULL);
-        size_t expected = SEGMENT_SIZE(3, 2) + SEGMENT_SIZE(1, 2); EQUALS(amount, expected);
+        size_t expected = CREATE_SEGMENT(3, 2) + OWNER_SEGMENT(1); EQUALS(amount, expected);
 
-        SEGMENT_CMP(buffer, create_expected_buffer, amount-2); /* compare w/o token data */
+        SEGMENT_CMP(expected_buffer_create, buffer, amount);
 
         r = librg_world_destroy(world); EQUALS(r, LIBRG_OK);
     });
@@ -170,8 +165,8 @@ MODULE(packing, {
         r = librg_event_set(world, LIBRG_WRITE_CREATE, dummy_0size); EQUALS(r, LIBRG_OK);
 
         char buffer[4096] = {0};
-        size_t amount = librg_world_write(world, 1, buffer, 30, NULL);
-        size_t expected = SEGMENT_SIZE(2, 0); EQUALS(amount, expected);
+        size_t amount = librg_world_write(world, 1, buffer, 34, NULL);
+        size_t expected = CREATE_SEGMENT(2, 0); EQUALS(amount, expected);
 
         r = librg_world_destroy(world); EQUALS(r, LIBRG_OK);
     });
@@ -192,11 +187,11 @@ MODULE(packing, {
         r = librg_event_set(world, LIBRG_WRITE_CREATE, dummy_0size); EQUALS(r, LIBRG_OK);
 
         char buffer[4096] = {0};
-        size_t amount = librg_world_write(world, 1, buffer, 30, NULL);
-        size_t expected = SEGMENT_SIZE(2, 0); EQUALS(amount, expected);
+        size_t amount = librg_world_write(world, 1, buffer, 34, NULL);
+        size_t expected = CREATE_SEGMENT(2, 0); EQUALS(amount, expected);
 
         amount = librg_world_write(world, 1, buffer, 30, NULL);
-        expected = SEGMENT_SIZE(1, 0); EQUALS(amount, expected);
+        expected = CREATE_SEGMENT(1, 0); EQUALS(amount, expected);
 
         r = librg_world_destroy(world); EQUALS(r, LIBRG_OK);
     });
@@ -218,7 +213,7 @@ MODULE(packing, {
 
         char buffer[4096] = {0};
         size_t amount = librg_world_write(world, 1, buffer, 35, NULL);
-        size_t expected = SEGMENT_SIZE(2, 2); EQUALS(amount, expected);
+        size_t expected = CREATE_SEGMENT(2, 2); EQUALS(amount, expected);
 
         r = librg_world_destroy(world); EQUALS(r, LIBRG_OK);
     });
@@ -240,10 +235,10 @@ MODULE(packing, {
 
         char buffer[4096] = {0};
         size_t amount = librg_world_write(world, 1, buffer, 35, NULL);
-        size_t expected = SEGMENT_SIZE(2, 2); EQUALS(amount, expected);
+        size_t expected = CREATE_SEGMENT(2, 2); EQUALS(amount, expected);
 
         amount = librg_world_write(world, 1, buffer, 35, NULL);
-        expected = SEGMENT_SIZE(1, 2); EQUALS(amount, expected);
+        expected = CREATE_SEGMENT(1, 2); EQUALS(amount, expected);
 
         r = librg_world_destroy(world); EQUALS(r, LIBRG_OK);
     });
@@ -274,7 +269,7 @@ MODULE(packing, {
         char buffer[4096] = {0};
         librg_world_write(world, 1, buffer, 4096, NULL);
         size_t amount = librg_world_write(world, 1, buffer, 4096, NULL);
-        size_t expected = SEGMENT_SIZE(3, 0); EQUALS(amount, expected);
+        size_t expected = UPDATE_SEGMENT(3, 0); EQUALS(amount, expected);
 
         r = librg_world_destroy(world); EQUALS(r, LIBRG_OK);
     });
@@ -290,7 +285,7 @@ MODULE(packing, {
         char buffer[4096] = {0};
         librg_world_write(world, 1, buffer, 4096, NULL);
         size_t amount = librg_world_write(world, 1, buffer, 4096, NULL);
-        size_t expected = SEGMENT_SIZE(1, 0); EQUALS(amount, expected);
+        size_t expected = UPDATE_SEGMENT(1, 0); EQUALS(amount, expected);
 
         r = librg_world_destroy(world); EQUALS(r, LIBRG_OK);
     });
@@ -313,9 +308,9 @@ MODULE(packing, {
         char buffer[4096] = {0};
         librg_world_write(world, 1, buffer, 4096, NULL);
         size_t amount = librg_world_write(world, 1, buffer, 4096, NULL);
-        size_t expected = SEGMENT_SIZE(3, 2); EQUALS(amount, expected);
+        size_t expected = UPDATE_SEGMENT(3, 2); EQUALS(amount, expected);
 
-        SEGMENT_CMP(buffer, update_expected_buffer, amount);
+        SEGMENT_CMP(buffer, expected_buffer_update, amount);
 
         r = librg_world_destroy(world); EQUALS(r, LIBRG_OK);
     });
@@ -360,8 +355,9 @@ MODULE(packing, {
 
         char buffer[4096] = {0};
         librg_world_write(world, 1, buffer, 4096, NULL);
-        size_t amount = librg_world_write(world, 1, buffer, 30, NULL);
-        size_t expected = SEGMENT_SIZE(2, 0); EQUALS(amount, expected);
+
+        size_t amount = librg_world_write(world, 1, buffer, 34, NULL);
+        size_t expected = UPDATE_SEGMENT(2, 0); EQUALS(amount, expected);
 
         r = librg_world_destroy(world); EQUALS(r, LIBRG_OK);
     });
@@ -383,10 +379,12 @@ MODULE(packing, {
 
         char buffer[4096] = {0};
         librg_world_write(world, 1, buffer, 4096, NULL);
-        size_t amount = librg_world_write(world, 1, buffer, 30, NULL);
-        size_t expected = SEGMENT_SIZE(2, 0); EQUALS(amount, expected);
-        amount = librg_world_write(world, 1, buffer, 30, NULL);
-        expected = SEGMENT_SIZE(2, 0); EQUALS(amount, expected);
+
+        size_t amount = librg_world_write(world, 1, buffer, 34, NULL);
+        size_t expected = UPDATE_SEGMENT(2, 0); EQUALS(amount, expected);
+
+        amount = librg_world_write(world, 1, buffer, 34, NULL);
+        expected = UPDATE_SEGMENT(2, 0); EQUALS(amount, expected);
 
         r = librg_world_destroy(world); EQUALS(r, LIBRG_OK);
     });
@@ -409,7 +407,7 @@ MODULE(packing, {
         char buffer[4096] = {0};
         librg_world_write(world, 1, buffer, 4096, NULL);
         size_t amount = librg_world_write(world, 1, buffer, 35, NULL);
-        size_t expected = SEGMENT_SIZE(2, 2); EQUALS(amount, expected);
+        size_t expected = UPDATE_SEGMENT(2, 2); EQUALS(amount, expected);
 
         r = librg_world_destroy(world); EQUALS(r, LIBRG_OK);
     });
@@ -432,10 +430,10 @@ MODULE(packing, {
         char buffer[4096] = {0};
         librg_world_write(world, 1, buffer, 4096, NULL);
         size_t amount = librg_world_write(world, 1, buffer, 35, NULL);
-        size_t expected = SEGMENT_SIZE(2, 2); EQUALS(amount, expected);
+        size_t expected = UPDATE_SEGMENT(2, 2); EQUALS(amount, expected);
 
         amount = librg_world_write(world, 1, buffer, 35, NULL);
-        expected = SEGMENT_SIZE(2, 2); EQUALS(amount, expected);
+        expected = UPDATE_SEGMENT(2, 2); EQUALS(amount, expected);
 
         r = librg_world_destroy(world); EQUALS(r, LIBRG_OK);
     });
@@ -469,20 +467,20 @@ MODULE(packing, {
         size_t expected;
 
         amount = librg_world_write(world, 1, buffer, 4096, NULL);
-        expected = SEGMENT_SIZE(3, 0) + SEGMENT_SIZE(1, 2); EQUALS(amount, expected);
+        expected = CREATE_SEGMENT(3, 0) + OWNER_SEGMENT(1); EQUALS(amount, expected);
 
         amount = librg_world_write(world, 1, buffer, 4096, NULL);
-        expected = SEGMENT_SIZE(3, 0); EQUALS(amount, expected);
+        expected = UPDATE_SEGMENT(3, 0); EQUALS(amount, expected);
 
         r = librg_entity_untrack(world, 2); EQUALS(r, LIBRG_OK);
 
         amount = librg_world_write(world, 1, buffer, 4096, &value);
-        expected = SEGMENT_SIZE(2, 0) + SEGMENT_SIZE(1, 0); EQUALS(amount, expected);
+        expected = UPDATE_SEGMENT(2, 0) + REMOVE_SEGMENT(1, 0); EQUALS(amount, expected);
 
         EQUALS(value, 1);
 
         amount = librg_world_write(world, 1, buffer, 4096, NULL);
-        expected = SEGMENT_SIZE(2, 0); EQUALS(amount, expected);
+        expected = UPDATE_SEGMENT(2, 0); EQUALS(amount, expected);
 
         r = librg_world_destroy(world); EQUALS(r, LIBRG_OK);
     });
@@ -508,11 +506,11 @@ MODULE(packing, {
         librg_entity_untrack(world, 2);
 
         size_t amount = librg_world_write(world, 1, buffer, 4096, NULL);
-        size_t expected = SEGMENT_SIZE(2, 0) + SEGMENT_SIZE(1, 2); EQUALS(amount, expected);
+        size_t expected = UPDATE_SEGMENT(2, 0) + REMOVE_SEGMENT(1, 2); EQUALS(amount, expected);
 
 
         amount = librg_world_write(world, 1, buffer, 4096, NULL);
-        expected = SEGMENT_SIZE(2, 0); EQUALS(amount, expected);
+        expected = UPDATE_SEGMENT(2, 0); EQUALS(amount, expected);
 
         r = librg_world_destroy(world); EQUALS(r, LIBRG_OK);
     });
@@ -537,14 +535,14 @@ MODULE(packing, {
         librg_entity_untrack(world, 2);
         librg_entity_untrack(world, 3);
 
-        size_t amount = librg_world_write(world, 1, buffer, 30, NULL);
-        size_t expected = SEGMENT_SIZE(1, 0); EQUALS(amount, expected);
+        size_t amount = librg_world_write(world, 1, buffer, 34, NULL);
+        size_t expected = UPDATE_SEGMENT(1, 0); EQUALS(amount, expected);
 
-        amount = librg_world_write(world, 1, buffer, 40, NULL);
-        expected = SEGMENT_SIZE(1, 0) + SEGMENT_SIZE(1, 0); EQUALS(amount, expected);
+        amount = librg_world_write(world, 1, buffer, 48, NULL);
+        expected = UPDATE_SEGMENT(1, 0) + REMOVE_SEGMENT(1, 0); EQUALS(amount, expected);
 
-        amount = librg_world_write(world, 1, buffer, 40, NULL);
-        expected = SEGMENT_SIZE(1, 0) + SEGMENT_SIZE(1, 0); EQUALS(amount, expected);
+        amount = librg_world_write(world, 1, buffer, 48, NULL);
+        expected = UPDATE_SEGMENT(1, 0) + REMOVE_SEGMENT(1, 0); EQUALS(amount, expected);
 
         r = librg_world_destroy(world); EQUALS(r, LIBRG_OK);
     });
@@ -569,10 +567,10 @@ MODULE(packing, {
         librg_entity_untrack(world, 2);
 
         size_t amount = librg_world_write(world, 1, buffer, 4096, NULL);
-        size_t expected = SEGMENT_SIZE(2, 0); EQUALS(amount, expected);
+        size_t expected = UPDATE_SEGMENT(2, 0); EQUALS(amount, expected);
 
         amount = librg_world_write(world, 1, buffer, 40, NULL);
-        expected = SEGMENT_SIZE(2, 0); EQUALS(amount, expected);
+        expected = UPDATE_SEGMENT(2, 0); EQUALS(amount, expected);
 
         r = librg_world_destroy(world); EQUALS(r, LIBRG_OK);
     });
@@ -980,6 +978,93 @@ MODULE(packing, {
         r = librg_entity_count(world2); EQUALS(r, 1);
 
         EQUALS(value, 1); /* value == 1 means the LIBRG_READ_REMOVE call was indeed executed */
+
+        r = librg_world_destroy(world1); EQUALS(r, LIBRG_OK);
+        r = librg_world_destroy(world2); EQUALS(r, LIBRG_OK);
+    });
+
+    // =======================================================================//
+    // !
+    // ! Other
+    // !
+    // =======================================================================//
+
+    printf(" * OTHER\n");
+
+    IT("should read update backwards (from foreign entity) and call update event", {
+        librg_world *world1 = librg_world_create();
+        librg_world *world2 = librg_world_create();
+
+        r = librg_entity_track(world1, 1); EQUALS(r, LIBRG_OK);
+        r = librg_entity_chunk_set(world1, 1, 1); EQUALS(r, LIBRG_OK);
+        r = librg_entity_owner_set(world1, 1, 1); EQUALS(r, LIBRG_OK);
+        r = librg_entity_radius_set(world1, 1, 1); EQUALS(r, LIBRG_OK);
+
+        r = librg_event_set(world1, LIBRG_READ_UPDATE, dummy_markuserdata); EQUALS(r, LIBRG_OK);
+        r = librg_event_set(world2, LIBRG_READ_UPDATE, dummy_markuserdata); EQUALS(r, LIBRG_OK);
+
+        int value = 0;
+        size_t amount = 0;
+        char buffer[4096] = {0};
+
+        amount = librg_world_write(world1, 1, buffer, 4096, NULL);
+
+        r = librg_entity_count(world2); EQUALS(r, 0);
+        r = librg_world_read(world2, 1, buffer, amount, &value); EQUALS(r, LIBRG_OK);
+        r = librg_entity_count(world2); EQUALS(r, 1);
+
+        amount = librg_world_write(world1, 1, buffer, 4096, NULL);
+        r = librg_world_read(world2, 1, buffer, amount, &value); EQUALS(r, LIBRG_OK);
+
+        EQUALS(value, 1); /* value == 1 means the LIBRG_READ_UPDATE call was indeed executed */
+
+        /* read backwards */
+        value = 0;
+        amount = librg_world_write(world2, 1, buffer, 4096, NULL); GREATER(amount, 0);
+        r = librg_world_read(world1, 1, buffer, amount, &value);  EQUALS(r, LIBRG_OK);
+
+        EQUALS(value, 1); /* value == 1 means the LIBRG_READ_UPDATE call was indeed executed */
+
+        r = librg_world_destroy(world1); EQUALS(r, LIBRG_OK);
+        r = librg_world_destroy(world2); EQUALS(r, LIBRG_OK);
+    });
+
+    IT("should not read update backwards (from foreign entity) if token has changed", {
+        librg_world *world1 = librg_world_create();
+        librg_world *world2 = librg_world_create();
+
+        r = librg_entity_track(world1, 1); EQUALS(r, LIBRG_OK);
+        r = librg_entity_chunk_set(world1, 1, 1); EQUALS(r, LIBRG_OK);
+        r = librg_entity_owner_set(world1, 1, 1); EQUALS(r, LIBRG_OK);
+        r = librg_entity_radius_set(world1, 1, 1); EQUALS(r, LIBRG_OK);
+
+        r = librg_event_set(world1, LIBRG_ERROR_UPDATE, dummy_markuserdata); EQUALS(r, LIBRG_OK);
+        r = librg_event_set(world2, LIBRG_READ_UPDATE, dummy_markuserdata); EQUALS(r, LIBRG_OK);
+
+        int value = 0;
+        size_t amount = 0;
+        char buffer[4096] = {0};
+
+        amount = librg_world_write(world1, 1, buffer, 4096, NULL);
+
+        r = librg_entity_count(world2); EQUALS(r, 0);
+        r = librg_world_read(world2, 1, buffer, amount, &value); EQUALS(r, LIBRG_OK);
+        r = librg_entity_count(world2); EQUALS(r, 1);
+
+        amount = librg_world_write(world1, 1, buffer, 4096, NULL);
+        r = librg_world_read(world2, 1, buffer, amount, &value); EQUALS(r, LIBRG_OK);
+
+        EQUALS(value, 1); /* value == 1 means the LIBRG_READ_UPDATE call was indeed executed */
+
+        /* set same owner, but token will be updated */
+        librg_entity_owner_set(world1, 1, 1);
+
+        /* read backwards */
+        value = 0;
+        amount = librg_world_write(world2, 1, buffer, 4096, NULL); GREATER(amount, 0);
+        r = librg_world_read(world1, 1, buffer, amount, &value);  EQUALS(r, LIBRG_OK);
+
+        EQUALS(value, 1); /* value == 1 means the LIBRG_READ_UPDATE call was indeed executed */
 
         r = librg_world_destroy(world1); EQUALS(r, LIBRG_OK);
         r = librg_world_destroy(world2); EQUALS(r, LIBRG_OK);

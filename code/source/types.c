@@ -75,9 +75,6 @@ enum  {
     LIBRG_PACKAGING_TOTAL,
 };
 
-LIBRG_PRIVATE int32_t librg_dummy_write_owner(librg_world *, librg_event *);
-LIBRG_PRIVATE int32_t librg_dummy_read_owner(librg_world *, librg_event *);
-
 typedef struct {
     uint8_t type : 4;
     uint8_t flag_owner_updated : 1;

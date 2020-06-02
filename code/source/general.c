@@ -63,10 +63,6 @@ librg_world *librg_world_create() {
     librg_table_tbl_init(&wld->owner_map, wld->allocator);
     zpl_random_init(&wld->random);
 
-    /* set 2 intenal events */
-    wld->handlers[LIBRG_WRITE_OWNER] = librg_dummy_write_owner;
-    wld->handlers[LIBRG_READ_OWNER] = librg_dummy_read_owner;
-
     return (librg_world *)wld;
 }
 

@@ -139,7 +139,7 @@ int8_t librg_entity_owner_set(librg_world *world, int64_t entity_id, int64_t own
         /* set new token, and make sure to prevent collisions */
         uint16_t newtoken = 0;
         do { newtoken = (uint16_t)(zpl_random_gen_u32(&wld->random) % ZPL_U16_MAX); }
-        while (newtoken == entity->ownership_token);
+        while (newtoken == 0 || newtoken == entity->ownership_token);
         entity->ownership_token = newtoken;
 
         /* fetch or create a new subtable */
