@@ -173,6 +173,8 @@
         #endif
     #elif defined(LIBRG_STATIC)
         #define LIBRG_API static
+    #elif defined(LIBRG_EMSCRIPTEN)
+        #define LIBRG_API EMSCRIPTEN_KEEPALIVE
     #else
         #define LIBRG_API LIBRG_EXTERN
     #endif
@@ -180,6 +182,10 @@
 
 #include <stdint.h>
 #include <stddef.h>
+
+#if defined(__EMSCRIPTEN__)
+    #include <emscripten.h>
+#endif
 
 #include "header/types.h"
 #include "header/general.h"

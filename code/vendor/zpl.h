@@ -27,6 +27,8 @@ GitHub:
   https://github.com/zpl-c/zpl
 
 Version History:
+  10.5.1  - Fixed zpl_rdtsc for Emscripten
+  10.5.0  - Changed casts to memcopy in random methods, added embed cmd
   10.4.1  - Jobs system now enqueues jobs with def priority of 1.0
   10.4.0  - [META] version bump
   10.3.0  - Pool allocator now supports zpl_free_all
@@ -258,7 +260,7 @@ Version History:
 
 #define ZPL_VERSION_MAJOR 10
 #define ZPL_VERSION_MINOR 5
-#define ZPL_VERSION_PATCH 0
+#define ZPL_VERSION_PATCH 1
 #define ZPL_VERSION_PRE ""
 
 // file: zpl_hedley.h
@@ -10432,6 +10434,10 @@ ZPL_END_C_DECLS
         #include <mach/clock.h>
     #endif
 
+    #if defined(ZPL_SYSTEM_EMSCRIPTEN)
+        #include <emscripten.h>
+    #endif
+
     ZPL_BEGIN_C_DECLS
 
     //! @}
@@ -10472,6 +10478,10 @@ ZPL_END_C_DECLS
             result = result | lower;
 
             return result;
+        }
+    #elif defined(ZPL_SYSTEM_EMSCRIPTEN)
+        zpl_u64 zpl_rdtsc(void) {
+            return (zpl_u64)(emscripten_get_now() * 1e+6);
         }
     #elif defined(ZPL_CPU_ARM)
         zpl_u64 zpl_rdtsc(void) {

@@ -33,7 +33,7 @@ APPS += $(patsubst %.cc,%,$(wildcard code/apps/*.cc))
 
 BUILD_FILES = $(wildcard build/*)
 
-.PHONY: all clean apps test
+.PHONY: all clean apps test ecm
 
 all: clean apps test
 
@@ -43,6 +43,10 @@ test: clean code/tests/unit
 
 apps: $(APPS)
 	@echo '> Building apps'
+
+ecm:
+	emcc $(LEVEL) -s WASM=1 -s EXTRA_EXPORTED_RUNTIME_METHODS='["cwrap"]' \
+		-DLIBRG_EMSCRIPTEN=1 -I code/ code/apps/library.c -o build/librg.js
 
 clean:
 ifneq ($(BUILD_FILES),)
