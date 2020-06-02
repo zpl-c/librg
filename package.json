@@ -3,12 +3,12 @@
   "version": "5.0.6",
   "author": "Inlife",
   "description": "Pure C library for building simple and elegant cross-platform multiplayer client-server solutions.",
-  "homepage": "https://github.com/reguider/librg#readme",
+  "homepage": "https://github.com/zpl-c/librg#readme",
   "license": "Apache-2.0",
-  "main": "include/librg.h",
+  "main": "code/librg.h",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/reguider/librg.git"
+    "url": "git+https://github.com/zpl-c/librg.git"
   },
   "scripts": {
     "release": "release-it",
