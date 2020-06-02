@@ -152,7 +152,7 @@ size_t librg_world_query(librg_world *world, int64_t owner_id, int64_t *entity_i
         for (int k = 0; k < LIBRG_ENTITY_MAXCHUNKS; ++k) {
             if (entity->chunks[k] == LIBRG_CHUNK_INVALID) break;
 
-            int16_t chx, chy, chz;
+            int16_t chx=0, chy=0, chz=0;
             librg_chunk_to_chunkpos(world, entity->chunks[k], &chx, &chy, &chz);
             librg_util_chunkrange(world, dim_chunks, chx, chy, chz, entity->observed_radius);
         }
