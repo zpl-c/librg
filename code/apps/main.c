@@ -19,6 +19,7 @@
 
 #define LIBRG_IMPL
 #define LIBRG_DEBUG
+#define LIBRG_WORLDWRITE_MAXQUERY 40000
 #include "librg.h"
 
 // TODO: add text info header part for librg.h
@@ -101,12 +102,16 @@ int main() {
 /* impl part*/
 
 int32_t _parent_create(librg_world *world, librg_event *event) {
-    printf("_parent_create %p %d\n", world, event->type);
+    zpl_unused(world);
+    zpl_unused(event);
+    // printf("_parent_create %p %d\n", world, event->type);
     return 0;
 }
 
 int32_t _child_create(librg_world *world, librg_event *event) {
-    printf("_child_create %p %d\n", world, event->type);
+    zpl_unused(world);
+    zpl_unused(event);
+    // printf("_child_create %p %d\n", world, event->type);
     return 0;
 }
 
@@ -128,7 +133,8 @@ int main() {
     librg_entity_track(world, myId);
     printf("setting chunk to: %lld\n", chunkId);
     librg_entity_chunk_set(world, myId, chunkId);
-    librg_entity_owner_set(world, myId, 1, observerRadius);
+    librg_entity_owner_set(world, myId, 1);
+    librg_entity_radius_set(world, myId, observerRadius);
 
     const int totalEnts = 40000;
     for (int i=0;i<totalEnts;i++) {
@@ -139,13 +145,34 @@ int main() {
 
     printf("> querying...\n");
 
+    #define RESSIZE 65655
+    int64_t results[RESSIZE] = {0};
+
+    #define BUFSIZE 2000000
+    char buffer[BUFSIZE] = {0};
+
     f64 tstart = zpl_time_now();
-    int64_t results[65655] = {0};
-    int amount = librg_world_query(world, 1, results, 65655);
+    int amount = librg_world_query(world, 1, results, RESSIZE);
     printf("query found %d results of %d in (%.3f ms)\n", amount, totalEnts, zpl_time_now() - tstart);
     // for (int i=0; i<amount; i++) printf("result #%d: %lld\n", i, results[i]);
 
+    printf("> encoding...\n");
+
+    tstart = zpl_time_now();
+    size_t actual = librg_world_write(world, 1, buffer, BUFSIZE, NULL);
+    printf("written %zu bytes in (%.3f ms)\n", actual, zpl_time_now() - tstart);
+
+    librg_world *w2 = librg_world_create();
+
+    librg_event_set(w2, LIBRG_WRITE_CREATE, _parent_create);
+    librg_event_set(w2, LIBRG_READ_CREATE, _child_create);
+
+    tstart = zpl_time_now();
+    int r = librg_world_read(w2, 1, buffer, actual, NULL);
+    printf("read %zu bytes, result: %d, entities: %d in (%.3f ms)\n", actual, r, librg_entity_count(w2), zpl_time_now() - tstart);
+
     librg_entity_untrack(world, myId);
     librg_world_destroy(world);
+    librg_world_destroy(w2);
     return 0;
 }
