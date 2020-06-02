@@ -11,6 +11,7 @@
     "url": "git+https://github.com/zpl-c/librg.git"
   },
   "scripts": {
+    "embed": "node -e 'require(\"./misc/packager\").embedIncludes()'",
     "release": "release-it",
     "release-patch": "release-it patch --ci",
     "release-minor": "release-it minor --ci",

@@ -87,3 +87,4 @@ class Bumper extends Plugin {
 }
 
 module.exports = Bumper
+module.exports.embedIncludes = embedIncludes
