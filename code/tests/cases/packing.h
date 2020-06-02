@@ -62,8 +62,6 @@ MODULE(packing, {
     // !
     // =======================================================================//
 
-    printf(" * WRITE:CREATE\n");
-
     IT("should write create for single entity", {
         librg_world *world = librg_world_create();
 
@@ -248,8 +246,6 @@ MODULE(packing, {
     // ! Update
     // !
     // =======================================================================//
-
-    printf(" * WRITE:UPDATE\n");
 
     IT("should write update section", {
         librg_world *world = librg_world_create();
@@ -444,8 +440,6 @@ MODULE(packing, {
     // !
     // =======================================================================//
 
-    printf(" * WRITE:REMOVE\n");
-
     IT("should write remove section", {
         librg_world *world = librg_world_create();
 
@@ -581,8 +575,6 @@ MODULE(packing, {
     // !
     // =======================================================================//
 
-    printf(" * READ:CREATE\n");
-
     IT("should read create for single entity", {
         librg_world *world1 = librg_world_create();
         librg_world *world2 = librg_world_create();
@@ -713,8 +705,6 @@ MODULE(packing, {
     // !
     // =======================================================================//
 
-    printf(" * READ:UPDATE\n");
-
     IT("should read update for single entity", {
         librg_world *world1 = librg_world_create();
         librg_world *world2 = librg_world_create();
@@ -828,8 +818,6 @@ MODULE(packing, {
     // ! Reading remove
     // !
     // =======================================================================//
-
-    printf(" * READ:REMOVE\n");
 
     IT("should read remove for single entity", {
         librg_world *world1 = librg_world_create();
@@ -988,8 +976,6 @@ MODULE(packing, {
     // ! Other
     // !
     // =======================================================================//
-
-    printf(" * OTHER\n");
 
     IT("should read update backwards (from foreign entity) and call update event", {
         librg_world *world1 = librg_world_create();

@@ -70,6 +70,7 @@ LIBRG_BEGIN_C_DECLS
 // !
 // =======================================================================//
 
+ZPL_TABLE(static inline, librg_table_i8, librg_table_i8_, int8_t);
 ZPL_TABLE(static inline, librg_table_i64, librg_table_i64_, int64_t);
 ZPL_TABLE(static inline, librg_table_tbl, librg_table_tbl_, librg_table_i64);
 
@@ -81,11 +82,12 @@ enum  {
 };
 
 typedef struct {
-    uint8_t type : 4;
+    uint8_t type : 2;
+    uint8_t visibility_global : 2;
     uint8_t flag_owner_updated : 1;
     uint8_t flag_foreign : 1;
-    uint8_t flag_unused_2 : 1;
-    uint8_t flag_unused_3 : 1;
+    uint8_t flag_visbility_owner_enabled : 1;
+    uint8_t flag_unused2 : 1;
 
     int8_t observed_radius;
     uint16_t ownership_token;
@@ -94,6 +96,7 @@ typedef struct {
     int64_t owner_id;
 
     librg_chunk chunks[LIBRG_ENTITY_MAXCHUNKS];
+    librg_table_i8 owner_visibility_map;
 
     void *userdata;
 } librg_entity_t;

@@ -43,6 +43,7 @@ int8_t librg_entity_untrack(librg_world *world, int64_t entity_id) {
         return LIBRG_ENTITY_FOREIGN;
     }
 
+    /* cleanup owner snapshots */
     if (entity->owner_id != LIBRG_OWNER_INVALID) {
         size_t owned = 0;
         size_t total = zpl_array_count(wld->entity_map.entries);
@@ -60,6 +61,12 @@ int8_t librg_entity_untrack(librg_world *world, int64_t entity_id) {
             librg_table_i64_destroy(snapshot);
             librg_table_tbl_remove(&wld->owner_map, entity->owner_id);
         }
+    }
+
+    /* cleanup owner visibility */
+    if (entity->flag_visbility_owner_enabled) {
+        entity->flag_visbility_owner_enabled = LIBRG_FALSE;
+        librg_table_i8_destroy(&entity->owner_visibility_map);
     }
 
     librg_table_ent_remove(&wld->entity_map, entity_id);
@@ -265,6 +272,65 @@ size_t librg_entity_chunkarray_get(librg_world *world, int64_t entity_id, librg_
     }
 
     return count;
+}
+
+
+int8_t librg_entity_visibility_global_set(librg_world *world, int64_t entity_id, librg_visibility value) {
+    LIBRG_ASSERT(world); if (!world) return LIBRG_WORLD_INVALID;
+    librg_world_t *wld = (librg_world_t *)world;
+
+    librg_entity_t *entity = librg_table_ent_get(&wld->entity_map, entity_id);
+    if (entity == NULL) return LIBRG_ENTITY_UNTRACKED;
+
+    entity->visibility_global = value;
+
+    return LIBRG_OK;
+}
+
+int8_t librg_entity_visibility_global_get(librg_world *world, int64_t entity_id) {
+    LIBRG_ASSERT(world); if (!world) return LIBRG_WORLD_INVALID;
+    librg_world_t *wld = (librg_world_t *)world;
+
+    librg_entity_t *entity = librg_table_ent_get(&wld->entity_map, entity_id);
+    if (entity == NULL) return LIBRG_ENTITY_UNTRACKED;
+
+    return entity->visibility_global;
+}
+
+int8_t librg_entity_visibility_owner_set(librg_world *world, int64_t entity_id, int64_t owner_id, librg_visibility value) {
+    LIBRG_ASSERT(world); if (!world) return LIBRG_WORLD_INVALID;
+    librg_world_t *wld = (librg_world_t *)world;
+
+    librg_entity_t *entity = librg_table_ent_get(&wld->entity_map, entity_id);
+    if (entity == NULL) return LIBRG_ENTITY_UNTRACKED;
+
+    /* prevent setting visiblity, for your own entity, it will be always visible */
+    if (entity->owner_id == owner_id) {
+        return LIBRG_ENTITY_VISIBILITY_IGNORED;
+    }
+
+    if (!entity->flag_visbility_owner_enabled) {
+        entity->flag_visbility_owner_enabled = LIBRG_TRUE;
+        librg_table_i8_init(&entity->owner_visibility_map, wld->allocator);
+    }
+
+    librg_table_i8_set(&entity->owner_visibility_map, owner_id, value);
+
+    return LIBRG_OK;
+}
+
+int8_t librg_entity_visibility_owner_get(librg_world *world, int64_t entity_id, int64_t owner_id) {
+    LIBRG_ASSERT(world); if (!world) return LIBRG_WORLD_INVALID;
+    librg_world_t *wld = (librg_world_t *)world;
+
+    librg_entity_t *entity = librg_table_ent_get(&wld->entity_map, entity_id);
+    if (entity == NULL) return LIBRG_ENTITY_UNTRACKED;
+
+    if (!entity->flag_visbility_owner_enabled)
+        return LIBRG_VISIBLITY_DEFAULT;
+
+    int8_t *value = librg_table_i8_get(&entity->owner_visibility_map, owner_id);
+    return (value ? *value : LIBRG_VISIBLITY_DEFAULT);
 }
 
 #if 0

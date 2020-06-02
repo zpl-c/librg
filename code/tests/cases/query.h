@@ -316,4 +316,213 @@ MODULE(query, {
 
         librg_world_destroy(world);
     });
+
+    IT("should properly exclude globally-invisible entity", {
+        librg_world *world = librg_world_create();
+
+        r = librg_entity_track(world, 1); EQUALS(r, LIBRG_OK);
+        r = librg_entity_track(world, 2); EQUALS(r, LIBRG_OK);
+        r = librg_entity_track(world, 3); EQUALS(r, LIBRG_OK);
+
+        r = librg_entity_chunk_set(world, 1, 1); EQUALS(r, LIBRG_OK);
+        r = librg_entity_chunk_set(world, 2, 1); EQUALS(r, LIBRG_OK);
+        r = librg_entity_chunk_set(world, 3, 1); EQUALS(r, LIBRG_OK);
+
+        r = librg_entity_owner_set(world, 1, 1); EQUALS(r, LIBRG_OK);
+        r = librg_entity_radius_set(world, 1, 1); EQUALS(r, LIBRG_OK);
+
+        r = librg_entity_visibility_global_set(world, 2, LIBRG_VISIBLITY_NEVER); EQUALS(r, LIBRG_OK);
+
+        int64_t results[16] = {0};
+        size_t amt = librg_world_query(world, 1, results, 16);
+        EQUALS(amt, 2);
+        EQUALS(results[0], 1); // own entity first
+        EQUALS(results[1], 3);
+
+        librg_world_destroy(world);
+    });
+
+    IT("should properly include always-globally-visible entity without regards of chunk radius", {
+        librg_world *world = librg_world_create();
+
+        r = librg_entity_track(world, 1); EQUALS(r, LIBRG_OK);
+        r = librg_entity_track(world, 2); EQUALS(r, LIBRG_OK);
+        r = librg_entity_track(world, 3); EQUALS(r, LIBRG_OK);
+
+        r = librg_entity_chunk_set(world, 1, 1); EQUALS(r, LIBRG_OK);
+        r = librg_entity_chunk_set(world, 2, 50); EQUALS(r, LIBRG_OK);
+        r = librg_entity_chunk_set(world, 3, 1); EQUALS(r, LIBRG_OK);
+
+        r = librg_entity_owner_set(world, 1, 1); EQUALS(r, LIBRG_OK);
+        r = librg_entity_radius_set(world, 1, 1); EQUALS(r, LIBRG_OK);
+
+        r = librg_entity_visibility_global_set(world, 2, LIBRG_VISIBLITY_ALWAYS); EQUALS(r, LIBRG_OK);
+
+        int64_t results[16] = {0};
+        size_t amt = librg_world_query(world, 1, results, 16);
+        EQUALS(amt, 3);
+        EQUALS(results[0], 1); // own entity first
+        EQUALS(results[1], 2);
+        EQUALS(results[2], 3);
+
+        librg_world_destroy(world);
+    });
+
+    IT("should properly include always-globally-visible entity without regards of dimension", {
+        librg_world *world = librg_world_create();
+
+        r = librg_entity_track(world, 1); EQUALS(r, LIBRG_OK);
+        r = librg_entity_track(world, 2); EQUALS(r, LIBRG_OK);
+        r = librg_entity_track(world, 3); EQUALS(r, LIBRG_OK);
+
+        r = librg_entity_chunk_set(world, 1, 1); EQUALS(r, LIBRG_OK);
+        r = librg_entity_chunk_set(world, 2, 50); EQUALS(r, LIBRG_OK);
+        r = librg_entity_chunk_set(world, 3, 1); EQUALS(r, LIBRG_OK);
+
+        r = librg_entity_owner_set(world, 1, 1); EQUALS(r, LIBRG_OK);
+        r = librg_entity_radius_set(world, 1, 1); EQUALS(r, LIBRG_OK);
+
+        r = librg_entity_dimension_set(world, 2, 3); EQUALS(r, LIBRG_OK);
+        r = librg_entity_visibility_global_set(world, 2, LIBRG_VISIBLITY_ALWAYS); EQUALS(r, LIBRG_OK);
+
+        int64_t results[16] = {0};
+        size_t amt = librg_world_query(world, 1, results, 16);
+        EQUALS(amt, 3);
+        EQUALS(results[0], 1); // own entity first
+        EQUALS(results[1], 2);
+        EQUALS(results[2], 3);
+
+        librg_world_destroy(world);
+    });
+
+    IT("should properly exclude owner-invisible entity", {
+        librg_world *world = librg_world_create();
+
+        r = librg_entity_track(world, 1); EQUALS(r, LIBRG_OK);
+        r = librg_entity_track(world, 2); EQUALS(r, LIBRG_OK);
+        r = librg_entity_track(world, 3); EQUALS(r, LIBRG_OK);
+
+        r = librg_entity_chunk_set(world, 1, 1); EQUALS(r, LIBRG_OK);
+        r = librg_entity_chunk_set(world, 2, 1); EQUALS(r, LIBRG_OK);
+        r = librg_entity_chunk_set(world, 3, 1); EQUALS(r, LIBRG_OK);
+
+        r = librg_entity_owner_set(world, 1, 1); EQUALS(r, LIBRG_OK);
+        r = librg_entity_radius_set(world, 1, 1); EQUALS(r, LIBRG_OK);
+
+        r = librg_entity_visibility_owner_set(world, 2, 1, LIBRG_VISIBLITY_NEVER); EQUALS(r, LIBRG_OK);
+
+        int64_t results[16] = {0};
+        size_t amt = librg_world_query(world, 1, results, 16);
+        EQUALS(amt, 2);
+        EQUALS(results[0], 1); // own entity first
+        EQUALS(results[1], 3);
+
+        librg_world_destroy(world);
+    });
+
+    IT("should properly include always-owner-visible entity without regards of chunk radius", {
+        librg_world *world = librg_world_create();
+
+        r = librg_entity_track(world, 1); EQUALS(r, LIBRG_OK);
+        r = librg_entity_track(world, 2); EQUALS(r, LIBRG_OK);
+        r = librg_entity_track(world, 3); EQUALS(r, LIBRG_OK);
+
+        r = librg_entity_chunk_set(world, 1, 1); EQUALS(r, LIBRG_OK);
+        r = librg_entity_chunk_set(world, 2, 50); EQUALS(r, LIBRG_OK);
+        r = librg_entity_chunk_set(world, 3, 1); EQUALS(r, LIBRG_OK);
+
+        r = librg_entity_owner_set(world, 1, 1); EQUALS(r, LIBRG_OK);
+        r = librg_entity_radius_set(world, 1, 1); EQUALS(r, LIBRG_OK);
+
+        r = librg_entity_visibility_owner_set(world, 2, 1, LIBRG_VISIBLITY_ALWAYS); EQUALS(r, LIBRG_OK);
+
+        int64_t results[16] = {0};
+        size_t amt = librg_world_query(world, 1, results, 16);
+        EQUALS(amt, 3);
+        EQUALS(results[0], 1); // own entity first
+        EQUALS(results[1], 2);
+        EQUALS(results[2], 3);
+
+        librg_world_destroy(world);
+    });
+
+    IT("should properly include always-owner-visible entity without regards of dimension", {
+        librg_world *world = librg_world_create();
+
+        r = librg_entity_track(world, 1); EQUALS(r, LIBRG_OK);
+        r = librg_entity_track(world, 2); EQUALS(r, LIBRG_OK);
+        r = librg_entity_track(world, 3); EQUALS(r, LIBRG_OK);
+
+        r = librg_entity_chunk_set(world, 1, 1); EQUALS(r, LIBRG_OK);
+        r = librg_entity_chunk_set(world, 2, 50); EQUALS(r, LIBRG_OK);
+        r = librg_entity_chunk_set(world, 3, 1); EQUALS(r, LIBRG_OK);
+
+        r = librg_entity_owner_set(world, 1, 1); EQUALS(r, LIBRG_OK);
+        r = librg_entity_radius_set(world, 1, 1); EQUALS(r, LIBRG_OK);
+
+        r = librg_entity_dimension_set(world, 2, 3); EQUALS(r, LIBRG_OK);
+        r = librg_entity_visibility_owner_set(world, 2, 1, LIBRG_VISIBLITY_ALWAYS); EQUALS(r, LIBRG_OK);
+
+        int64_t results[16] = {0};
+        size_t amt = librg_world_query(world, 1, results, 16);
+        EQUALS(amt, 3);
+        EQUALS(results[0], 1); // own entity first
+        EQUALS(results[1], 2);
+        EQUALS(results[2], 3);
+
+        librg_world_destroy(world);
+    });
+
+    IT("should properly exclude owner-invisible entity overriding always-globally-visible", {
+        librg_world *world = librg_world_create();
+
+        r = librg_entity_track(world, 1); EQUALS(r, LIBRG_OK);
+        r = librg_entity_track(world, 2); EQUALS(r, LIBRG_OK);
+        r = librg_entity_track(world, 3); EQUALS(r, LIBRG_OK);
+
+        r = librg_entity_chunk_set(world, 1, 1); EQUALS(r, LIBRG_OK);
+        r = librg_entity_chunk_set(world, 2, 1); EQUALS(r, LIBRG_OK);
+        r = librg_entity_chunk_set(world, 3, 1); EQUALS(r, LIBRG_OK);
+
+        r = librg_entity_owner_set(world, 1, 1); EQUALS(r, LIBRG_OK);
+        r = librg_entity_radius_set(world, 1, 1); EQUALS(r, LIBRG_OK);
+
+        r = librg_entity_visibility_owner_set(world, 2, 1, LIBRG_VISIBLITY_NEVER); EQUALS(r, LIBRG_OK);
+        r = librg_entity_visibility_global_set(world, 2, LIBRG_VISIBLITY_ALWAYS); EQUALS(r, LIBRG_OK);
+
+        int64_t results[16] = {0};
+        size_t amt = librg_world_query(world, 1, results, 16);
+        EQUALS(amt, 2);
+        EQUALS(results[0], 1); // own entity first
+        EQUALS(results[1], 3);
+
+        librg_world_destroy(world);
+    });
+
+    IT("should properly include always-owner-visible entity overriding always-globally-visible", {
+        librg_world *world = librg_world_create();
+
+        r = librg_entity_track(world, 1); EQUALS(r, LIBRG_OK);
+        r = librg_entity_track(world, 2); EQUALS(r, LIBRG_OK);
+        r = librg_entity_track(world, 3); EQUALS(r, LIBRG_OK);
+
+        r = librg_entity_chunk_set(world, 1, 1); EQUALS(r, LIBRG_OK);
+        r = librg_entity_chunk_set(world, 2, 50); EQUALS(r, LIBRG_OK);
+        r = librg_entity_chunk_set(world, 3, 1); EQUALS(r, LIBRG_OK);
+
+        r = librg_entity_owner_set(world, 1, 1); EQUALS(r, LIBRG_OK);
+        r = librg_entity_radius_set(world, 1, 1); EQUALS(r, LIBRG_OK);
+
+        r = librg_entity_visibility_owner_set(world, 2, 1, LIBRG_VISIBLITY_ALWAYS); EQUALS(r, LIBRG_OK);
+        r = librg_entity_visibility_global_set(world, 2, LIBRG_VISIBLITY_ALWAYS); EQUALS(r, LIBRG_OK);
+
+        int64_t results[16] = {0};
+        size_t amt = librg_world_query(world, 1, results, 16);
+        EQUALS(amt, 3);
+        EQUALS(results[0], 1); // own entity first
+        EQUALS(results[1], 2);
+        EQUALS(results[2], 3);
+
+        librg_world_destroy(world);
+    });
 });

@@ -51,5 +51,6 @@ typedef int64_t librg_chunk;
 #define LIBRG_HANDLER_EMPTY             (-0x0002)
 #define LIBRG_ENTITY_UNTRACKED          (-0x0002)
 #define LIBRG_ENTITY_ALREADY_TRACKED    (-0x0002)
+#define LIBRG_ENTITY_VISIBILITY_IGNORED (-0x0003)
 
 LIBRG_END_C_DECLS

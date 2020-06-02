@@ -22,9 +22,9 @@
 // #define LIBRG_WORLDWRITE_MAXQUERY 360
 #include "librg.h"
 
-// TODO: add text info header part for librg.h
 // TODO: add visibility features
 // TODO: add behavior support
+// TODO: add librg_enet code
 
 /* impl part*/
 int32_t _parent_create(librg_world *world, librg_event *event) {

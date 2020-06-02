@@ -12,6 +12,11 @@
     <a href="LICENSE"><img src="https://img.shields.io/github/license/zpl-c/librg.svg" alt="license" /></a>
 </div>
 
+![GitHub Workflow Status](https://img.shields.io/github/workflow/status/zpl-c/librg/tests?label=Tests&style=for-the-badge)
+![GitHub package.json version (branch)](https://img.shields.io/github/package-json/v/zpl-c/librg?style=for-the-badge)
+![Discord](https://img.shields.io/discord/354670964400848898?style=for-the-badge)
+![GitHub](https://img.shields.io/github/license/zpl-c/librg?style=for-the-badge)
+
 <br />
 <div align="center">
   Pure C99 game networking library for building simple and elegant cross-platform multiplayer client-server solutions.

@@ -22,6 +22,12 @@ typedef enum {
     LIBRG_BEHAVIOR_STEPBACK,
 } librg_behavior;
 
+typedef enum {
+    LIBRG_VISIBLITY_DEFAULT,
+    LIBRG_VISIBLITY_NEVER,
+    LIBRG_VISIBLITY_ALWAYS,
+} librg_visibility;
+
 // =======================================================================//
 // !
 // ! Basic entity manipulation
@@ -55,5 +61,9 @@ LIBRG_API int8_t        librg_entity_userdata_set(librg_world *, int64_t entity_
 LIBRG_API void *        librg_entity_userdata_get(librg_world *, int64_t entity_id);
 LIBRG_API int8_t        librg_entity_chunkarray_set(librg_world *, int64_t entity_id, const librg_chunk *chunks, size_t chunk_amount);
 LIBRG_API size_t        librg_entity_chunkarray_get(librg_world *, int64_t entity_id, LIBRG_OUT librg_chunk *chunks, size_t buffer_limit);
+LIBRG_API int8_t        librg_entity_visibility_global_set(librg_world *, int64_t entity_id, librg_visibility value);
+LIBRG_API int8_t        librg_entity_visibility_global_get(librg_world *, int64_t entity_id);
+LIBRG_API int8_t        librg_entity_visibility_owner_set(librg_world *, int64_t entity_id, int64_t owner_id, librg_visibility value);
+LIBRG_API int8_t        librg_entity_visibility_owner_get(librg_world *, int64_t entity_id, int64_t owner_id);
 
 LIBRG_END_C_DECLS

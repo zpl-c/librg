@@ -169,6 +169,26 @@ size_t librg_world_query(librg_world *world, int64_t owner_id, int64_t *entity_i
         librg_entity_t *entity = &wld->entity_map.entries[i].value;
         librg_table_i64 *chunks = librg_table_tbl_get(&dimensions, entity->dimension);
 
+        /* owner visiblity (personal)*/
+        int8_t vis_owner = librg_entity_visibility_owner_get(world, entity_id, owner_id);
+        if (vis_owner == LIBRG_VISIBLITY_NEVER) {
+            continue; /* prevent from being included */
+        }
+        else if (vis_owner == LIBRG_VISIBLITY_ALWAYS) {
+            librg_table_i64_set(&results, entity_id, 1); /* always included */
+            continue;
+        }
+
+        /* global entity visiblity */
+        int8_t vis_global = librg_entity_visibility_global_get(world, entity_id);
+        if (vis_global == LIBRG_VISIBLITY_NEVER) {
+            continue; /* prevent from being included */
+        }
+        else if (vis_global == LIBRG_VISIBLITY_ALWAYS) {
+            librg_table_i64_set(&results, entity_id, 1); /* always included */
+            continue;
+        }
+
         /* skip if there are no chunks in this dimension */
         if (!chunks) continue;
         size_t chunk_amount = zpl_array_count(chunks->entries);
