@@ -27,6 +27,10 @@ GitHub:
   https://github.com/zpl-c/zpl
 
 Version History:
+  10.4.1  - Jobs system now enqueues jobs with def priority of 1.0
+  10.4.0  - [META] version bump
+  10.3.0  - Pool allocator now supports zpl_free_all
+  10.2.0  - [META] version bump
   10.1.0  - Additional math methods (thanks to funZX and msmshazan)
   10.0.15 - WIP Emscripten fixes
   10.0.14 - FreeBSD support
@@ -253,8 +257,8 @@ Version History:
 #define ZPL_H
 
 #define ZPL_VERSION_MAJOR 10
-#define ZPL_VERSION_MINOR 2
-#define ZPL_VERSION_PATCH 0
+#define ZPL_VERSION_MINOR 4
+#define ZPL_VERSION_PATCH 1
 #define ZPL_VERSION_PRE ""
 
 // file: zpl_hedley.h
@@ -2208,7 +2212,7 @@ ZPL_DIAGNOSTIC_POP
 
 /* Distributions */
 #ifndef ZPL_CUSTOM_MODULES
-    /* default distribtuion */
+    /* default distribution */
     #define ZPL_MODULE_CORE
     #define ZPL_MODULE_TIMER
     #define ZPL_MODULE_HASHING
@@ -3371,6 +3375,7 @@ ZPL_END_C_DECLS
         zpl_isize block_size;
         zpl_isize block_align;
         zpl_isize total_size;
+        zpl_isize num_blocks;
     } zpl_pool;
 
 
@@ -8120,6 +8125,7 @@ ZPL_END_C_DECLS
         pool->backing = backing;
         pool->block_size = block_size;
         pool->block_align = block_align;
+        pool->num_blocks = num_blocks;
 
         actual_block_size = block_size + block_align;
         pool_size = num_blocks * actual_block_size;
@@ -8171,9 +8177,26 @@ ZPL_END_C_DECLS
                 pool->total_size -= pool->block_size;
             } break;
 
-            case ZPL_ALLOCATION_FREE_ALL:
-            // TODO:
-            break;
+            case ZPL_ALLOCATION_FREE_ALL: {
+                zpl_isize actual_block_size, block_index;
+                void *curr;
+                zpl_uintptr *end;
+
+                actual_block_size = pool->block_size + pool->block_align;
+                pool->total_size = 0;
+
+                // NOTE: Init intrusive freelist
+                curr = pool->physical_start;
+                for (block_index = 0; block_index < pool->num_blocks - 1; block_index++) {
+                    zpl_uintptr *next = cast(zpl_uintptr *) curr;
+                    *next = cast(zpl_uintptr) curr + actual_block_size;
+                    curr = zpl_pointer_add(curr, actual_block_size);
+                }
+
+                end = cast(zpl_uintptr *) curr;
+                *end = cast(zpl_uintptr) NULL;
+                pool->free_list = pool->physical_start;
+            } break;
 
             case ZPL_ALLOCATION_RESIZE:
             // NOTE: Cannot resize
@@ -10717,13 +10740,16 @@ ZPL_END_C_DECLS
     }
 
     ZPL_ALWAYS_INLINE zpl_f64 zpl__random_copy_sign64(zpl_f64 x, zpl_f64 y) {
-        zpl_i64 ix, iy;
-        ix = *(zpl_i64 *)&x;
-        iy = *(zpl_i64 *)&y;
+        zpl_i64 ix=0, iy=0;
+        zpl_memcopy(&ix, &x, zpl_sizeof(zpl_i64));
+        zpl_memcopy(&iy, &y, zpl_sizeof(zpl_i64));
 
         ix &= 0x7fffffffffffffff;
         ix |= iy & 0x8000000000000000;
-        return *cast(zpl_f64 *)&ix;
+
+        zpl_f64 r = 0.0;
+        zpl_memcopy(&r, &ix, zpl_sizeof(zpl_f64));
+        return r;
     }
 
     ZPL_ALWAYS_INLINE zpl_f64 zpl__random_floor64    (zpl_f64 x)        { return cast(zpl_f64)((x >= 0.0) ? cast(zpl_i64)x : cast(zpl_i64)(x-0.9999999999999999)); }
@@ -10743,7 +10769,8 @@ ZPL_END_C_DECLS
 
     zpl_f64 zpl_random_range_f64(zpl_random *r, zpl_f64 lower_inc, zpl_f64 higher_inc) {
         zpl_u64 u = zpl_random_gen_u64(r);
-        zpl_f64 f = *cast(zpl_f64 *)&u;
+        zpl_f64 f = 0;
+        zpl_memcopy(&f, &u, zpl_sizeof(zpl_f64));
         zpl_f64 diff = higher_inc-lower_inc+1.0;
         f = zpl__random_mod64(f, diff);
         f += lower_inc;
@@ -16712,7 +16739,7 @@ ZPL_END_C_DECLS
 
         void zpl_jobs_enqueue(zpl_thread_pool *pool, zpl_jobs_proc proc, void *data) {
             ZPL_ASSERT_NOT_NULL(proc);
-            zpl_jobs_enqueue_with_priority(pool, proc, data, 0);
+            zpl_jobs_enqueue_with_priority(pool, proc, data, 1);
         }
 
         zpl_thread_local zpl_thread_pool *zpl__thread_pool;
