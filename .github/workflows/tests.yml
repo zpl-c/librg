@@ -1,0 +1,32 @@
+name: tests
+on: [push, pull_request]
+
+jobs:
+  build-linux:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: run debug test
+        run: make test
+      - name: run release test
+        run: LEVEL=-O3 make test
+
+  build-macos:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: run debug test
+        run: make test
+      - name: run release test
+        run: LEVEL=-O3 make test
+
+  build-windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: cmake generate
+        run: mkdir build ; cd build ; cmake ../misc
+      - name: cmake build
+        run: cd build ; cmake --build .
+      - name: run test
+        run: cd build ; .\Debug\unit.exe
