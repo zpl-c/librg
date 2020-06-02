@@ -185,6 +185,7 @@
 #include "header/general.h"
 #include "header/entity.h"
 #include "header/query.h"
+#include "header/packing.h"
 
 /* Implementation part */
 #if defined(LIBRG_IMPLEMENTATION) && !defined(LIBRG_IMPLEMENTATION_DONE)

@@ -72,8 +72,8 @@ LIBRG_API int8_t librg_event_remove(librg_world *, librg_event_id);
 // !
 // =======================================================================//
 
-LIBRG_ALWAYS_INLINE LIBRG_API librg_chunk librg_chunk_from_realpos(librg_world *, double x, double y, double z);
-LIBRG_ALWAYS_INLINE LIBRG_API librg_chunk librg_chunk_from_chunkpos(librg_world *, int16_t chunk_x, int16_t chunk_y, int16_t chunk_z);
-LIBRG_ALWAYS_INLINE LIBRG_API int8_t      librg_chunk_to_chunkpos(librg_world *, librg_chunk id, int16_t *chunk_x, int16_t *chunk_y, int16_t *chunk_z);
+LIBRG_API librg_chunk librg_chunk_from_realpos(librg_world *, double x, double y, double z);
+LIBRG_API librg_chunk librg_chunk_from_chunkpos(librg_world *, int16_t chunk_x, int16_t chunk_y, int16_t chunk_z);
+LIBRG_API int8_t      librg_chunk_to_chunkpos(librg_world *, librg_chunk id, int16_t *chunk_x, int16_t *chunk_y, int16_t *chunk_z);
 
 LIBRG_END_C_DECLS
