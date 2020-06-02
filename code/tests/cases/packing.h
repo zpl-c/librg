@@ -602,7 +602,7 @@ MODULE(packing, {
         r = librg_world_read(world2, 1, buffer, amount, &value); EQUALS(r, LIBRG_OK);
         r = librg_entity_count(world2); EQUALS(r, 1);
 
-        r = librg_entity_owner_get(world2, 1); EQUALS(r, 1);
+        r = (int32_t)librg_entity_owner_get(world2, 1); EQUALS(r, 1);
 
         EQUALS(value, 1); /* value == 1 means the LIBRG_READ_CREATE call was indeed executed */
 

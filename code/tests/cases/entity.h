@@ -40,7 +40,7 @@ MODULE(entity, {
         librg_entity_track(world, 15);
 
         r = librg_entity_chunk_set(world, 15, 15); EQUALS(r, LIBRG_OK);
-        r = librg_entity_chunk_get(world, 15); EQUALS(r, 15);
+        r = (int8_t)librg_entity_chunk_get(world, 15); EQUALS(r, 15);
 
         librg_entity_untrack(world, 15);
         librg_world_destroy(world);
@@ -51,7 +51,7 @@ MODULE(entity, {
         librg_entity_track(world, 15);
 
         r = librg_entity_owner_set(world, 15, 15); EQUALS(r, LIBRG_OK);
-        r = librg_entity_owner_get(world, 15); EQUALS(r, 15);
+        r = (int8_t)librg_entity_owner_get(world, 15); EQUALS(r, 15);
 
         librg_entity_untrack(world, 15);
         librg_world_destroy(world);
@@ -87,7 +87,7 @@ MODULE(entity, {
         r = librg_entity_chunkarray_set(world, 15, arr, 3); EQUALS(r, LIBRG_OK);
 
         librg_chunk res[5];
-        int amt = librg_entity_chunkarray_get(world, 15, res, 5);
+        size_t amt = librg_entity_chunkarray_get(world, 15, res, 5);
 
         EQUALS(amt, 3);
         EQUALS(res[0], 1);
@@ -106,7 +106,7 @@ MODULE(entity, {
         r = librg_entity_chunkarray_set(world, 15, arr, 3); EQUALS(r, LIBRG_OK);
 
         librg_chunk res[3] = {0};
-        int amt = librg_entity_chunkarray_get(world, 15, res, 2);
+        size_t amt = librg_entity_chunkarray_get(world, 15, res, 2);
 
         EQUALS(amt, 2);
         EQUALS(res[0], 1);

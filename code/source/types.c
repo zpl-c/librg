@@ -59,6 +59,11 @@ LIBRG_BEGIN_C_DECLS
 #define LIBRG_WORLDWRITE_MAXQUERY 4096
 #endif
 
+/* validate that value is less than maximum allowed */
+#if LIBRG_WORLDWRITE_MAXQUERY > ZPL_U16_MAX
+#error "LIBRG_WORLDWRITE_MAXQUERY must have value less than 65535"
+#endif
+
 // =======================================================================//
 // !
 // ! Internal data structures

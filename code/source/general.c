@@ -234,8 +234,8 @@ int8_t librg_chunk_to_chunkpos(librg_world *world, librg_chunk id, int16_t *chun
         return LIBRG_FAIL;
     }
 
-    int16_t z = id / (wld->worldsize.z * wld->worldsize.y);
-    int16_t r1 = id % (wld->worldsize.z * wld->worldsize.y);
+    int16_t z = (int16_t)(id / (wld->worldsize.z * wld->worldsize.y));
+    int16_t r1 = (int16_t)(id % (wld->worldsize.z * wld->worldsize.y));
     int16_t y = r1 / wld->worldsize.y;
     int16_t x = r1 % wld->worldsize.y;
 

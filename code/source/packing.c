@@ -52,7 +52,6 @@ size_t librg_world_write(librg_world *world, int64_t owner_id, char *buffer, siz
     int64_t results[LIBRG_WORLDWRITE_MAXQUERY] = {0};
     size_t total_amount = librg_world_query(world, owner_id, results, LIBRG_WORLDWRITE_MAXQUERY);
     size_t total_written = 0;
-
     librg_event evt = {0};
 
     #define sz_total (total_written + sizeof(librg_segment_t))
@@ -67,7 +66,7 @@ librg_lbl_ww:
         librg_segment_t *seg = (librg_segment_t*)(buffer+total_written);
         char *segend = (buffer + sz_total);
 
-        size_t amount = 0;
+        uint16_t amount = 0;
         size_t value_written = 0;
         size_t iterations = total_amount;
 
@@ -173,7 +172,7 @@ librg_lbl_ww:
 
         if (amount > 0) {
             seg->type = action_id;
-            seg->size = value_written;
+            seg->size = (uint32_t)value_written;
             seg->amount = amount;
 
             total_written += sizeof(librg_segment_t) + seg->size;
@@ -322,7 +321,7 @@ int32_t librg_world_read(librg_world *world, int64_t owner_id, const char *buffe
     #undef sz_segval
 
     if (total_read != size) {
-        return size - total_read;
+        return (int32_t)(size - total_read);
     }
 
     return LIBRG_OK;

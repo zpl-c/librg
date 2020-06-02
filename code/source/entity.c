@@ -89,7 +89,7 @@ int32_t librg_entity_count(librg_world *world) {
     LIBRG_ASSERT(world); if (!world) return LIBRG_WORLD_INVALID;
     librg_world_t *wld = (librg_world_t *)world;
 
-    return zpl_array_count(wld->entity_map.entries);
+    return (int32_t)zpl_array_count(wld->entity_map.entries);
 }
 
 // =======================================================================//
