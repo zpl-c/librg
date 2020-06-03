@@ -77,15 +77,22 @@ int main() {
     char buffer[BUFSIZE] = {0};
 
     f64 tstart = zpl_time_now();
-    size_t amount = librg_world_query(world, 1, results, RESSIZE);
+    int32_t amount = librg_world_query(world, 1, results, RESSIZE);
     zpl_printf("query found %d results of %d in (%.3f ms)\n", amount, totalEnts, zpl_time_now() - tstart);
     // for (int i=0; i<amount; i++) zpl_printf("result #%d: %lld\n", i, results[i]);
 
     zpl_printf("> encoding...\n");
 
     tstart = zpl_time_now();
-    size_t actual = librg_world_write(world, 1, buffer, BUFSIZE, NULL);
-    zpl_printf("written %zu bytes in (%.3f ms)\n", actual, zpl_time_now() - tstart);
+
+    size_t buffer_size = 10000;
+    int32_t result = librg_world_write(world, 1, buffer, &buffer_size, NULL);
+
+    if (result > 0) {
+        printf("AAA, you didnt have enough space to write stuff in your buffer mister\n");
+    }
+
+    zpl_printf("written %zu bytes in (%.3f ms)\n", buffer_size, zpl_time_now() - tstart);
 
     librg_world *w2 = librg_world_create();
 
@@ -93,8 +100,8 @@ int main() {
     librg_event_set(w2, LIBRG_READ_CREATE, _child_create);
 
     tstart = zpl_time_now();
-    int r = librg_world_read(w2, 1, buffer, actual, NULL);
-    zpl_printf("read %zu bytes, result: %d, entities: %d in (%.3f ms)\n", actual, r, librg_entity_count(w2), zpl_time_now() - tstart);
+    int r = librg_world_read(w2, 1, buffer, buffer_size, NULL);
+    zpl_printf("read %zu bytes, result: %d, entities: %d in (%.3f ms)\n", buffer_size, r, librg_entity_count(w2), zpl_time_now() - tstart);
 
     librg_entity_untrack(world, myId);
     librg_world_destroy(world);

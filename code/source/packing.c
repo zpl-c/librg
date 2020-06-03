@@ -37,13 +37,16 @@ LIBRG_STATIC_ASSERT(sizeof(librg_segment_t) == 8, "packed librg_segment_t should
 // !
 // =======================================================================//
 
-size_t librg_world_write(librg_world *world, int64_t owner_id, char *buffer, size_t buffer_limit, void *userdata) {
+int32_t librg_world_write(librg_world *world, int64_t owner_id, char *buffer, size_t *size, void *userdata) {
     LIBRG_ASSERT(world); if (!world) return LIBRG_WORLD_INVALID;
     librg_world_t *wld = (librg_world_t *)world;
     librg_table_i64 *last_snapshot = librg_table_tbl_get(&wld->owner_map, owner_id);
 
     /* no snapshot - means we are asking an invalid owner */
-    if (!last_snapshot) return LIBRG_OWNER_INVALID;
+    if (!last_snapshot) {
+        *size = 0;
+        return LIBRG_OWNER_INVALID;
+    }
 
     /* get old, and preapre new snapshot handlers */
     librg_table_i64 next_snapshot = {0};
@@ -52,12 +55,14 @@ size_t librg_world_write(librg_world *world, int64_t owner_id, char *buffer, siz
     int64_t *results = LIBRG_MEM_ALLOC(LIBRG_WORLDWRITE_MAXQUERY * sizeof(int64_t));
     size_t total_amount = librg_world_query(world, owner_id, results, LIBRG_WORLDWRITE_MAXQUERY);
     size_t total_written = 0;
-    librg_event evt = {0};
+    librg_event_t evt = {0};
 
     #define sz_total (total_written + sizeof(librg_segment_t))
     #define sz_value (sz_total + value_written + sizeof(librg_segval_t))
 
     uint8_t action_id = LIBRG_WRITE_CREATE;
+    size_t buffer_limit = *size;
+    size_t insufficient_size = 0;
 
 librg_lbl_ww:
 
@@ -126,7 +131,7 @@ librg_lbl_ww:
 
                 /* call event handlers */
                 if (wld->handlers[action_id]) {
-                    data_size = (int32_t)wld->handlers[action_id](world, &evt);
+                    data_size = (int32_t)wld->handlers[action_id](world, (librg_event*)&evt);
                 }
 
                 /* if user returned < 0, we consider that event rejected */
@@ -149,6 +154,11 @@ librg_lbl_ww:
                     action_rejected = LIBRG_FALSE;
                     amount++;
                 }
+            }
+
+            /* accumulate insufficient buffer size */
+            if (condition && sz_value >= buffer_limit) {
+                insufficient_size += (buffer_limit - sz_value);
             }
 
             /* finaliztion */
@@ -177,6 +187,8 @@ librg_lbl_ww:
 
             total_written += sizeof(librg_segment_t) + seg->size;
         }
+    } else {
+        insufficient_size = buffer_limit - sz_total;
     }
 
     /* iterate it again till all tasks are finished */
@@ -191,10 +203,14 @@ librg_lbl_ww:
     librg_table_tbl_set(&wld->owner_map, owner_id, next_snapshot);
     LIBRG_MEM_FREE(results);
 
+    /* write our total size */
+    *size = total_written;
+
     #undef sz_total
     #undef sz_value
 
-    return total_written;
+    /* if we didnt have enough space, value will be > 0 */
+    return insufficient_size;
 }
 
 // =======================================================================//
@@ -207,7 +223,7 @@ int32_t librg_world_read(librg_world *world, int64_t owner_id, const char *buffe
     LIBRG_ASSERT(world); if (!world) return LIBRG_WORLD_INVALID;
     librg_world_t *wld = (librg_world_t *)world;
 
-    librg_event evt = {0};
+    librg_event_t evt = {0};
     size_t total_read = 0;
 
     #define sz_segment (total_read + sizeof(librg_segment_t))

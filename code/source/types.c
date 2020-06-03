@@ -104,6 +104,15 @@ typedef struct {
 ZPL_TABLE(static inline, librg_table_ent, librg_table_ent_, librg_entity_t);
 
 typedef struct {
+    uint8_t     type;           /* type of the event that was called, might be useful in bindings */
+    int64_t     owner_id;       /* id of the owner who this event is called for */
+    int64_t     entity_id;      /* id of an entity which this event is called about */
+    char      * buffer;         /* ptr to the buffer data */
+    size_t      size;           /* depending on the event type, can show maximum amount of data you are able to write, or amount of data you can read */
+    void      * userdata;       /* userpointer that is passed from librg_world_write/librg_world_read fns */
+} librg_event_t;
+
+typedef struct {
     uint8_t valid;
     zpl_allocator allocator;
     zpl_random random;

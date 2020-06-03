@@ -175,7 +175,7 @@ int8_t librg_config_chunkoffset_get(librg_world *world, int16_t *x, int16_t *y, 
 // !
 // =======================================================================//
 
-int8_t librg_event_set(librg_world *world, librg_event_id id, librg_event_fn handler) {
+int8_t librg_event_set(librg_world *world, librg_event_type id, librg_event_fn handler) {
     LIBRG_ASSERT(world); if (!world) return LIBRG_WORLD_INVALID;
     librg_world_t *wld = (librg_world_t *)world;
 
@@ -188,7 +188,7 @@ int8_t librg_event_set(librg_world *world, librg_event_id id, librg_event_fn han
     return LIBRG_OK;
 }
 
-int8_t librg_event_remove(librg_world *world, librg_event_id id) {
+int8_t librg_event_remove(librg_world *world, librg_event_type id) {
     LIBRG_ASSERT(world); if (!world) return LIBRG_WORLD_INVALID;
     librg_world_t *wld = (librg_world_t *)world;
 
@@ -198,6 +198,56 @@ int8_t librg_event_remove(librg_world *world, librg_event_id id) {
 
     wld->handlers[id] = NULL;
     return LIBRG_OK;
+}
+
+librg_event_type librg_event_type_get(librg_world *world, librg_event *event) {
+    LIBRG_ASSERT(event); if (!event) return LIBRG_EVENT_INVALID;
+    zpl_unused(world);
+    librg_event_t *e = (librg_event_t*)event;
+    return e->type;
+}
+
+int64_t librg_event_owner_get(librg_world *world, librg_event *event) {
+    LIBRG_ASSERT(event); if (!event) return LIBRG_EVENT_INVALID;
+    zpl_unused(world);
+    librg_event_t *e = (librg_event_t*)event;
+    return e->owner_id;
+}
+
+int64_t librg_event_entity_get(librg_world *world, librg_event *event) {
+    LIBRG_ASSERT(event); if (!event) return LIBRG_EVENT_INVALID;
+    zpl_unused(world);
+    librg_event_t *e = (librg_event_t*)event;
+    return e->entity_id;
+}
+
+char * librg_event_buffer_get(librg_world *world, librg_event *event) {
+    LIBRG_ASSERT(event); if (!event) return NULL;
+    zpl_unused(world);
+    librg_event_t *e = (librg_event_t*)event;
+    return e->buffer;
+}
+
+size_t librg_event_size_get(librg_world *world, librg_event *event) {
+    LIBRG_ASSERT(event); if (!event) return LIBRG_EVENT_INVALID;
+    zpl_unused(world);
+    librg_event_t *e = (librg_event_t*)event;
+    return e->size;
+}
+
+int8_t librg_event_userdata_set(librg_world *world, librg_event *event, void *userdata) {
+    LIBRG_ASSERT(event); if (!event) return LIBRG_EVENT_INVALID;
+    zpl_unused(world);
+    librg_event_t *e = (librg_event_t*)event;
+    e->userdata = userdata;
+    return LIBRG_OK;
+}
+
+void * librg_event_userdata_get(librg_world *world, librg_event *event) {
+    LIBRG_ASSERT(event); if (!event) return NULL;
+    zpl_unused(world);
+    librg_event_t *e = (librg_event_t*)event;
+    return e->userdata;
 }
 
 // =======================================================================//

@@ -13,6 +13,7 @@ LIBRG_BEGIN_C_DECLS
 // =======================================================================//
 
 typedef void librg_world;
+typedef void librg_event;
 typedef int64_t librg_chunk;
 
 #define LIBRG_OFFSET_BEG                ((int16_t)0x8000)
@@ -24,6 +25,21 @@ typedef int64_t librg_chunk;
 
 #define LIBRG_IN
 #define LIBRG_OUT
+#define LIBRG_INOUT
+
+typedef enum {
+    LIBRG_WRITE_CREATE,
+    LIBRG_WRITE_UPDATE,
+    LIBRG_WRITE_REMOVE,
+
+    LIBRG_READ_CREATE,
+    LIBRG_READ_UPDATE,
+    LIBRG_READ_REMOVE,
+
+    LIBRG_ERROR_CREATE,
+    LIBRG_ERROR_UPDATE,
+    LIBRG_ERROR_REMOVE,
+} librg_event_type;
 
 // =======================================================================//
 // !
@@ -47,6 +63,7 @@ typedef int64_t librg_chunk;
 #define LIBRG_CHUNK_INVALID             (-0x0003)
 #define LIBRG_ENTITY_INVALID            (-0x0004)
 #define LIBRG_ENTITY_FOREIGN            (-0x0005)
+#define LIBRG_EVENT_INVALID             (-0x0006)
 #define LIBRG_HANDLER_REPLACED          (-0x0002)
 #define LIBRG_HANDLER_EMPTY             (-0x0002)
 #define LIBRG_ENTITY_UNTRACKED          (-0x0002)

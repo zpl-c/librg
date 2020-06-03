@@ -37,33 +37,18 @@ LIBRG_API int8_t librg_config_chunkoffset_get(librg_world *world, int16_t *x, in
 // !
 // =======================================================================//
 
-typedef enum {
-    LIBRG_WRITE_CREATE,
-    LIBRG_WRITE_UPDATE,
-    LIBRG_WRITE_REMOVE,
-
-    LIBRG_READ_CREATE,
-    LIBRG_READ_UPDATE,
-    LIBRG_READ_REMOVE,
-
-    LIBRG_ERROR_CREATE,
-    LIBRG_ERROR_UPDATE,
-    LIBRG_ERROR_REMOVE,
-} librg_event_id;
-
-typedef struct {
-    uint8_t     type;           /* type of the event that was called, might be useful in bindings */
-    int64_t     owner_id;       /* id of the owner who this event is called for */
-    int64_t     entity_id;      /* id of an entity which this event is called about */
-    char      * buffer;         /* ptr to the buffer data */
-    size_t      size;           /* depending on the event type, can show maximum amount of data you are able to write, or amount of data you can read */
-    void      * userdata;       /* userpointer that is passed from librg_world_write/librg_world_read fns */
-} librg_event;
-
 typedef int32_t (*librg_event_fn)(librg_world *world, librg_event *event);
 
-LIBRG_API int8_t librg_event_set(librg_world *world, librg_event_id, librg_event_fn);
-LIBRG_API int8_t librg_event_remove(librg_world *world, librg_event_id);
+LIBRG_API int8_t            librg_event_set(librg_world *world, librg_event_type, librg_event_fn);
+LIBRG_API int8_t            librg_event_remove(librg_world *world, librg_event_type);
+
+LIBRG_API librg_event_type  librg_event_type_get(librg_world *world, librg_event *event);
+LIBRG_API int64_t           librg_event_owner_get(librg_world *world, librg_event *event);
+LIBRG_API int64_t           librg_event_entity_get(librg_world *world, librg_event *event);
+LIBRG_API char *            librg_event_buffer_get(librg_world *world, librg_event *event);
+LIBRG_API size_t            librg_event_size_get(librg_world *world, librg_event *event);
+LIBRG_API int8_t            librg_event_userdata_set(librg_world *world, librg_event *event, void *userdata);
+LIBRG_API void *            librg_event_userdata_get(librg_world *world, librg_event *event);
 
 // =======================================================================//
 // !
