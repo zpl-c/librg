@@ -3,6 +3,12 @@
 - Getting started
 
   - [Quick start](quickstart.md)
-  - [Writing more pages](more-pages.md)
+
+- Methods
+
+  - [General](methods/general.md)
+  - [Entity](methods/entity.md)
+  - [Query](methods/query.md)
 
 - [Changelog](changelog.md)
+

@@ -11,6 +11,7 @@
     "url": "git+https://github.com/zpl-c/librg.git"
   },
   "scripts": {
+    "docs-serve": "docsify serve ./docs",
     "embed": "node -e 'require(\"./misc/packager\").embedIncludes()'",
     "release": "release-it",
     "release-patch": "release-it patch --ci",
