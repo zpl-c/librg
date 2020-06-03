@@ -176,7 +176,7 @@ MODULE(packing, {
 
         char buffer[4096] = {0};
         buffer_size = 34;
-        r = librg_world_write(world, 1, buffer, &buffer_size, NULL);
+        r = librg_world_write(world, 1, buffer, &buffer_size, NULL); EQUALS(r, 38);
         size_t expected = CREATE_SEGMENT(2, 0); EQUALS(buffer_size, expected);
 
         r = librg_world_destroy(world); EQUALS(r, LIBRG_OK);

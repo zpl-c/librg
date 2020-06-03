@@ -158,7 +158,7 @@ librg_lbl_ww:
 
             /* accumulate insufficient buffer size */
             if (condition && sz_value >= buffer_limit) {
-                insufficient_size += (buffer_limit - sz_value);
+                insufficient_size += (sz_value - buffer_limit);
             }
 
             /* finaliztion */
@@ -188,7 +188,7 @@ librg_lbl_ww:
             total_written += sizeof(librg_segment_t) + seg->size;
         }
     } else {
-        insufficient_size = buffer_limit - sz_total;
+        insufficient_size += sz_total - buffer_limit;
     }
 
     /* iterate it again till all tasks are finished */
