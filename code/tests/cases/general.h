@@ -177,6 +177,22 @@ MODULE(general, {
         librg_world_destroy(world);
     });
 
+    IT("should calculate chunk id from a floating position in 2d top-left mode", {
+        librg_world *world = librg_world_create();
+        r = librg_config_chunksize_set(world, 16, 16, 0); EQUALS(r, LIBRG_OK);
+        r = librg_config_chunkamount_set(world, 16, 16, 0); EQUALS(r, LIBRG_OK);
+        r = librg_config_chunkoffset_set(world, LIBRG_OFFSET_BEG, LIBRG_OFFSET_BEG, LIBRG_OFFSET_BEG); EQUALS(r, LIBRG_OK);
+
+        librg_chunk id = LIBRG_CHUNK_INVALID;
+
+        id = librg_chunk_from_realpos(world,  0.f,  0.f, 0); EQUALS(id, 0);
+        id = librg_chunk_from_realpos(world, 15.f, 15.f, 0); EQUALS(id, 0);
+        id = librg_chunk_from_realpos(world, 16.f, 15.f, 0); EQUALS(id, 1);
+        id = librg_chunk_from_realpos(world, 16.f, 17.f, 0); EQUALS(id, 17);
+
+        librg_world_destroy(world);
+    });
+
     IT("should calculate chunk id from a floating position in 3d top-left mode", {
         librg_world *world = librg_world_create();
         r = librg_config_chunksize_set(world, 16, 16, 16); EQUALS(r, LIBRG_OK);
