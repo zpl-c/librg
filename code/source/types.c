@@ -56,7 +56,7 @@ LIBRG_BEGIN_C_DECLS
 /* defines how many max entity ids could be used  */
 /* inside of the librg_world_write call */
 #ifndef LIBRG_WORLDWRITE_MAXQUERY
-#define LIBRG_WORLDWRITE_MAXQUERY 4096
+#define LIBRG_WORLDWRITE_MAXQUERY 16384
 #endif
 
 /* validate that value is less than maximum allowed */

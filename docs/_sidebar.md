@@ -17,8 +17,8 @@
 
 - Advanced
 
-  - [Compile-time configuration]()
-  - [Custom allocators]()
+  - [Compile-time configuration](compiletime.md)
+  - [Custom allocators](allocators.md)
 
 - [Changelog](changelog.md)
 

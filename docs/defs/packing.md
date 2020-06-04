@@ -13,8 +13,10 @@ Additionally, an event is fired for each entity within owner's view radius, allo
 For more details on events, please refer to the [events](defs/events.md) page.
 In case you wish to write any additional information, you would need to return length of the data you copied to the buffer. More details in the [example](#example) below.
 
-
 All of that information is then written to the buffer that provided as an argument, and is ready to be transferred/saved, and then later on read by [librg_world_read](#librg_world_read) method.
+
+Important: the [librg_world_query](defs/query.md#librg_world_query) will use a **temporary allocated** buffer of size [LIBRG_WORLDWRITE_MAXQUERY](compiletime.md#LIBRG_WORLDWRITE_MAXQUERY) elements.
+If the provided space will not be enough, you need to redefine the macro to increase the limit.
 
 > Note:
 > * pre-last argument tells method maximum length of your buffer, and the method will respect that length
