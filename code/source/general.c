@@ -70,18 +70,25 @@ int8_t librg_world_destroy(librg_world *world) {
     LIBRG_ASSERT(world); if (!world) return LIBRG_WORLD_INVALID;
     librg_world_t *wld = (librg_world_t *)world;
 
-    /* free up internal structs */
-    for (int i = 0; i < zpl_array_count(wld->entity_map.entries); ++i) {
-        wld->entity_map.entries[i].value.flag_foreign = LIBRG_FALSE;
-        librg_entity_untrack(world, wld->entity_map.entries[i].key);
+    {/* free up entities */
+        for (int i = 0; i < zpl_array_count(wld->entity_map.entries); ++i) {
+            librg_entity_t *entity = &wld->entity_map.entries[i].value;
+
+            if (entity->flag_visbility_owner_enabled) {
+                entity->flag_visbility_owner_enabled = LIBRG_FALSE;
+                librg_table_i8_destroy(&entity->owner_visibility_map);
+            }
+        }
+
+        librg_table_ent_destroy(&wld->entity_map);
     }
 
-    librg_table_ent_destroy(&wld->entity_map);
+    {/* free up owners */
+        for (int i = 0; i < zpl_array_count(wld->owner_map.entries); ++i)
+            librg_table_i64_destroy(&wld->owner_map.entries[i].value);
 
-    for (int i = 0; i < zpl_array_count(wld->owner_map.entries); ++i)
-        librg_table_i64_destroy(&wld->owner_map.entries[i].value);
-
-    librg_table_tbl_destroy(&wld->owner_map);
+        librg_table_tbl_destroy(&wld->owner_map);
+    }
 
     /* mark it invalid */
     wld->valid = LIBRG_FALSE;
@@ -235,14 +242,6 @@ size_t librg_event_size_get(librg_world *world, librg_event *event) {
     return e->size;
 }
 
-int8_t librg_event_userdata_set(librg_world *world, librg_event *event, void *userdata) {
-    LIBRG_ASSERT(event); if (!event) return LIBRG_EVENT_INVALID;
-    zpl_unused(world);
-    librg_event_t *e = (librg_event_t*)event;
-    e->userdata = userdata;
-    return LIBRG_OK;
-}
-
 void * librg_event_userdata_get(librg_world *world, librg_event *event) {
     LIBRG_ASSERT(event); if (!event) return NULL;
     zpl_unused(world);
@@ -286,7 +285,7 @@ int8_t librg_chunk_to_chunkpos(librg_world *world, librg_chunk id, int16_t *chun
     librg_world_t *wld = (librg_world_t *)world;
 
     if (id < 0 || id > (wld->worldsize.x * wld->worldsize.y * wld->worldsize.z)) {
-        return LIBRG_FAIL;
+        return LIBRG_CHUNK_INVALID;
     }
 
     int16_t z = (int16_t)(id / (wld->worldsize.z * wld->worldsize.y));

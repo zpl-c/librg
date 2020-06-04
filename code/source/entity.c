@@ -17,8 +17,13 @@ int8_t librg_entity_track(librg_world *world, int64_t entity_id) {
     LIBRG_ASSERT(world); if (!world) return LIBRG_WORLD_INVALID;
     librg_world_t *wld = (librg_world_t *)world;
 
-    if (librg_entity_tracked(world, entity_id) == LIBRG_TRUE)
+    if (librg_entity_tracked(world, entity_id) == LIBRG_TRUE) {
         return LIBRG_ENTITY_ALREADY_TRACKED;
+    }
+
+    if (entity_id < 0 || entity_id > ZPL_I64_MAX) {
+        return LIBRG_ENTITY_INVALID;
+    }
 
     librg_entity_t _entity = {0};
     librg_table_ent_set(&wld->entity_map, entity_id, _entity);
@@ -33,11 +38,11 @@ int8_t librg_entity_track(librg_world *world, int64_t entity_id) {
 int8_t librg_entity_untrack(librg_world *world, int64_t entity_id) {
     LIBRG_ASSERT(world); if (!world) return LIBRG_WORLD_INVALID;
     librg_world_t *wld = (librg_world_t *)world;
-
-    if (librg_entity_tracked(world, entity_id) == LIBRG_FALSE)
-        return LIBRG_ENTITY_UNTRACKED;
-
     librg_entity_t *entity = librg_table_ent_get(&wld->entity_map, entity_id);
+
+    if (!entity) {
+        return LIBRG_ENTITY_UNTRACKED;
+    }
 
     if (entity->flag_foreign == LIBRG_TRUE) {
         return LIBRG_ENTITY_FOREIGN;
@@ -70,12 +75,11 @@ int8_t librg_entity_untrack(librg_world *world, int64_t entity_id) {
     }
 
     librg_table_ent_remove(&wld->entity_map, entity_id);
-
     return LIBRG_OK;
 }
 
 int8_t librg_entity_tracked(librg_world *world, int64_t entity_id) {
-    LIBRG_ASSERT(world); if (!world) return LIBRG_WORLD_INVALID;
+    LIBRG_ASSERT(world); if (!world) return LIBRG_FALSE;
     librg_world_t *wld = (librg_world_t *)world;
 
     librg_entity_t *entity = librg_table_ent_get(&wld->entity_map, entity_id);
@@ -83,11 +87,11 @@ int8_t librg_entity_tracked(librg_world *world, int64_t entity_id) {
 }
 
 int8_t librg_entity_foreign(librg_world *world, int64_t entity_id) {
-    LIBRG_ASSERT(world); if (!world) return LIBRG_WORLD_INVALID;
+    LIBRG_ASSERT(world); if (!world) return LIBRG_FALSE;
     librg_world_t *wld = (librg_world_t *)world;
 
     librg_entity_t *entity = librg_table_ent_get(&wld->entity_map, entity_id);
-    if (entity == NULL) return LIBRG_ENTITY_UNTRACKED;
+    if (entity == NULL) return LIBRG_FALSE;
 
     return entity->flag_foreign == LIBRG_TRUE;
 }
@@ -255,7 +259,7 @@ int8_t librg_entity_chunkarray_set(librg_world *world, int64_t entity_id, const 
 
 }
 
-size_t librg_entity_chunkarray_get(librg_world *world, int64_t entity_id, librg_chunk *results, size_t buffer_limit) {
+int8_t librg_entity_chunkarray_get(librg_world *world, int64_t entity_id, librg_chunk *results, size_t *chunk_amount) {
     LIBRG_ASSERT(world); if (!world) return LIBRG_WORLD_INVALID;
     librg_world_t *wld = (librg_world_t *)world;
 
@@ -264,6 +268,7 @@ size_t librg_entity_chunkarray_get(librg_world *world, int64_t entity_id, librg_
 
     LIBRG_ASSERT(results);
     size_t count = 0;
+    size_t buffer_limit = *chunk_amount;
 
     for (size_t i = 0; i < LIBRG_MIN(buffer_limit, LIBRG_ENTITY_MAXCHUNKS); ++i) {
         if (entity->chunks[i] != LIBRG_CHUNK_INVALID) {
@@ -271,7 +276,8 @@ size_t librg_entity_chunkarray_get(librg_world *world, int64_t entity_id, librg_
         }
     }
 
-    return count;
+    *chunk_amount = count;
+    return (LIBRG_ENTITY_MAXCHUNKS - buffer_limit);
 }
 
 

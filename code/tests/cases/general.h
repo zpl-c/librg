@@ -1,5 +1,5 @@
 MODULE(general, {
-    int8_t r = LIBRG_FAIL;
+    int8_t r = -1;
 
     IT("should be able to allocate and free an instance", {
         librg_world *world = librg_world_create();

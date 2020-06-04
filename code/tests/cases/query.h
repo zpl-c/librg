@@ -1,15 +1,16 @@
 MODULE(query, {
-    int8_t r = LIBRG_FAIL;
+    int8_t r = -1;
 
     IT("should be able to fetch all tracked entities", {
         librg_world *world = librg_world_create();
 
-        r = librg_entity_track(world, 1); NEQUALS(r, LIBRG_FAIL);
-        r = librg_entity_track(world, 2); NEQUALS(r, LIBRG_FAIL);
-        r = librg_entity_track(world, 3); NEQUALS(r, LIBRG_FAIL);
+        r = librg_entity_track(world, 1); EQUALS(r, LIBRG_OK);
+        r = librg_entity_track(world, 2); EQUALS(r, LIBRG_OK);
+        r = librg_entity_track(world, 3); EQUALS(r, LIBRG_OK);
 
         int64_t results[16] = {0};
-        size_t amt = librg_world_fetch_all(world, results, 16);
+        size_t amt = 16;
+        librg_world_fetch_all(world, results, &amt);
 
         EQUALS(amt, 3);
         EQUALS(results[0], 1);
@@ -22,22 +23,24 @@ MODULE(query, {
     IT("should be able to fetch entities within a chunk", {
         librg_world *world = librg_world_create();
 
-        r = librg_entity_track(world, 1); NEQUALS(r, LIBRG_FAIL);
-        r = librg_entity_track(world, 2); NEQUALS(r, LIBRG_FAIL);
-        r = librg_entity_track(world, 3); NEQUALS(r, LIBRG_FAIL);
+        r = librg_entity_track(world, 1); EQUALS(r, LIBRG_OK);
+        r = librg_entity_track(world, 2); EQUALS(r, LIBRG_OK);
+        r = librg_entity_track(world, 3); EQUALS(r, LIBRG_OK);
 
-        r = librg_entity_chunk_set(world, 1, 5); NEQUALS(r, LIBRG_FAIL);
-        r = librg_entity_chunk_set(world, 2, 5); NEQUALS(r, LIBRG_FAIL);
-        r = librg_entity_chunk_set(world, 3, 4); NEQUALS(r, LIBRG_FAIL);
+        r = librg_entity_chunk_set(world, 1, 5); EQUALS(r, LIBRG_OK);
+        r = librg_entity_chunk_set(world, 2, 5); EQUALS(r, LIBRG_OK);
+        r = librg_entity_chunk_set(world, 3, 4); EQUALS(r, LIBRG_OK);
 
         int64_t results[16] = {0};
-        size_t amt = librg_world_fetch_chunk(world, 5, results, 16);
+        size_t amt = 16;
+        librg_world_fetch_chunk(world, 5, results, &amt);
 
         EQUALS(amt, 2);
         EQUALS(results[0], 1);
         EQUALS(results[1], 2);
 
-        amt = librg_world_fetch_chunk(world, 4, results, 16);
+        amt = 16;
+        librg_world_fetch_chunk(world, 4, results, &amt);
 
         EQUALS(amt, 1);
         EQUALS(results[0], 3);
@@ -61,7 +64,8 @@ MODULE(query, {
         int64_t results[16] = {0};
         librg_chunk chunks[2] = {0}; chunks[0] = 5; chunks[1] = 6;
 
-        size_t amt = librg_world_fetch_chunkarray(world, chunks, 2, results, 16);
+        size_t amt = 16;
+        librg_world_fetch_chunkarray(world, chunks, 2, results, &amt);
 
         EQUALS(amt, 3);
         EQUALS(results[0], 2);
@@ -86,7 +90,8 @@ MODULE(query, {
 
         int64_t results[16] = {0};
         int64_t owners_ids[2]; owners_ids[0] = 5; owners_ids[1] = 6;
-        size_t amt = librg_world_fetch_ownerarray(world, owners_ids, 2, results, 16);
+        size_t amt = 16;
+        librg_world_fetch_ownerarray(world, owners_ids, 2, results, &amt);
 
         EQUALS(amt, 3);
         EQUALS(results[0], 2);
@@ -110,7 +115,8 @@ MODULE(query, {
         r = librg_entity_owner_set(world, 4, 6); EQUALS(r, LIBRG_OK);
 
         int64_t results[16] = {0};
-        size_t amt = librg_world_query(world, 0, results, 16);
+        size_t amt = 16;
+        librg_world_query(world, 0, results, &amt);
         EQUALS(amt, 0);
 
         librg_world_destroy(world);
@@ -130,7 +136,8 @@ MODULE(query, {
         r = librg_entity_owner_set(world, 4, 6); EQUALS(r, LIBRG_OK);
 
         int64_t results[16] = {0};
-        size_t amt = librg_world_query(world, 6, results, 16);
+        size_t amt = 16;
+        librg_world_query(world, 6, results, &amt);
         EQUALS(amt, 2);
         EQUALS(results[0], 3);
         EQUALS(results[1], 4);
@@ -157,7 +164,8 @@ MODULE(query, {
         r = librg_entity_dimension_set(world, 4, 4); EQUALS(r, LIBRG_OK);
 
         int64_t results[16] = {0};
-        size_t amt = librg_world_query(world, 6, results, 16);
+        size_t amt = 16;
+        librg_world_query(world, 6, results, &amt);
         EQUALS(amt, 2);
         EQUALS(results[0], 3);
         EQUALS(results[1], 4);
@@ -184,7 +192,8 @@ MODULE(query, {
         r = librg_entity_radius_set(world, 3, 1); EQUALS(r, LIBRG_OK);
 
         int64_t results[16] = {0};
-        size_t amt = librg_world_query(world, 6, results, 16);
+        size_t amt = 16;
+        librg_world_query(world, 6, results, &amt);
         EQUALS(amt, 3);
         EQUALS(results[0], 3); // own entity first
         EQUALS(results[1], 1);
@@ -216,7 +225,8 @@ MODULE(query, {
         r = librg_entity_dimension_set(world, 3, 3); EQUALS(r, LIBRG_OK);
 
         int64_t results[16] = {0};
-        size_t amt = librg_world_query(world, 6, results, 16);
+        size_t amt = 16;
+        librg_world_query(world, 6, results, &amt);
         EQUALS(amt, 2);
         EQUALS(results[0], 3); // own entity first
         EQUALS(results[1], 1);
@@ -256,7 +266,8 @@ MODULE(query, {
         r = librg_entity_dimension_set(world, 5, 1); EQUALS(r, LIBRG_OK);
 
         int64_t results[16] = {0};
-        size_t amt = librg_world_query(world, 1, results, 16);
+        size_t amt = 16;
+        librg_world_query(world, 1, results, &amt);
 
         EQUALS(amt, 5);
         EQUALS(results[0], 1); // own entity first
@@ -303,7 +314,8 @@ MODULE(query, {
         librg_entity_chunk_set(world, 10, librg_chunk_from_chunkpos(world, 2323, 0, 3));
 
         int64_t results[16] = {0};
-        size_t amt = librg_world_query(world, owner_id, results, 16);
+        size_t amt = 16;
+        librg_world_query(world, owner_id, results, &amt);
 
         EQUALS(amt, 7);
         EQUALS(results[0], 1); // own entity first
@@ -334,7 +346,8 @@ MODULE(query, {
         r = librg_entity_visibility_global_set(world, 2, LIBRG_VISIBLITY_NEVER); EQUALS(r, LIBRG_OK);
 
         int64_t results[16] = {0};
-        size_t amt = librg_world_query(world, 1, results, 16);
+        size_t amt = 16;
+        librg_world_query(world, 1, results, &amt);
         EQUALS(amt, 2);
         EQUALS(results[0], 1); // own entity first
         EQUALS(results[1], 3);
@@ -359,7 +372,8 @@ MODULE(query, {
         r = librg_entity_visibility_global_set(world, 2, LIBRG_VISIBLITY_ALWAYS); EQUALS(r, LIBRG_OK);
 
         int64_t results[16] = {0};
-        size_t amt = librg_world_query(world, 1, results, 16);
+        size_t amt = 16;
+        librg_world_query(world, 1, results, &amt);
         EQUALS(amt, 3);
         EQUALS(results[0], 1); // own entity first
         EQUALS(results[1], 2);
@@ -386,7 +400,8 @@ MODULE(query, {
         r = librg_entity_visibility_global_set(world, 2, LIBRG_VISIBLITY_ALWAYS); EQUALS(r, LIBRG_OK);
 
         int64_t results[16] = {0};
-        size_t amt = librg_world_query(world, 1, results, 16);
+        size_t amt = 16;
+        librg_world_query(world, 1, results, &amt);
         EQUALS(amt, 3);
         EQUALS(results[0], 1); // own entity first
         EQUALS(results[1], 2);
@@ -412,7 +427,8 @@ MODULE(query, {
         r = librg_entity_visibility_owner_set(world, 2, 1, LIBRG_VISIBLITY_NEVER); EQUALS(r, LIBRG_OK);
 
         int64_t results[16] = {0};
-        size_t amt = librg_world_query(world, 1, results, 16);
+        size_t amt = 16;
+        librg_world_query(world, 1, results, &amt);
         EQUALS(amt, 2);
         EQUALS(results[0], 1); // own entity first
         EQUALS(results[1], 3);
@@ -437,7 +453,8 @@ MODULE(query, {
         r = librg_entity_visibility_owner_set(world, 2, 1, LIBRG_VISIBLITY_ALWAYS); EQUALS(r, LIBRG_OK);
 
         int64_t results[16] = {0};
-        size_t amt = librg_world_query(world, 1, results, 16);
+        size_t amt = 16;
+        librg_world_query(world, 1, results, &amt);
         EQUALS(amt, 3);
         EQUALS(results[0], 1); // own entity first
         EQUALS(results[1], 2);
@@ -464,7 +481,8 @@ MODULE(query, {
         r = librg_entity_visibility_owner_set(world, 2, 1, LIBRG_VISIBLITY_ALWAYS); EQUALS(r, LIBRG_OK);
 
         int64_t results[16] = {0};
-        size_t amt = librg_world_query(world, 1, results, 16);
+        size_t amt = 16;
+        librg_world_query(world, 1, results, &amt);
         EQUALS(amt, 3);
         EQUALS(results[0], 1); // own entity first
         EQUALS(results[1], 2);
@@ -491,7 +509,8 @@ MODULE(query, {
         r = librg_entity_visibility_global_set(world, 2, LIBRG_VISIBLITY_ALWAYS); EQUALS(r, LIBRG_OK);
 
         int64_t results[16] = {0};
-        size_t amt = librg_world_query(world, 1, results, 16);
+        size_t amt = 16;
+        librg_world_query(world, 1, results, &amt);
         EQUALS(amt, 2);
         EQUALS(results[0], 1); // own entity first
         EQUALS(results[1], 3);
@@ -517,7 +536,8 @@ MODULE(query, {
         r = librg_entity_visibility_global_set(world, 2, LIBRG_VISIBLITY_ALWAYS); EQUALS(r, LIBRG_OK);
 
         int64_t results[16] = {0};
-        size_t amt = librg_world_query(world, 1, results, 16);
+        size_t amt = 16;
+        librg_world_query(world, 1, results, &amt);
         EQUALS(amt, 3);
         EQUALS(results[0], 1); // own entity first
         EQUALS(results[1], 2);

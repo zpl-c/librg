@@ -13,34 +13,41 @@ LIBRG_BEGIN_C_DECLS
 // !
 // =======================================================================//
 
-size_t librg_world_fetch_all(librg_world *world, int64_t *entity_ids, size_t buffer_limit) {
+int32_t librg_world_fetch_all(librg_world *world, int64_t *entity_ids, size_t *entity_amount) {
     LIBRG_ASSERT(world); if (!world) return LIBRG_WORLD_INVALID;
+    LIBRG_ASSERT(entity_amount); if (!entity_amount) return LIBRG_NULL_REFERENCE;
     librg_world_t *wld = (librg_world_t *)world;
 
     size_t count = 0;
+    size_t buffer_limit = *entity_amount;
     size_t total_count = zpl_array_count(wld->entity_map.entries);
 
     for (size_t i=0; i < LIBRG_MIN(buffer_limit, total_count); ++i) {
         entity_ids[count++] = wld->entity_map.entries[i].key;
     }
 
-    return count;
+    *entity_amount = count;
+    return (total_count - buffer_limit);
 }
 
-size_t librg_world_fetch_chunk(librg_world *world, librg_chunk chunk, int64_t *entity_ids, size_t buffer_limit) {
-    return librg_world_fetch_chunkarray(world, (librg_chunk[]){chunk}, 1, entity_ids, buffer_limit);
+int32_t librg_world_fetch_chunk(librg_world *world, librg_chunk chunk, int64_t *entity_ids, size_t *entity_amount) {
+    return librg_world_fetch_chunkarray(world, (librg_chunk[]){chunk}, 1, entity_ids, entity_amount);
 }
 
-size_t librg_world_fetch_chunkarray(librg_world *world, const librg_chunk *chunks, size_t chunk_amount, int64_t *entity_ids, size_t buffer_limit) {
+int32_t librg_world_fetch_chunkarray(librg_world *world, const librg_chunk *chunks, size_t chunk_amount, int64_t *entity_ids, size_t *entity_amount) {
     LIBRG_ASSERT(world); if (!world) return LIBRG_WORLD_INVALID;
+    LIBRG_ASSERT(entity_amount); if (!entity_amount) return LIBRG_NULL_REFERENCE;
     librg_world_t *wld = (librg_world_t *)world;
 
     size_t count = 0;
+    size_t iterated = 0;
+    size_t buffer_limit = *entity_amount;
     size_t total_count = zpl_array_count(wld->entity_map.entries);
 
     for (size_t i=0; i < LIBRG_MIN(buffer_limit, total_count); ++i) {
         uint64_t entity_id = wld->entity_map.entries[i].key;
         librg_entity_t *entity = &wld->entity_map.entries[i].value;
+        iterated++;
 
         for (size_t k = 0; k < chunk_amount; ++k) {
             librg_chunk chunk = chunks[k];
@@ -59,23 +66,28 @@ size_t librg_world_fetch_chunkarray(librg_world *world, const librg_chunk *chunk
         }
     }
 
-    return count;
+    *entity_amount = count;
+    return (total_count - iterated);
 }
 
-size_t librg_world_fetch_owner(librg_world *world, int64_t owner_id, int64_t *entity_ids, size_t buffer_limit) {
-    return librg_world_fetch_ownerarray(world, (int64_t[]){owner_id}, 1, entity_ids, buffer_limit);
+int32_t librg_world_fetch_owner(librg_world *world, int64_t owner_id, int64_t *entity_ids, size_t *entity_amount) {
+    return librg_world_fetch_ownerarray(world, (int64_t[]){owner_id}, 1, entity_ids, entity_amount);
 }
 
-size_t librg_world_fetch_ownerarray(librg_world *world, const int64_t *owner_ids, size_t owner_amount, int64_t *entity_ids, size_t buffer_limit) {
+int32_t librg_world_fetch_ownerarray(librg_world *world, const int64_t *owner_ids, size_t owner_amount, int64_t *entity_ids, size_t *entity_amount) {
     LIBRG_ASSERT(world); if (!world) return LIBRG_WORLD_INVALID;
+    LIBRG_ASSERT(entity_amount); if (!entity_amount) return LIBRG_NULL_REFERENCE;
     librg_world_t *wld = (librg_world_t *)world;
 
     size_t count = 0;
+    size_t iterated = 0;
+    size_t buffer_limit = *entity_amount;
     size_t total_count = zpl_array_count(wld->entity_map.entries);
 
     for (size_t i=0; i < LIBRG_MIN(buffer_limit, total_count); ++i) {
         uint64_t entity_id = wld->entity_map.entries[i].key;
         librg_entity_t *entity = &wld->entity_map.entries[i].value;
+        iterated++;
 
         for (size_t k = 0; k < owner_amount; ++k) {
             int64_t owner_id = owner_ids[k];
@@ -83,7 +95,8 @@ size_t librg_world_fetch_ownerarray(librg_world *world, const int64_t *owner_ids
         }
     }
 
-    return count;
+    *entity_amount = count;
+    return (total_count - iterated);
 }
 
 // =======================================================================//
@@ -109,10 +122,12 @@ static LIBRG_ALWAYS_INLINE void librg_util_chunkrange(librg_world *w, librg_tabl
     return;
 }
 
-size_t librg_world_query(librg_world *world, int64_t owner_id, int64_t *entity_ids, size_t buffer_limit) {
+int32_t librg_world_query(librg_world *world, int64_t owner_id, int64_t *entity_ids, size_t *entity_amount) {
     LIBRG_ASSERT(world); if (!world) return LIBRG_WORLD_INVALID;
+    LIBRG_ASSERT(entity_amount); if (!entity_amount) return LIBRG_NULL_REFERENCE;
     librg_world_t *wld = (librg_world_t *)world;
 
+    size_t buffer_limit = *entity_amount;
     size_t total_count = zpl_array_count(wld->entity_map.entries);
 
     librg_table_i64 results = {0};
@@ -221,7 +236,8 @@ size_t librg_world_query(librg_world *world, int64_t owner_id, int64_t *entity_i
     librg_table_tbl_destroy(&dimensions);
     librg_table_i64_destroy(&results);
 
-    return LIBRG_MIN(buffer_limit, count);
+    *entity_amount = LIBRG_MIN(buffer_limit, count);
+    return (count - buffer_limit);
 
 }
 

@@ -20,9 +20,6 @@ typedef int64_t librg_chunk;
 #define LIBRG_OFFSET_MID                ((int16_t)0x0000)
 #define LIBRG_OFFSET_END                ((int16_t)0x7fff)
 
-#define LIBRG_OBSERVE_ALL               (-0x01)
-#define LIBRG_OBSERVE_NONE              (+0x00)
-
 #define LIBRG_IN
 #define LIBRG_OUT
 #define LIBRG_INOUT
@@ -41,6 +38,8 @@ typedef enum {
     LIBRG_ERROR_REMOVE,
 } librg_event_type;
 
+typedef int32_t (*librg_event_fn)(librg_world *world, librg_event *event);
+
 // =======================================================================//
 // !
 // ! Errors, statuses, warnings and information message codes
@@ -48,15 +47,9 @@ typedef enum {
 // =======================================================================//
 
 #define LIBRG_OK                        (+0x0000)
-#define LIBRG_FAIL                      (-0x0001)
-
+#define LIBRG_FAIL(code)                (code < 0)
 #define LIBRG_TRUE                      (+0x0001)
 #define LIBRG_FALSE                     (+0x0000)
-#define LIBRG_VALID                     (+0x0001)
-#define LIBRG_INVALID                   (-0x0001)
-
-#define LIBRG_WRITE_REJECT              (-0x0001)
-#define LIBRG_READ_INVALID              (-0x0003)
 
 #define LIBRG_WORLD_INVALID             (-0x0001)
 #define LIBRG_OWNER_INVALID             (-0x0002)
@@ -69,5 +62,15 @@ typedef enum {
 #define LIBRG_ENTITY_UNTRACKED          (-0x0002)
 #define LIBRG_ENTITY_ALREADY_TRACKED    (-0x0002)
 #define LIBRG_ENTITY_VISIBILITY_IGNORED (-0x0003)
+#define LIBRG_WRITE_REJECT              (-0x0001)
+#define LIBRG_READ_INVALID              (-0x0003)
+#define LIBRG_NULL_REFERENCE            (-0x0007)
+
+
+/* unsued */
+
+// #define LIBRG_OBSERVE_ALL               (-0x01)
+// #define LIBRG_OBSERVE_NONE              (+0x00)
+
 
 LIBRG_END_C_DECLS

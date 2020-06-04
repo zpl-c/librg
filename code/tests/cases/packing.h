@@ -61,7 +61,7 @@ char expected_buffer_update[] = {
 };
 
 MODULE(packing, {
-    int32_t r = LIBRG_FAIL;
+    int32_t r = -1;
     size_t buffer_size = 0;
 
     // =======================================================================//

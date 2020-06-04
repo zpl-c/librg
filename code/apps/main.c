@@ -77,7 +77,8 @@ int main() {
     char buffer[BUFSIZE] = {0};
 
     f64 tstart = zpl_time_now();
-    int32_t amount = librg_world_query(world, 1, results, RESSIZE);
+    size_t amount = RESSIZE;
+    librg_world_query(world, 1, results, &amount);
     zpl_printf("query found %d results of %d in (%.3f ms)\n", amount, totalEnts, zpl_time_now() - tstart);
     // for (int i=0; i<amount; i++) zpl_printf("result #%d: %lld\n", i, results[i]);
 

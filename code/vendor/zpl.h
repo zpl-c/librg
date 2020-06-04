@@ -9276,6 +9276,7 @@ ZPL_END_C_DECLS
 
             fd->i = open(filename, os_mode, S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH | S_IWOTH);
             if (fd->i < 0) {
+              printf("aaa %ld\n", fd->i);
                 // TODO: More file errors
                 return ZPL_FILE_ERROR_INVALID;
             }
