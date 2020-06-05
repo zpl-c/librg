@@ -1,32 +1,97 @@
-name: tests
-on: [push, pull_request]
+name: tester
+on:
+  push:
+    tags-ignore:
+      - '[0-9]+.[0-9]+.[0-9]+'
+    branches:
+      - master
+      - review/**
+    paths:
+      - 'code/**'
+      - 'Makefile'
+      - 'misc/CMakeLists.txt'
+  pull_request:
+    branches:
+      - master
+    paths:
+      - 'code/**'
+      - 'Makefile'
+      - 'misc/CMakeLists.txt'
 
 jobs:
-  build-linux:
+  prep:
+    name: Notify about testing
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
-      - name: run debug test
-        run: make test
-      - name: run release test
-        run: LEVEL=-O3 make test
-
-  build-macos:
-    runs-on: macos-latest
-    steps:
-      - uses: actions/checkout@v2
-      - name: run debug test
-        run: make test
-      - name: run release test
-        run: LEVEL=-O3 make test
-
-  build-windows:
+      - uses: sarisia/actions-status-discord@v1
+        if: always()
+        env:
+          DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
+        with:
+          description: "**librg** has started the fire trial! (Running tests...)"
+          nodetail: true
+          nofail: true
+          color: "0xFFA500"
+          username: "Michael Scott"
+          avatar_url: "http://raw.madaraszd.net/office/test.jpg"
+  build-win:
+    name: Test Windows
     runs-on: windows-latest
+    needs: [prep]
     steps:
-      - uses: actions/checkout@v2
-      - name: cmake generate
+      - uses: actions/checkout@v1
+      - name: Run cmake generator
         run: mkdir build ; cd build ; cmake ../misc
-      - name: cmake build
+      - name: Run Windows build
         run: cd build ; cmake --build .
-      - name: run test
+      - name: Run unit tests
         run: cd build ; .\Debug\unit.exe
+
+  build-lin:
+    name: Test Linux
+    runs-on: ubuntu-latest
+    needs: [prep]
+    steps:
+      - uses: actions/checkout@v1
+      - name: Run build on Linux
+        run: make test
+      - name: Run optimized build on Linux
+        run: LEVEL=-O3 make test
+
+  build-mac:
+    name: Test macOS
+    runs-on: macOS-latest
+    needs: [prep]
+    steps:
+      - uses: actions/checkout@v1
+      - name: Run build on macOS
+        run: make test
+      - name: Run optimized build on macOS
+        run: LEVEL=-O3 make test
+
+  done:
+    name: Notify about status
+    runs-on: ubuntu-latest
+    needs: [build-mac, build-lin, build-win]
+    if: always()
+    steps:
+      - uses: sarisia/actions-status-discord@v1
+        if: ${{ contains(needs.build-mac.result, 'success') && contains(needs.build-lin.result, 'success') && contains(needs.build-win.result, 'success') }}
+        env:
+          DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
+        with:
+          description: "**librg** tests have succeeded!"
+          nodetail: true
+          nofail: true
+          color: "0x55df2a"
+      - uses: sarisia/actions-status-discord@v1
+        if: ${{ !(contains(needs.build-mac.result, 'success') && contains(needs.build-lin.result, 'success') && contains(needs.build-win.result, 'success')) }}
+        env:
+          DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
+        with:
+          description: "**librg** tests have failed!"
+          nodetail: true
+          nofail: true
+          color: "0xdf332a"
+          username: "Devastated Michael Scott"
+          avatar_url: "http://raw.madaraszd.net/office/fail.jpg"
