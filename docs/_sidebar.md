@@ -2,6 +2,7 @@
 
 - Getting started
 
+  - [Welcome](readme.md)
   - [Quick start](quickstart.md)
 
 - General
