@@ -26,7 +26,7 @@
 
 ## Introduction
 
-**librg** is a light-weight "mid-level" library, to serve as a middleware between data-transferring libraries (networking, file-streaming, etc.) and core application/game logic.
+**librg** is a light-weight "mid-level" library, that can be used to serve as a middleware between data-transferring libraries (networking, file-streaming, etc.) and core application/game logic.
 Main responsibilities of the library include:
 
  * entity tracking (tracks which entity belongs to what world, and what states do they have)
@@ -60,22 +60,31 @@ It came a long way of stripping out things that were non-essential, slowly sculp
 
 **Answer**: The library is spread into multiple files so it is easier to work with it while developing, however each time a new release is created, a "bundled" version of the header file is created and pushed directly to the [releases](https://github.com/zpl-c/librg/releases) page.
 
+> **Question**: You've mentioned entities in the description above, does it mean I would need to use another entity system?
+
+**Answer**: No, the library does not manage nor actually create it's own entities, it rather expects you to provide your entity/object id to attach some internal data onto it,
+which in context of the library we call "tracking".
+
+## Documentation
+
+To read detailed documentation about the library, see examples and quick start guide, please visit our [documetation page]().
+
+Additionally you can check [code/apps](code/apps) folder for actual code examples.
+
 ## Support
 
 We are testing the library for different platforms. This table provides some sort of description for compatibility.
 If you have tested it, and your resut is different from the one in the table, please feel free to describe the issue in the [issues](https://github.com/zpl-c/librg/issues).
 
-|  Platform          | ✅ compiles/runs | ❔ not tested |
-|:-------------------|:----------------:|:-----------------:|
-| **Windows**        | msvc, mingw      |                   |
-| **macOS**          | gcc, clang       |                   |
-| **Linux**          | gcc, clang       |                   |
-| **iOS**            |                  | clang             |
-| **Android**        |                  | clang             |
-| **Raspberry Pi**   |                  | gcc, clang        |
-| **OpenBSD**        |                  | clang             |
-| **FreeBSD**        |                  | gcc, clang        |
-| **Emscripten**     | emcc             |                   |
+
+|  Platform / Result | Windows       | macOS         | Linux         | iOS           | Android       | Raspberry Pi  | OpenBSD       | FreeBSD       | Emscripten    |
+|:------------------:|:-------------:|:-------------:|:-------------:|:-------------:|:-------------:|:-------------:|:-------------:|:-------------:|:-------------:|
+| ❔                 |               |               |               | clang         | clang         | gcc, clang    | gcc, clang    | gcc, clang    |               |
+| ✅                 | msvc, mingw   | gcc, clang    | gcc, clang    |               |               |               |               |               | emcc          |
+
+* ✅ - Library successfully compiles, and all tests are executed properly
+* ❔ - Library was not tested on this platform/compiler yet
+
 
 ## Development
 
@@ -90,7 +99,7 @@ In case you are working from **Windows**, and/or are not able to use `make`, you
 
 1. `mkdir build`
 2. `cd build`
-3. `cmake ../misc -G"Visual Studio 15 2017"` (or any configuration you have)
+3. `cmake ../misc -G"Visual Studio 16 2019"` (or any configuration you have)
 4. `cmake --open .` (opens VS with the solution)
 5. And repeat steps from above
 
