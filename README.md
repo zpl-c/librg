@@ -35,7 +35,7 @@ Main responsibilities of the library include:
  * world replication (re-creates a limited representation in a destination world of what is considered visible to a participant in the source world)
 
 The library was born to solve complexities of setting up and managing the flow of multi-player games and dedicated game servers.
-It came a long way of stripping out things that were non-essential, slowly sculpting in its current form, which you are able to see and use today.
+It came a long way of stripping out things that were non-essential, slowly sculpting into its current form, which you are able to see and use today.
 
 ## Features
 
