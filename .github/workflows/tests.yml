@@ -1,4 +1,4 @@
-name: tester
+name: tests
 on:
   push:
     tags-ignore:
