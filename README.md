@@ -67,7 +67,7 @@ which in context of the library we call "tracking".
 
 ## Documentation
 
-To read detailed documentation about the library, see examples and quick start guide, please visit our [documentation page](https://zpl-c.github.io/librg/).
+To read detailed documentation about the library, see examples and quick start guide, please visit our [documentation page](https://zpl-c.github.io/librg/#/quickstart).
 
 Additionally you can check [code/apps](code/apps) folder for actual code examples.
 
