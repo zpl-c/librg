@@ -43,11 +43,6 @@ Additionally, to keep library code and your code fully separated at compile time
 
 ## First world
 
-```c
-int main() {
-    librg_world *world = librg_world_create();
+This small example shows how can you create your first world, confgure it, add an entity, and use a querying and buffer packing methods.
 
-    librg_world_destroy(world);
-    return 0;
-}
-```
+[example-simple.c](https://raw.githubusercontent.com/zpl-c/librg/master/code/apps/example-simple.c ':include :type=code')

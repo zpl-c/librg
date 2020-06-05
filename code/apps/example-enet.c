@@ -4,6 +4,8 @@
 /* 1. server side, runs a server, hosts a world, creates a entity for each new client, handles position changes */
 /* 2. client size, runs a client, connects to the server, gets updates about other entities, and sends updates about its own entity */
 /* application hosts a server and MAX_CLIENTS amount of clients from within a single thread, runs for N ticks, and then exits */
+/* client side will be constantly printing messages about entities being created or removed, that behavior is inteded */
+/* it demonstrates how entities that are changing positions on the server, getiing in or out of the each other view range */
 
 #define LIBRG_IMPL
 #include "librg.h"
@@ -23,11 +25,6 @@
 
 #define MAX_CLIENTS 4
 typedef struct { float x, y, z; } vec3;
-
-/* helper macro to print a segment */
-#define SEGMENT_PRINT(buf, amt) \
-    for(size_t i=0;i<amt;i++) printf("%02x ",buf[i]); \
-    printf("\nsegment size: %zd\n", amt);
 
 // =======================================================================//
 // !
@@ -248,12 +245,6 @@ int32_t client_read_update(librg_world *w, librg_event *e) {
 
     vec3 position = {0};
     memcpy(&position, buffer, actual_length);
-    // printf("[client] Entity %d new actual position is: %.2f %.2f %.2f\n",
-    //     (int)entity_id,
-    //     position.x,
-    //     position.y,
-    //     position.z
-    // );
 
     return 0;
 }
@@ -277,14 +268,6 @@ int32_t client_write_update(librg_world *w, librg_event *e) {
     u32 x = (zpl_random_gen_u32(&r)%40); position.x = (float)(x-20.0f);
     u32 y = (zpl_random_gen_u32(&r)%40); position.y = (float)(y-20.0f);
     u32 z = (zpl_random_gen_u32(&r)%40); position.z = (float)(z-20.0f);
-
-    // printf("[client] Entity [%d:%d] new actual position is: %.2f %.2f %.2f\n",
-    //     (int)owner_id,
-    //     (int)entity_id,
-    //     position.x,
-    //     position.y,
-    //     position.z
-    // );
 
     memcpy(buffer, &position, sizeof(vec3));
     return sizeof(vec3);
