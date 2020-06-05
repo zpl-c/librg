@@ -15,3 +15,8 @@ x64/
 build.sh
 build.bat
 package-lock.json
+
+# gtags
+GPATH
+GRTAGS
+GTAGS
