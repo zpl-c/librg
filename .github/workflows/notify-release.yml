@@ -1,0 +1,20 @@
+name: notify-release
+on:
+  release:
+    types:
+      - published
+
+jobs:
+  notify:
+    name: Show a changelog
+    runs-on: ubuntu-latest
+    steps:
+      - uses: sarisia/actions-status-discord@v1
+        if: always()
+        env:
+          DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
+        with:
+          description:  "**${{ github.repository }}: ${{ github.event.release.name }}**\n\n**Changelog:**\n${{ github.event.release.body }}"
+          nodetail: true
+          nofail: true
+          color: "0x9999ff"
