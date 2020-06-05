@@ -5,7 +5,7 @@
 <div align="center">
     <a href="https://github.com/zpl-c/librg/actions"><img src="https://img.shields.io/github/workflow/status/zpl-c/librg/tests?label=Tests&style=for-the-badge" alt="build status" /></a>
     <img src="https://img.shields.io/github/package-json/v/zpl-c/librg?style=for-the-badge" alt="version" /></a>
-    <a href="https://discord.gg/2fZVEym"><img src="https://img.shields.io/discord/354670964400848898?style=for-the-badge" alt="discord" /></a>
+    <a href="https://discord.gg/2fZVEym"><img src="https://img.shields.io/discord/354670964400848898?color=7289DA&style=for-the-badge" alt="discord" /></a>
     <a href="LICENSE"><img src="https://img.shields.io/github/license/zpl-c/librg?style=for-the-badge" alt="license" /></a>
 </div>
 
@@ -20,7 +20,7 @@
     Built with love using <a href="https://github.com/zpl-c/zpl"><strong>zpl</strong></a>
     &bull; Brought to you by <a href="https://github.com/inlife">@inlife</a>,
     <a href="https://github.com/zaklaus">@zaklaus</a>
-    and <a href="https://github.com/zpl-c/librg/graphs/contributors">contributors</a>
+    and other <a href="https://github.com/zpl-c/librg/graphs/contributors">contributors</a>
   </sub>
 </div>
 
