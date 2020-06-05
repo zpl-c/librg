@@ -48,7 +48,7 @@ int main() {
         /* check out example-packing.c for writing demo */
         zpl_file f = {0};
         zpl_file_open_mode(&f, ZPL_FILE_MODE_READ, "build/example-data.buf");
-        total_size = zpl_file_size(&f);
+        total_size = (size_t)zpl_file_size(&f);
         zpl_file_read(&f, buffer, total_size);
         zpl_file_close(&f);
     }

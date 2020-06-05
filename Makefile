@@ -5,10 +5,11 @@ LEVEL?=-g
 
 ifeq ($(OS),Windows_NT)
 	CFLAGS += -DWIN32
+	LDFLAGS += -lws2_32 -lwinmm # only for enet example
 else
 	OSDEF := $(shell uname -s)
 	ifeq ($(OSDEF),Linux)
-		LDFLAGS += -pthread -ldl -lm
+		LDFLAGS += -pthread -lm
 	endif
 	ifeq ($(OSDEF),OpenBSD)
 		STDC=-std=c11

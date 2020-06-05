@@ -1,3 +1,5 @@
+/* this file is usually used to manually test some stuff */
+
 #include <assert.h>
 // #include <stdlib.h>
 // #include <stdio.h>

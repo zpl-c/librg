@@ -277,7 +277,7 @@ int8_t librg_entity_chunkarray_get(librg_world *world, int64_t entity_id, librg_
     }
 
     *chunk_amount = count;
-    return (LIBRG_ENTITY_MAXCHUNKS - buffer_limit);
+    return (int8_t)(LIBRG_ENTITY_MAXCHUNKS - buffer_limit);
 }
 
 

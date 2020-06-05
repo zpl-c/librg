@@ -77,6 +77,8 @@ Just a theoretical list of what kind of libraries should be supported:
 * `WebRTC`
 * Any other `UDP` or `TCP` based library
 
+> Note: you can check an example for network [integration for enet](https://github.com/zpl-c/librg/blob/master/code/apps/example-enet.c).
+
 ## Other
 
 This section will be expanded with additional questions and answers coming from the users.
