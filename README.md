@@ -12,7 +12,7 @@
 <br />
 
 <div align="center">
-  Making multi-player simpler since 2017. Single-header cross-platform world replication library in pure C99.
+  Making multi-player gamedev simpler since 2017. Single-header cross-platform world replication library in pure C99.
 </div>
 
 <div align="center">
