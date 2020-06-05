@@ -46,66 +46,51 @@ It came a long way of stripping out things that were non-essential, slowly sculp
  * no external dependencies
  * built-in unit test coverage
 
-## Use-cases
+## F.A.Q.
 
-* As "built-in" server:  
-    Server can be merged with the client and run even from the same thread. It will result in a quite common concept of client-hosted game sessions for **friends**.
-    However it requires user, or you, to deal with stuff like public ip/visibility.
+> **Question**: Is this a networking library?
 
-* As proxy server:  
-    Would you like to have a **dedicated server** solution? Server will be used as a proxy to store and send accumulated player data.
-    Considering the fact that you don't have (almost) any game logic on the server side, it can handle big amounts of clients.
-    Similar example can be something like [San-Andreas Multiplayer](http://www.sa-mp.com/).
+**Answer**: Not really, no. It is inteded to be used with netwoking in mind, but it does not have any networking capabilities on its own.
 
-* As thin client (advanced):  
-    For client side, you will use thin-client "pattern". All user actions will be sent directly to the server.
-    Requires you to write all the server side systems, like physics handling, game world management, and **gameloop on the server side**.
+> **Question**: Can I use any networking library with it?
 
-* Any other possible way that was not mentioned.
+**Anwser**: Yes. All you need is an ability to read data to and from the buffer, and most libraries do support that.
 
-## Testing
+> **Question**: The repository contains a bunch of `*.h` and `*.c` files, and yet you suggest it is a single-header library, how is that possible?
 
-We started testing the library for different platforms. This table provides some sort of description for compatibility.
-If you have tested it, and it compiles, or it perhaps stopped compiling, please feel free to describe the issue in the [issues](https://github.com/zpl-c/librg/issues).
+**Answer**: The library is spread into multiple files so it is easier to work with it while developing, however each time a new release is created, a "bundled" version of the header file is created and pushed directly to the [releases](https://github.com/zpl-c/librg/releases) page.
 
-| *Compiler* / Target   | Windows               | Linux                 | macOS                 | iOS                   | Android               |
-|:-:|:-:|:-:|:-:|:-:|:-:    |
-| *clang C*             | :grey_question:       | :white_check_mark:    | :white_check_mark:    | :white_check_mark:    | :grey_question:       |
-| *gcc C*               |                       | :white_check_mark:    | :white_check_mark:    |                       |                       |
-| *msvc C*              | :white_check_mark:    |                       |                       |                       |                       |
-| *mingw C*             | :white_check_mark:    |                       |                       |                       |                       |
-| *clang C++*           | :grey_question:       | :white_check_mark:    | :white_check_mark:    | :grey_question:       | :white_check_mark:    |
-| *gcc C++*             |                       | :white_check_mark:    | :grey_question:       |                       |                       |
-| *msvc C++*            | :white_check_mark:    |                       |                       |                       |                       |
-| *mingw C++*           | :white_check_mark:    |                       |                       |                       |                       |
+## Support
 
-| *Platform*         | ✅ - compiles/runs | ☑️ - compiles with limited features | ❔ - not tested |
-|:-------------------|:---:|:---:|:---:|
-| **Windows**        | msvc, mingw | | |
-| **macOS**          | gcc, clang | | |
-| **OpenBSD**        | | | gcc, clang |
-| **FreeBSD**        | | | |
-| **Linux**          | gcc, clang | | |
-| **iOS**            |  
-| **Android**        |  
-| **Raspberry Pi**   |  
-| **Emscripten**     |  
+We are testing the library for different platforms. This table provides some sort of description for compatibility.
+If you have tested it, and your resut is different from the one in the table, please feel free to describe the issue in the [issues](https://github.com/zpl-c/librg/issues).
 
-|
-|---|---|---|---|---|---|---|---|---|---|
-| *clang* | :grey_question: | :ballot_box_with_check: | :white_check_mark: | :white_check_mark: | :white_check_mark: | :white_check_mark: | :white_check_mark: | :grey_question: | :grey_question: |
-| *gcc* | :white_check_mark: | :grey_question: | :white_check_mark: | :white_check_mark: | :white_check_mark: |  |  | :grey_question: | :ballot_box_with_check: |
-| *msvc C* | :white_check_mark: |   |   |  |  |  |  |  |  |
-| *mingw* | :white_check_mark: |   |   |  |  |  |  |  |  |
-| *clang++* | :grey_question: | :ballot_box_with_check: | :white_check_mark: | :white_check_mark: | :white_check_mark: | :grey_question: | :white_check_mark: | :grey_question: | :grey_question: |
-| *g++* | :white_check_mark: | :grey_question: | :white_check_mark: | :white_check_mark: | :grey_question: |  |  | :grey_question: | :ballot_box_with_check: |
-| *msvc C++* | :white_check_mark: |   |   |  |  |  |  |  |  |
-| *mingw++* | :white_check_mark: |   |   |  |  |  |  |  |  |
+|  Platform          | ✅ compiles/runs | ❔ not tested |
+|:-------------------|:----------------:|:-----------------:|
+| **Windows**        | msvc, mingw      |                   |
+| **macOS**          | gcc, clang       |                   |
+| **Linux**          | gcc, clang       |                   |
+| **iOS**            |                  | clang             |
+| **Android**        |                  | clang             |
+| **Raspberry Pi**   |                  | gcc, clang        |
+| **OpenBSD**        |                  | clang             |
+| **FreeBSD**        |                  | gcc, clang        |
+| **Emscripten**     | emcc             |                   |
 
+## Development
 
-<sub>
-:white_check_mark: - compiles/runs without any errors.  
-:grey_question: - not tested.  
-:red_circle: - compilation/runtime faults.  
-</sub>
+If you wish to contribute, add new feature, optimizations, or overall improvements, here are the instructions on how to do that:
+
+1. Clone the repo, f.e.: `git clone https://github.com/zpl-c/librg.git`
+2. Run `make` to build all projects, and verify everything works
+3. Develop a feature, add tests for it in `code/tests/`
+4. And eventually run `make test` again to check
+
+In case you are working from **Windows**, and/or are not able to use `make`, you can also use built-in `cmake` config file to generate a Visual Studio solution, to do that:
+
+1. `mkdir build`
+2. `cd build`
+3. `cmake ../misc -G"Visual Studio 15 2017"` (or any configuration you have)
+4. `cmake --open .` (opens VS with the solution)
+5. And repeat steps from above
 
