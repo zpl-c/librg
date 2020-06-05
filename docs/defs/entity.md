@@ -408,11 +408,123 @@ int8_t librg_entity_radius_get(
 
 ------------------------------
 
-### TODO
+## librg_entity_visibility_global_set
 
-Add coverage for:
- * `int8_t librg_entity_visibility_global_set(librg_world *world, int64_t entity_id, librg_visibility value);`
- * `int8_t librg_entity_visibility_global_get(librg_world *world, int64_t entity_id);`
- * `int8_t librg_entity_visibility_owner_set(librg_world *world, int64_t entity_id, int64_t owner_id, librg_visibility value);`
- * `int8_t librg_entity_visibility_owner_get(librg_world *world, int64_t entity_id, int64_t owner_id);`
+Set entity global visibility value.
+It affects how this entity will be viewed by other owners.
 
+Global visibility has lower priority than relation (owner) visibility,
+meaning globally invisible entity, will still be visibile to an owner if it has `LIBRG_VISIBLITY_ALWAYS` set for that owner and vice verca.
+
+Possible values:
+ * `LIBRG_VISIBLITY_DEFAULT` - the default value of the visibility setting
+ * `LIBRG_VISIBLITY_NEVER` - specified entity will be always invisible, regardless of proximity
+ * `LIBRG_VISIBLITY_ALWAYS` - specified entity will be always visible, regardless of proximity
+
+> Note: For the owner of the entity the entity will remain visible regardless of the visibility setting.
+
+##### Signature
+```c
+int8_t librg_entity_visibility_global_set(
+    librg_world *world,
+    int64_t entity_id,
+    librg_visibility value
+)
+```
+
+##### Returns
+
+* In case of success: `LIBRG_OK`
+* In case of invalid world: `LIBRG_WORLD_INVALID`
+* In case of unknown entity: `LIBRG_ENTITY_UNTRACKED`
+
+------------------------------
+
+## librg_entity_visibility_global_get
+
+Get entity global visibility value.
+It affects how this entity will be viewed by other owners.
+
+Possible values:
+ * `LIBRG_VISIBLITY_DEFAULT` - the default value of the visibility setting
+ * `LIBRG_VISIBLITY_NEVER` - specified entity will be always invisible, regardless of proximity
+ * `LIBRG_VISIBLITY_ALWAYS` - specified entity will be always visible, regardless of proximity
+
+> Note: For the owner of the entity the entity will remain visible regardless of the visibility setting.
+
+##### Signature
+```c
+int8_t librg_entity_visibility_global_get(
+    librg_world *world,
+    int64_t entity_id
+)
+```
+
+##### Returns
+
+* In case of success: current visibility value
+* In case of invalid world: `LIBRG_WORLD_INVALID`
+* In case of unknown entity: `LIBRG_ENTITY_UNTRACKED`
+
+------------------------------
+
+## librg_entity_visibility_owner_set
+
+Set entity relational visibility value.
+It affects how this entity will be viewed by provided owner.
+
+Relational (owner) visibility has higher priority than global visibility,
+meaning globally invisible entity, will still be visibile to an owner if it has `LIBRG_VISIBLITY_ALWAYS` set for that owner and vice verca.
+
+
+Possible values:
+ * `LIBRG_VISIBLITY_DEFAULT` - the default value of the visibility setting
+ * `LIBRG_VISIBLITY_NEVER` - specified entity will be always invisible, regardless of proximity
+ * `LIBRG_VISIBLITY_ALWAYS` - specified entity will be always visible, regardless of proximity
+
+> Note: For the owner of the entity the entity will remain visible regardless of the visibility setting.
+
+##### Signature
+```c
+int8_t librg_entity_visibility_owner_set(
+    librg_world *world,
+    int64_t entity_id,
+    int64_t owner_id,
+    librg_visibility value
+)
+```
+
+##### Returns
+
+* In case of success: `LIBRG_OK`
+* In case of invalid world: `LIBRG_WORLD_INVALID`
+* In case of unknown entity: `LIBRG_ENTITY_UNTRACKED`
+
+------------------------------
+
+## librg_entity_visibility_owner_get
+
+Get entity relational visibility value.
+It affects how this entity will be viewed by provided owner.
+
+Possible values:
+ * `LIBRG_VISIBLITY_DEFAULT` - the default value of the visibility setting
+ * `LIBRG_VISIBLITY_NEVER` - specified entity will be always invisible, regardless of proximity
+ * `LIBRG_VISIBLITY_ALWAYS` - specified entity will be always visible, regardless of proximity
+
+> Note: For the owner of the entity the entity will remain visible regardless of the visibility setting.
+
+##### Signature
+```c
+int8_t librg_entity_visibility_owner_get(
+    librg_world *world,
+    int64_t entity_id,
+    int64_t owner_id
+)
+```
+
+##### Returns
+
+* In case of success: current visibility value
+* In case of invalid world: `LIBRG_WORLD_INVALID`
+* In case of unknown entity: `LIBRG_ENTITY_UNTRACKED`

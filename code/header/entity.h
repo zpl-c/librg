@@ -6,28 +6,6 @@
 
 LIBRG_BEGIN_C_DECLS
 
-// typedef enum librg_entity_refreshing {
-//     LIBRG_CONSTANT,     /* int argument, update entity every Nth tick */
-//     LIBRG_LINEAR,       /* float argument, linearly decrease update interval based on distance step (argument) */
-//     LIBRG_QUADRATIC,    /* float argument, cubicly decrease update inverval based on distance step (argument) */
-// } librg_entity_refreshing;
-
-// typedef enum {
-//     LIBRG_ENTITY_DYNAMIC,
-//     LIBRG_ENTITY_STATIC,
-// } librg_behavior_type;
-
-// typedef enum {
-//     LIBRG_BEHAVIOR_TYPE,
-//     LIBRG_BEHAVIOR_STEPBACK,
-// } librg_behavior;
-
-typedef enum {
-    LIBRG_VISIBLITY_DEFAULT,
-    LIBRG_VISIBLITY_NEVER,
-    LIBRG_VISIBLITY_ALWAYS,
-} librg_visibility;
-
 // =======================================================================//
 // !
 // ! Basic entity manipulation

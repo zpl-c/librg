@@ -40,6 +40,13 @@ typedef enum {
 
 typedef int32_t (*librg_event_fn)(librg_world *world, librg_event *event);
 
+typedef enum {
+    LIBRG_VISIBLITY_DEFAULT,
+    LIBRG_VISIBLITY_NEVER,
+    LIBRG_VISIBLITY_ALWAYS,
+} librg_visibility;
+
+
 // =======================================================================//
 // !
 // ! Errors, statuses, warnings and information message codes
@@ -66,11 +73,25 @@ typedef int32_t (*librg_event_fn)(librg_world *world, librg_event *event);
 #define LIBRG_READ_INVALID              (-0x0003)
 #define LIBRG_NULL_REFERENCE            (-0x0007)
 
-
 /* unsued */
 
 // #define LIBRG_OBSERVE_ALL               (-0x01)
 // #define LIBRG_OBSERVE_NONE              (+0x00)
 
+// typedef enum librg_entity_refreshing {
+//     LIBRG_CONSTANT,     /* int argument, update entity every Nth tick */
+//     LIBRG_LINEAR,       /* float argument, linearly decrease update interval based on distance step (argument) */
+//     LIBRG_QUADRATIC,    /* float argument, cubicly decrease update inverval based on distance step (argument) */
+// } librg_entity_refreshing;
+
+// typedef enum {
+//     LIBRG_ENTITY_DYNAMIC,
+//     LIBRG_ENTITY_STATIC,
+// } librg_behavior_type;
+
+// typedef enum {
+//     LIBRG_BEHAVIOR_TYPE,
+//     LIBRG_BEHAVIOR_STEPBACK,
+// } librg_behavior;
 
 LIBRG_END_C_DECLS
