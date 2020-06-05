@@ -26,7 +26,7 @@
 
 ## Introduction
 
-**librg** is a lightweight library that can be used to serve as a middleware between data-transferring libraries (networking, file-streaming, etc.) and core application/game logic.
+**librg** is a lightweight library that serves as a middleware between data-transferring libraries (networking, file-streaming, etc.) and core application/game logic.
 
 Main responsibilities of the library include:
  * entity tracking (tracks which entity belongs to what world, and what states do they have)
