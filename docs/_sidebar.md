@@ -2,7 +2,7 @@
 
 - Getting started
 
-  - [Welcome](readme.md)
+  - [Welcome](/)
   - [Quick start](quickstart.md)
   - [Migration](migration.md)
 
