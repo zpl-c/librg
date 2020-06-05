@@ -1,8 +1,7 @@
 # Folders
 build/*
+misc/deploy/
 node_modules/
-build-win/*
-build-lin/*
 pkg/
 
 # vs shit
@@ -15,3 +14,4 @@ x64/
 # local build scripts
 build.sh
 build.bat
+package-lock.json
