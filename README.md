@@ -26,9 +26,9 @@
 
 ## Introduction
 
-**librg** is a light-weight "mid-level" library, that can be used to serve as a middleware between data-transferring libraries (networking, file-streaming, etc.) and core application/game logic.
-Main responsibilities of the library include:
+**librg** is a lightweight library that can be used to serve as a middleware between data-transferring libraries (networking, file-streaming, etc.) and core application/game logic.
 
+Main responsibilities of the library include:
  * entity tracking (tracks which entity belongs to what world, and what states do they have)
  * owner tracking (tracks which participant owns what entity)
  * area of interest management (controls what can and cannot be seen a participant)
@@ -40,7 +40,7 @@ It came a long way of stripping out things that were non-essential, slowly sculp
 ## Features
 
  * cross-platform support
- * light-weight, single-header
+ * lightweight, single-header
  * compile- and run-time configurable
  * written in C99 (portability reasons)
  * no external dependencies
@@ -50,7 +50,7 @@ It came a long way of stripping out things that were non-essential, slowly sculp
 
 > **Question**: Is this a networking library?
 
-**Answer**: Not really, no. It is inteded to be used with netwoking in mind, but it does not have any networking capabilities on its own.
+**Answer**: Not really, no. It is intended to be used with netwoking in mind, but it does not have any networking capabilities on its own.
 
 > **Question**: Can I use any networking library with it?
 
@@ -62,12 +62,12 @@ It came a long way of stripping out things that were non-essential, slowly sculp
 
 > **Question**: You've mentioned entities in the description above, does it mean I would need to use another entity system?
 
-**Answer**: No, the library does not manage nor actually create it's own entities, it rather expects you to provide your entity/object id to attach some internal data onto it,
+**Answer**: No, the library does not manage nor actually create its own entities, it rather expects you to provide your entity/object id to attach some internal data onto it,
 which in context of the library we call "tracking".
 
 ## Documentation
 
-To read detailed documentation about the library, see examples and quick start guide, please visit our [documetation page](https://zpl-c.github.io/librg/).
+To read detailed documentation about the library, see examples and quick start guide, please visit our [documentation page](https://zpl-c.github.io/librg/).
 
 Additionally you can check [code/apps](code/apps) folder for actual code examples.
 
@@ -77,8 +77,8 @@ If you've used the library before version `v6.0.0`, it is recommended to read th
 
 ## Support
 
-We are testing the library for different platforms. This table provides some sort of description for compatibility.
-If you have tested it, and your resut is different from the one in the table, please feel free to describe the issue in the [issues](https://github.com/zpl-c/librg/issues).
+We are testing the library for various platforms. This table provides some sort of description for compatibility.
+If you have tested it, and your result is different from the one in the table, please feel free to describe the issue in the [issues](https://github.com/zpl-c/librg/issues).
 
 
 |  Platform / Result | Windows       | macOS         | Linux         | iOS           | Android       | Raspberry Pi  | OpenBSD       | FreeBSD       | Emscripten    |
@@ -89,7 +89,7 @@ If you have tested it, and your resut is different from the one in the table, pl
 #### Legend:
 
 * ❔ - Library was not tested on this platform/compiler yet
-* ✅ - Library successfully compiles, and all tests are executed properly
+* ✅ - Library successfully compiles and all tests are executed properly
 
 
 ## Development
