@@ -4,6 +4,7 @@
 
   - [Welcome](readme.md)
   - [Quick start](quickstart.md)
+  - [Migration](migration.md)
 
 - General
 

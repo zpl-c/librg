@@ -67,9 +67,13 @@ which in context of the library we call "tracking".
 
 ## Documentation
 
-To read detailed documentation about the library, see examples and quick start guide, please visit our [documetation page]().
+To read detailed documentation about the library, see examples and quick start guide, please visit our [documetation page](https://zpl-c.github.io/librg/).
 
 Additionally you can check [code/apps](code/apps) folder for actual code examples.
+
+## Migration
+
+If you've used the library before version `v6.0.0`, it is recommended to read the migration guide [located here](https://zpl-c.github.io/librg/#/migration).
 
 ## Support
 

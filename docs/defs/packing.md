@@ -45,7 +45,7 @@ int32_t librg_world_write(
 
 ### **Example**
 
-[example-packing.c](https://raw.githubusercontent.com/zpl-c/librg/next/code/apps/example-packing.c ':include :type=code')
+[example-packing.c](https://raw.githubusercontent.com/zpl-c/librg/master/code/apps/example-packing.c ':include :type=code')
 
 ------------------------------
 
@@ -84,4 +84,4 @@ int32_t librg_world_read(
 
 ### **Example**
 
-[example-unpacking.c](https://raw.githubusercontent.com/zpl-c/librg/next/code/apps/example-unpacking.c ':include :type=code')
+[example-unpacking.c](https://raw.githubusercontent.com/zpl-c/librg/master/code/apps/example-unpacking.c ':include :type=code')

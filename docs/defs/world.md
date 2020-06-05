@@ -107,5 +107,5 @@ void * librg_world_userdata_get(
 
 A general example that shows how all methods above can be used together
 
-[example-world.c](https://raw.githubusercontent.com/zpl-c/librg/next/code/apps/example-world.c ':include :type=code')
+[example-world.c](https://raw.githubusercontent.com/zpl-c/librg/master/code/apps/example-world.c ':include :type=code')
 
