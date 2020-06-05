@@ -82,8 +82,10 @@ If you have tested it, and your resut is different from the one in the table, pl
 | ❔                 |               |               |               | clang         | clang         | gcc, clang    | gcc, clang    | gcc, clang    |               |
 | ✅                 | msvc, mingw   | gcc, clang    | gcc, clang    |               |               |               |               |               | emcc          |
 
-* ✅ - Library successfully compiles, and all tests are executed properly
+#### Legend:
+
 * ❔ - Library was not tested on this platform/compiler yet
+* ✅ - Library successfully compiles, and all tests are executed properly
 
 
 ## Development
