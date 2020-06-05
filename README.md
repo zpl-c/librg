@@ -35,7 +35,7 @@ Main responsibilities of the library include:
  * world replication (re-creates a limited representation in a destination world of what is considered visible to a participant in the source world)
 
 The library was born to solve complexities of setting up and managing the flow of multi-player games and dedicated game servers.
-It came a long way of stripping out things that were non-essential, slowly sculpting in its current form, which you are able to see and use today.
+It came a long way of stripping out things that were non-essential, slowly sculpting into its current form, which you are able to see and use today.
 
 ## Features
 
@@ -60,10 +60,9 @@ It came a long way of stripping out things that were non-essential, slowly sculp
 
 **Answer**: The library is spread into multiple files so it is easier to work with it while developing, however each time a new release is created, a "bundled" version of the header file is created and pushed directly to the [releases](https://github.com/zpl-c/librg/releases) page.
 
-> **Question**: You've mentioned entities in the description above, does it mean I would need to use another entity system?
+> **Question**: Does librg offer an entity system?
 
-**Answer**: No, the library does not manage nor actually create its own entities, it rather expects you to provide your entity/object id to attach some internal data onto it,
-which in context of the library we call "tracking".
+**Answer**: No, the library does not manage nor actually create its own entities, it rather expects you to provide your own entity/object handle to attach some internal data onto it, which in context of the library is called "tracking". 
 
 ## Documentation
 
