@@ -48,7 +48,7 @@ It came a long way of stripping out things that were non-essential, slowly sculp
 
 ## F.A.Q.
 
- 1.  **Is this a networking library?**
+1.  **Is this a networking library?**
 
     * Not really, no. It is intended to be used with netwoking in mind, but it does not have any networking capabilities on its own.
 
