@@ -48,27 +48,29 @@ It came a long way of stripping out things that were non-essential, slowly sculp
 
 ## F.A.Q.
 
-> **Question**: Is this a networking library?
+ 1.  **Question**: Is this a networking library?
+    * **Answer**: Not really, no. It is intended to be used with netwoking in mind, but it does not have any networking capabilities on its own.
 
-**Answer**: Not really, no. It is intended to be used with netwoking in mind, but it does not have any networking capabilities on its own.
+2. **Question**: Can I use any networking library with it?
+    * **Anwser**: Yes. All you need is an ability to read data to and from the buffer, and most libraries do support that.
 
-> **Question**: Can I use any networking library with it?
+3. **Question**: The repository contains a bunch of `*.h` and `*.c` files, and yet you suggest it is a single-header library, how is that possible?
+    * **Answer**: The library is spread into multiple files so it is easier to work with it while developing, however each time a new release is created, a "bundled" version of the header file is created and pushed directly to the [releases](https://github.com/zpl-c/librg/releases) page.
 
-**Anwser**: Yes. All you need is an ability to read data to and from the buffer, and most libraries do support that.
-
-> **Question**: The repository contains a bunch of `*.h` and `*.c` files, and yet you suggest it is a single-header library, how is that possible?
-
-**Answer**: The library is spread into multiple files so it is easier to work with it while developing, however each time a new release is created, a "bundled" version of the header file is created and pushed directly to the [releases](https://github.com/zpl-c/librg/releases) page.
-
-> **Question**: Does librg offer an entity system?
-
-**Answer**: No, the library does not manage nor actually create its own entities, it rather expects you to provide your own entity/object handle to attach some internal data onto it, which in context of the library is called "tracking". 
+4. **Question**: Does librg offer an entity system?
+     * **Answer**: No, the library does not manage nor actually create its own entities, it rather expects you to provide your own entity/object handle to attach some internal data onto it, which in context of the library is called "tracking". 
 
 ## Documentation
 
 To read detailed documentation about the library, see examples and quick start guide, please visit our [documentation page](https://zpl-c.github.io/librg/#/quickstart).
 
 Additionally you can check [code/apps](code/apps) folder for actual code examples.
+
+## Illustration
+
+Here is a simple illustration that attempts to describe how the library works on a simple 2d world of 4x4 chunks.
+
+![librg_image](https://user-images.githubusercontent.com/2182108/83945607-87d64400-a814-11ea-8897-3c268b26b0f7.png)
 
 ## Migration
 
