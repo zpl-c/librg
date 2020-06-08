@@ -27,8 +27,8 @@ Allows to define a custom deallocator
 ```c
 void my_custom_free(void *ptr);
 
-#define LIBRG_MEM_FREE(size) \
-    my_custom_free(size)
+#define LIBRG_MEM_FREE(ptr) \
+    my_custom_free(ptr)
 
 #define LIBRG_IMPL
 #include "librg.h"

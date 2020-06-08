@@ -41,6 +41,7 @@ It came a long way of stripping out things that were non-essential, slowly sculp
 
  * cross-platform support
  * lightweight, single-header
+ * supports 2d/3d worlds of various sizes
  * compile- and run-time configurable
  * written in C99 (portability reasons)
  * no external dependencies
@@ -54,7 +55,7 @@ It came a long way of stripping out things that were non-essential, slowly sculp
 
 2. **Can I use any networking library with it?**
 
-    * Yes. All you need is an ability to read data to and from the buffer, and most libraries do support that.
+    * Yes. All you need is an ability to read data to and from the buffer, and most libraries do support that. Theoretically it can be anything as low level as pure `UDP`, and up to `Websocket`/`WebRTC`.
 
 3. **The repository contains a bunch of `*.h` and `*.c` files, and yet you suggest it is a single-header library, how is that possible?**
 
@@ -62,11 +63,15 @@ It came a long way of stripping out things that were non-essential, slowly sculp
 
 4. **Does librg offer an entity system?**
 
-     * No, the library does not manage nor actually create its own entities, it rather expects you to provide your own entity/object handle to attach some internal data onto it, which in context of the library is called "tracking". 
+     * No, the library does not manage nor actually create its own entities, it rather expects you to provide your own entity/object handle to attach some internal data onto it, which in context of the library is called "tracking".
 
 5. **How do I pack data, do you provide methods for that?**
 
     * No, the library does not provide any data-packing/serialization methods. It's recommended you use some existing library for that (`protobuf`, `flatbuffers`, `msgpack`, etc.), or make your own implementation.
+
+6. **I see you mention chunks, does it mean my game/app should be chunk-based?**
+
+    * No. Chunks are only used internally, to artificially divide the space of the world on statically sized squares/cubes so that querying would work efficiently. Event if your game does use chunks, their amount/sizes/offsets are not required to much and be the same.
 
 ## Documentation
 
@@ -77,6 +82,7 @@ Additionally you can check [code/apps](code/apps) folder for actual code example
 ## Illustration
 
 Here is a simple illustration that attempts to describe how the library works on a simple 2d world of 4x4 chunks.
+For a 3d world of bigger size everything would work in a very similar way, just in 3 dimensions.
 
 ![librg_image](https://user-images.githubusercontent.com/2182108/83945607-87d64400-a814-11ea-8897-3c268b26b0f7.png)
 
