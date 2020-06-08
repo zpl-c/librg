@@ -71,7 +71,7 @@ It came a long way of stripping out things that were non-essential, slowly sculp
 
 6. **I see you mention chunks, does it mean my game/app should be chunk-based?**
 
-    * No. Chunks are only used internally, to artificially divide the space of the world on statically sized squares/cubes so that querying would work efficiently. Event if your game does use chunks, their amount/sizes/offsets are not required to much and be the same.
+    * No. Chunks are only used internally, to artificially divide the space of the world on statically sized squares/cubes so that querying would work efficiently. Even if your game does use chunks, their amount/sizes/offsets are not required to much and be the same.
 
 ## Documentation
 
