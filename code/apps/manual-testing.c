@@ -43,6 +43,8 @@ int32_t _child_create(librg_world *world, librg_event *event) {
 }
 
 int main() {
+    printf("version %d\n", librg_version());
+
     librg_world *world = librg_world_create();
     assert(librg_world_valid(world));
 

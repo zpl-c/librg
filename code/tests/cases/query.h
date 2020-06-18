@@ -10,7 +10,7 @@ MODULE(query, {
 
         int64_t results[16] = {0};
         size_t amt = 16;
-        librg_world_fetch_all(world, results, &amt);
+        r = librg_world_fetch_all(world, results, &amt); EQUALS(r, 0);
 
         EQUALS(amt, 3);
         EQUALS(results[0], 1);

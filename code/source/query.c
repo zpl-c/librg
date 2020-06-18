@@ -27,7 +27,7 @@ int32_t librg_world_fetch_all(librg_world *world, int64_t *entity_ids, size_t *e
     }
 
     *entity_amount = count;
-    return (total_count - buffer_limit);
+    return LIBRG_MAX(0, (int32_t)(total_count - buffer_limit));
 }
 
 int32_t librg_world_fetch_chunk(librg_world *world, librg_chunk chunk, int64_t *entity_ids, size_t *entity_amount) {
@@ -67,7 +67,7 @@ int32_t librg_world_fetch_chunkarray(librg_world *world, const librg_chunk *chun
     }
 
     *entity_amount = count;
-    return (total_count - iterated);
+    return LIBRG_MAX(0, (int32_t)(total_count - iterated));
 }
 
 int32_t librg_world_fetch_owner(librg_world *world, int64_t owner_id, int64_t *entity_ids, size_t *entity_amount) {
@@ -96,7 +96,7 @@ int32_t librg_world_fetch_ownerarray(librg_world *world, const int64_t *owner_id
     }
 
     *entity_amount = count;
-    return (total_count - iterated);
+    return LIBRG_MAX(0, (int32_t)(total_count - iterated));
 }
 
 // =======================================================================//
@@ -237,8 +237,7 @@ int32_t librg_world_query(librg_world *world, int64_t owner_id, int64_t *entity_
     librg_table_i64_destroy(&results);
 
     *entity_amount = LIBRG_MIN(buffer_limit, count);
-    return (count - buffer_limit);
-
+    return LIBRG_MAX(0, (int32_t)(count - buffer_limit));
 }
 
 LIBRG_END_C_DECLS

@@ -103,6 +103,21 @@ void * librg_world_userdata_get(
 
 -------------------------------
 
+## librg_version
+
+Method returns current library version in form of an integer. Can be used to compare against different librg versions.
+
+##### Signature
+```c
+int32_t librg_version()
+```
+
+##### Returns
+
+* Integer representing current version
+
+-------------------------------
+
 ## **Examples**
 
 A general example that shows how all methods above can be used together

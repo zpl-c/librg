@@ -12,6 +12,7 @@ LIBRG_BEGIN_C_DECLS
 // !
 // =======================================================================//
 
+LIBRG_API uint32_t      librg_version();
 LIBRG_API librg_world * librg_world_create();
 LIBRG_API int8_t        librg_world_destroy(librg_world *world);
 LIBRG_API int8_t        librg_world_valid(librg_world *world);

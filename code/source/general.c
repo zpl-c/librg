@@ -45,6 +45,10 @@ LIBRG_PRIVATE zpl_allocator librg_alloc_wrap() {
 // !
 // =======================================================================//
 
+uint32_t librg_version() {
+    return LIBRG_VERSION;
+}
+
 librg_world *librg_world_create() {
     librg_world_t *wld = LIBRG_MEM_ALLOC(sizeof(librg_world_t));
     zpl_memset(wld, 0, sizeof(librg_world_t));
