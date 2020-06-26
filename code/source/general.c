@@ -239,7 +239,7 @@ char * librg_event_buffer_get(librg_world *world, librg_event *event) {
     return e->buffer;
 }
 
-size_t librg_event_size_get(librg_world *world, librg_event *event) {
+int32_t librg_event_size_get(librg_world *world, librg_event *event) {
     LIBRG_ASSERT(event); if (!event) return LIBRG_EVENT_INVALID;
     zpl_unused(world);
     librg_event_t *e = (librg_event_t*)event;
