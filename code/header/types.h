@@ -24,7 +24,7 @@ typedef int64_t librg_chunk;
 #define LIBRG_OUT
 #define LIBRG_INOUT
 
-typedef enum {
+typedef enum librg_event_type {
     LIBRG_WRITE_CREATE,
     LIBRG_WRITE_UPDATE,
     LIBRG_WRITE_REMOVE,
@@ -40,7 +40,7 @@ typedef enum {
 
 typedef int32_t (*librg_event_fn)(librg_world *world, librg_event *event);
 
-typedef enum {
+typedef enum librg_visibility {
     LIBRG_VISIBLITY_DEFAULT,
     LIBRG_VISIBLITY_NEVER,
     LIBRG_VISIBLITY_ALWAYS,

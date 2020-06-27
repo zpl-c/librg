@@ -81,7 +81,7 @@ enum  {
     LIBRG_PACKAGING_TOTAL,
 };
 
-typedef struct {
+typedef struct librg_entity_t {
     uint8_t type : 2;
     uint8_t visibility_global : 2;
     uint8_t flag_owner_updated : 1;
@@ -103,7 +103,7 @@ typedef struct {
 
 ZPL_TABLE(static inline, librg_table_ent, librg_table_ent_, librg_entity_t);
 
-typedef struct {
+typedef struct librg_event_t {
     uint8_t     type;           /* type of the event that was called, might be useful in bindings */
     int64_t     owner_id;       /* id of the owner who this event is called for */
     int64_t     entity_id;      /* id of an entity which this event is called about */
@@ -112,7 +112,7 @@ typedef struct {
     void      * userdata;       /* userpointer that is passed from librg_world_write/librg_world_read fns */
 } librg_event_t;
 
-typedef struct {
+typedef struct librg_world_t {
     uint8_t valid;
     zpl_allocator allocator;
     zpl_random random;
