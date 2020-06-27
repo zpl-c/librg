@@ -24,17 +24,11 @@ jobs:
     runs-on: ubuntu-latest
     if: "!contains(github.event.head_commit.message, 'Release')"
     steps:
-      - uses: sarisia/actions-status-discord@v1
-        if: always()
-        env:
-          DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
+      - uses: inlife/actiord-action@v1
         with:
-          description: "**librg** has started the fire trial! (Running tests...)"
-          nodetail: true
-          nofail: true
-          color: "0xFFA500"
-          username: "Michael Scott"
-          avatar_url: "http://raw.madaraszd.net/office/test.jpg"
+          url: ${{ secrets.ACTIORD_URL }}
+          icon: https://avatars1.githubusercontent.com/u/26773913?s=200&v=4
+          state: started
 
   build-win:
     name: Test Windows
@@ -77,23 +71,16 @@ jobs:
     needs: [build-mac, build-lin, build-win]
     if: always()
     steps:
-      - uses: sarisia/actions-status-discord@v1
+      - uses: inlife/actiord-action@v1
         if: ${{ contains(needs.build-mac.result, 'success') && contains(needs.build-lin.result, 'success') && contains(needs.build-win.result, 'success') }}
-        env:
-          DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
         with:
-          description: "**librg** tests have succeeded!"
-          nodetail: true
-          nofail: true
-          color: "0x55df2a"
-      - uses: sarisia/actions-status-discord@v1
+          url: ${{ secrets.ACTIORD_URL }}
+          icon: https://avatars1.githubusercontent.com/u/26773913?s=200&v=4
+          state: succeeded
+
+      - uses: inlife/actiord-action@v1
         if: ${{ !(contains(needs.build-mac.result, 'success') && contains(needs.build-lin.result, 'success') && contains(needs.build-win.result, 'success')) }}
-        env:
-          DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
         with:
-          description: "**librg** tests have failed!"
-          nodetail: true
-          nofail: true
-          color: "0xdf332a"
-          username: "Devastated Michael Scott"
-          avatar_url: "http://raw.madaraszd.net/office/fail.jpg"
+          url: ${{ secrets.ACTIORD_URL }}
+          icon: https://avatars1.githubusercontent.com/u/26773913?s=200&v=4
+          state: failed
