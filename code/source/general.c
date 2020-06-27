@@ -207,6 +207,7 @@ int8_t librg_event_remove(librg_world *world, librg_event_type id) {
         return LIBRG_HANDLER_EMPTY;
     }
 
+
     wld->handlers[id] = NULL;
     return LIBRG_OK;
 }
