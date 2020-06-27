@@ -16,9 +16,9 @@ typedef void librg_world;
 typedef void librg_event;
 typedef int64_t librg_chunk;
 
-#define LIBRG_OFFSET_BEG                ((int16_t)0x8000)
-#define LIBRG_OFFSET_MID                ((int16_t)0x0000)
-#define LIBRG_OFFSET_END                ((int16_t)0x7fff)
+#define LIBRG_OFFSET_BEG ((int16_t)0x8000)
+#define LIBRG_OFFSET_MID ((int16_t)0x0000)
+#define LIBRG_OFFSET_END ((int16_t)0x7fff)
 
 #define LIBRG_IN
 #define LIBRG_OUT
@@ -72,26 +72,5 @@ typedef enum librg_visibility {
 #define LIBRG_WRITE_REJECT              (-0x0001)
 #define LIBRG_READ_INVALID              (-0x0003)
 #define LIBRG_NULL_REFERENCE            (-0x0007)
-
-/* unsued */
-
-// #define LIBRG_OBSERVE_ALL               (-0x01)
-// #define LIBRG_OBSERVE_NONE              (+0x00)
-
-// typedef enum librg_entity_refreshing {
-//     LIBRG_CONSTANT,     /* int argument, update entity every Nth tick */
-//     LIBRG_LINEAR,       /* float argument, linearly decrease update interval based on distance step (argument) */
-//     LIBRG_QUADRATIC,    /* float argument, cubicly decrease update inverval based on distance step (argument) */
-// } librg_entity_refreshing;
-
-// typedef enum {
-//     LIBRG_ENTITY_DYNAMIC,
-//     LIBRG_ENTITY_STATIC,
-// } librg_behavior_type;
-
-// typedef enum {
-//     LIBRG_BEHAVIOR_TYPE,
-//     LIBRG_BEHAVIOR_STEPBACK,
-// } librg_behavior;
 
 LIBRG_END_C_DECLS

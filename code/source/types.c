@@ -128,4 +128,25 @@ typedef struct librg_world_t {
     void *userdata;
 } librg_world_t;
 
+/* unsued */
+
+// #define LIBRG_OBSERVE_ALL               (-0x01)
+// #define LIBRG_OBSERVE_NONE              (+0x00)
+
+// typedef enum librg_entity_refreshing {
+//     LIBRG_CONSTANT,     /* int argument, update entity every Nth tick */
+//     LIBRG_LINEAR,       /* float argument, linearly decrease update interval based on distance step (argument) */
+//     LIBRG_QUADRATIC,    /* float argument, cubicly decrease update inverval based on distance step (argument) */
+// } librg_entity_refreshing;
+
+// typedef enum {
+//     LIBRG_ENTITY_DYNAMIC,
+//     LIBRG_ENTITY_STATIC,
+// } librg_behavior_type;
+
+// typedef enum {
+//     LIBRG_BEHAVIOR_TYPE,
+//     LIBRG_BEHAVIOR_STEPBACK,
+// } librg_behavior;
+
 LIBRG_END_C_DECLS
