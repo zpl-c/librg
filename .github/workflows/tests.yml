@@ -69,7 +69,7 @@ jobs:
     name: Notify about status
     runs-on: ubuntu-latest
     needs: [build-mac, build-lin, build-win]
-    if: always()
+    if: "!contains(github.event.head_commit.message, 'Release')"
     steps:
       - uses: inlife/actiord-action@v1
         if: ${{ contains(needs.build-mac.result, 'success') && contains(needs.build-lin.result, 'success') && contains(needs.build-win.result, 'success') }}
