@@ -12,7 +12,7 @@
 <br />
 
 <div align="center">
-  Making multi-player gamedev simpler since 2017. Single-header cross-platform world replication library in pure C99.
+  Making multi-player gamedev simpler since 2017. Single-header cross-platform world replication in pure C99.
 </div>
 
 <div align="center">
@@ -84,7 +84,13 @@ Additionally you can check [code/apps](code/apps) folder for actual code example
 Here is a simple illustration that attempts to describe how the library works on a simple 2d world of 4x4 chunks.
 For a 3d world of bigger size everything would work in a very similar way, just in 3 dimensions.
 
-![librg_image](https://user-images.githubusercontent.com/2182108/83945607-87d64400-a814-11ea-8897-3c268b26b0f7.png)
+<a href="https://user-images.githubusercontent.com/2182108/83945607-87d64400-a814-11ea-8897-3c268b26b0f7.png" target="_blank">
+  <img src="https://user-images.githubusercontent.com/2182108/83945607-87d64400-a814-11ea-8897-3c268b26b0f7.png" alt="librg illustration" />
+</a>
+
+<div align="center">
+  <sub>(click on the image to view full-size)</sub>
+</div>
 
 ## Migration
 
