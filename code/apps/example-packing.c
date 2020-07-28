@@ -6,7 +6,7 @@ int32_t mywrite_create(librg_world *w, librg_event *e) {
     const char *str = "Hello world!";
 
     /* make sure we have enough space */
-    if (strlen(str) > librg_event_size_get(w, e))
+    if ((int32_t)strlen(str) > librg_event_size_get(w, e))
         return LIBRG_WRITE_REJECT;
 
     /* feel free to replace memcpy with any serialization library */
