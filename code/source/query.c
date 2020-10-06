@@ -184,7 +184,7 @@ int32_t librg_world_query(librg_world *world, int64_t owner_id, int64_t *entity_
         librg_entity_t *entity = &wld->entity_map.entries[i].value;
         librg_table_i64 *chunks = librg_table_tbl_get(&dimensions, entity->dimension);
 
-        /* owner visiblity (personal)*/
+        /* owner visibility (personal)*/
         int8_t vis_owner = librg_entity_visibility_owner_get(world, entity_id, owner_id);
         if (vis_owner == LIBRG_VISIBLITY_NEVER) {
             continue; /* prevent from being included */
@@ -194,7 +194,7 @@ int32_t librg_world_query(librg_world *world, int64_t owner_id, int64_t *entity_
             continue;
         }
 
-        /* global entity visiblity */
+        /* global entity visibility */
         int8_t vis_global = librg_entity_visibility_global_get(world, entity_id);
         if (vis_global == LIBRG_VISIBLITY_NEVER) {
             continue; /* prevent from being included */

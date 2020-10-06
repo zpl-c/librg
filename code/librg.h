@@ -25,8 +25,8 @@
  * 5.0.6 - Fix forced_inline on librg__space_insert
  * 5.0.5 - Fixes to selection and deduplication flow
  * 5.0.3 - Minor fixes by @markatk
- * 5.0.2 - Fixed issue related to visiblity destruction
- * 5.0.1 - Fixed entity visiblity states after disconnection
+ * 5.0.2 - Fixed issue related to visibility destruction
+ * 5.0.1 - Fixed entity visibility states after disconnection
  *
  * 5.0.0
  *  - Changed API for visibility feature:
