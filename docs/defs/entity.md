@@ -367,7 +367,7 @@ int64_t librg_entity_owner_get(
 Sets current entity visibility radius.
 
 Visibility radius influences only entities that are owned.
-It represents a linear/circular/spherical (depending on world configuration) radius of entity visiblity in terms of nearby chunks,
+It represents a linear/circular/spherical (depending on world configuration) radius of entity visibility in terms of nearby chunks,
 and used whilist general visibility calculations in the [librg_world_query](def/query.md#librg_world_query) method.
 If property set for an entity that is not owned, but the owner is later on changed, it will be still applied, since the value is stored in the internal storage.
 
