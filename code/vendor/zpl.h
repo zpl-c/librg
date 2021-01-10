@@ -1,5 +1,5 @@
 /**
-  ZPL - Global module
+  ZPL - Your (almost) C99 Powerkit
 
 Usage:
   #define ZPL_IMPLEMENTATION exactly in ONE source file right BEFORE including the library, like:
@@ -16,7 +16,7 @@ Usage:
 Options:
 
   ZPL_EDITOR - This macro should be used by the IDE's Intellisense to parse ZPL correctly. It can NEVER be used for actual compilation of the library!
-  ZPL_PREFIX_TYPES - to make sure all ZPL defined types have a prefix to avoid cluttering the global namespace.
+  ZPL_EXPOSE_TYPES - exposes all ZPL defined types to the global namespace. This means type such as `zpl_u32` is now available as `u32` globally.
   ZPL_DEFINE_NULL_MACRO - to let ZPL define what NULL stands for in case it is undefined.
   ZPL_NO_MATH_H - disables the use of math.h library and replaces it with custom routines or SIMD.
 
@@ -27,6 +27,27 @@ GitHub:
   https://github.com/zpl-c/zpl
 
 Version History:
+  10.11.0 - Added zpl_file_stream_buf
+  10.10.3 - Math type-punning fixes
+  10.10.1 - Fix memory writing issue + new write-only in-situ flag
+  10.10.0 - Implement memory streaming API
+  10.9.1  - Support ARMv6, ARMv7 and ARMv8-a builds
+  10.9.0  - Improve the time API
+  10.8.3  - zpl_file_close tempfile Windows fixes
+  10.8.2  - zpl_file_temp disallow some operations
+  10.8.1  - zpl_file_temp Windows fixes
+  10.8.0  - Implemented zpl_json_write_string
+  10.7.1  - Fix zpl_file_temp platform bug
+  10.7.0  - Add zpl_file_write_contents
+  10.6.6  - Fix type mismatch in Jobs system
+  10.6.0  - Remove event system
+  10.5.8  - Remove zpl__memcpy_4byte
+  10.5.7  - zpl_file_new is now OS-agnostic constructor
+  10.5.6  - Fix coroutine creation
+  10.5.5  - Jobs system uses zpl_f32 for priority setting
+  10.5.4  - zpl_buffer_free no longer takes the 2nd argument (allocator)
+  10.5.3  - Removed crc64 and annotated some hashing methods
+  10.5.2  - Don't expose ZPL types anymore
   10.5.1  - Fixed zpl_rdtsc for Emscripten
   10.5.0  - Changed casts to memcopy in random methods, added embed cmd
   10.4.1  - Jobs system now enqueues jobs with def priority of 1.0
@@ -239,19 +260,33 @@ Version History:
 
   For more information, please refer to <http://unlicense.org/>
 
-  Apache 2.0
-  Copyright 2017-2019 Dominik Madarász <zaklaus@outlook.com>
-  Licensed under the Apache License, Version 2.0 (the "License");
-  you may not use this file except in compliance with the License.
-  You may obtain a copy of the License at
+  BSD 3-Clause
 
-      http://www.apache.org/licenses/LICENSE-2.0
+  Copyright (c) 2016-2021 Dominik Madarász. All rights reserved.
 
-  Unless required by applicable law or agreed to in writing, software
-  distributed under the License is distributed on an "AS IS" BASIS,
-  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-  See the License for the specific language governing permissions and
-  limitations under the License.
+  Redistribution and use in source and binary forms, with or without
+  modification, are permitted provided that the following conditions are met:
+
+  1. Redistributions of source code must retain the above copyright notice, this
+    list of conditions and the following disclaimer.
+  2. Redistributions in binary form must reproduce the above copyright notice,
+    this list of conditions and the following disclaimer in the documentation
+    and/or other materials provided with the distribution.
+  3. Neither the name of the copyright holder nor the names of its contributors
+    may be used to endorse or promote products derived from this software without
+    specific prior written permission.
+
+  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
+  ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+  WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+  DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
+  FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+  DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+  SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+  CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+  OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
 
 */
 
@@ -259,8 +294,8 @@ Version History:
 #define ZPL_H
 
 #define ZPL_VERSION_MAJOR 10
-#define ZPL_VERSION_MINOR 5
-#define ZPL_VERSION_PATCH 1
+#define ZPL_VERSION_MINOR 11
+#define ZPL_VERSION_PATCH 0
 #define ZPL_VERSION_PRE ""
 
 // file: zpl_hedley.h
@@ -2212,6 +2247,11 @@ ZPL_DIAGNOSTIC_POP
     #endif
 #endif
 
+/* Architecture-specific overrides */
+#if defined(__ARM_ARCH)
+    #define ZPL_DISABLE_THREADING
+#endif
+
 /* Distributions */
 #ifndef ZPL_CUSTOM_MODULES
     /* default distribution */
@@ -2257,9 +2297,6 @@ ZPL_DIAGNOSTIC_POP
     #endif
     #if defined(ZPL_ENABLE_REGEX) && !defined(ZPL_MODULE_REGEX)
         #define ZPL_MODULE_REGEX
-    #endif
-    #if defined(ZPL_ENABLE_EVENT) && !defined(ZPL_MODULE_EVENT)
-        #define ZPL_MODULE_EVENT
     #endif
     #if defined(ZPL_ENABLE_DLL) && !defined(ZPL_MODULE_DLL)
         #define ZPL_MODULE_DLL
@@ -2309,9 +2346,6 @@ ZPL_DIAGNOSTIC_POP
     #endif
     #if defined(ZPL_DISABLE_REGEX) && defined(ZPL_MODULE_REGEX)
         #undef ZPL_MODULE_REGEX
-    #endif
-    #if defined(ZPL_DISABLE_EVENT) && defined(ZPL_MODULE_EVENT)
-        #undef ZPL_MODULE_EVENT
     #endif
     #if defined(ZPL_DISABLE_DLL) && defined(ZPL_MODULE_DLL)
         #undef ZPL_MODULE_DLL
@@ -3925,9 +3959,7 @@ ZPL_END_C_DECLS
         *nx = cast(void *)(zpl__bh + 1);                                                                               \
     } while (0)
 
-    // DEPRECATED(zpl_buffer_free): Use zpl_buffer_free2 instead
-    #define zpl_buffer_free(x, allocator) (zpl_free(allocator, ZPL_BUFFER_HEADER(x)))
-    #define zpl_buffer_free2(x) (zpl_free(ZPL_BUFFER_HEADER(x)->backing, ZPL_BUFFER_HEADER(x)))
+    #define zpl_buffer_free(x) (zpl_free(ZPL_BUFFER_HEADER(x)->backing, ZPL_BUFFER_HEADER(x)))
 
     #define zpl_buffer_append(x, item)                                                                                     \
     do { (x)[zpl_buffer_count(x)++] = (item); } while (0)
@@ -4100,7 +4132,7 @@ ZPL_END_C_DECLS
         pad->head = pad->tail = 0;                                                                                     \
     }                                                                                                                  \
     void ZPL_JOIN3(zpl_ring_, type, _free)(ZPL_JOIN2(zpl_ring_, type) * pad) {                                         \
-        zpl_buffer_free(pad->buf, pad->backing);                                                                       \
+        zpl_buffer_free(pad->buf);                                                                       \
     }                                                                                                                  \
     \
     zpl_b32 ZPL_JOIN3(zpl_ring_, type, _full)(ZPL_JOIN2(zpl_ring_, type) * pad) {                                          \
@@ -4132,7 +4164,7 @@ ZPL_END_C_DECLS
     \
     zpl_array(type)                                                                                                    \
     ZPL_JOIN3(zpl_ring_, type, _get_array)(ZPL_JOIN2(zpl_ring_, type) * pad, zpl_usize max_size, zpl_allocator a) {    \
-        zpl_array(type) vals;                                                                                          \
+        zpl_array(type) vals = 0;                                                                                          \
         zpl_array_init(vals, a);                                                                                       \
         while (--max_size && !ZPL_JOIN3(zpl_ring_, type, _empty)(pad)) {                                               \
             zpl_array_append(vals, *ZPL_JOIN3(zpl_ring_, type, _get)(pad));                                            \
@@ -4737,99 +4769,6 @@ ZPL_END_C_DECLS
     ZPL_END_C_DECLS
     // file: header/core/stringlib.h
 
-    ////////////////////////////////////////////////////////////////
-    //
-    // zpl_string - C Read-Only-Compatible
-    //
-    //
-    /*
-        Reasoning:
-
-        By default, strings in C are null terminated which means you have to count
-        the number of character up to the null character to calculate the length.
-        Many "better" C string libraries will create a struct for a string.
-        i.e.
-
-        struct String {
-        Allocator allocator;
-        size_t    length;
-        size_t    capacity;
-        char *    cstring;
-        };
-
-        This library tries to augment normal C strings in a better way that is still
-        compatible with C-style strings.
-
-        +--------+-----------------------+-----------------+
-        | Header | Binary C-style String | Null Terminator |
-        +--------+-----------------------+-----------------+
-        |
-        +-> Pointer returned by functions
-
-        Due to the meta-data being stored before the string pointer and every zpl string
-        having an implicit null terminator, zpl strings are full compatible with c-style
-        strings and read-only functions.
-
-        Advantages:
-
-        * zpl strings can be passed to C-style string functions without accessing a struct
-        member of calling a function, i.e.
-
-        zpl_printf("%s\n", zpl_str);
-
-        Many other libraries do either of these:
-
-        zpl_printf("%s\n", string->cstr);
-        zpl_printf("%s\n", get_cstring(string));
-
-        * You can access each character just like a C-style string:
-
-        zpl_printf("%c %c\n", str[0], str[13]);
-
-        * zpl strings are singularly allocated. The meta-data is next to the character
-        array which is better for the cache.
-
-        Disadvantages:
-
-        * In the C version of these functions, many return the new string. i.e.
-        str = zpl_string_appendc(str, "another string");
-        This could be changed to zpl_string_appendc(&str, "another string"); but I'm still not sure.
-    */
-
-    #if 0
-    #define ZPL_IMPLEMENTATION
-    #include "zpl.h"
-    int main(int argc, char **argv) {
-        zpl_string str = zpl_string_make("Hello");
-        zpl_string other_str = zpl_string_make_length(", ", 2);
-        str = zpl_string_append(str, other_str);
-        str = zpl_string_appendc(str, "world!");
-
-        zpl_printf("%s\n", str); // Hello, world!
-
-        zpl_printf("str length = %d\n", zpl_string_length(str));
-
-        str = zpl_string_set(str, "Potato soup");
-        zpl_printf("%s\n", str); // Potato soup
-
-        str = zpl_string_set(str, "Hello");
-        other_str = zpl_string_set(other_str, "Pizza");
-        if (zpl_strings_are_equal(str, other_str))
-            zpl_printf("Not called\n");
-        else
-            zpl_printf("Called\n");
-
-        str = zpl_string_set(str, "Ab.;!...AHello World       ??");
-        str = zpl_string_trim(str, "Ab.;!. ?");
-        zpl_printf("%s\n", str); // "Hello World"
-
-        zpl_string_free(str);
-        zpl_string_free(other_str);
-
-        return 0;
-    }
-    #endif
-
     #ifdef ZPL_EDITOR
     #include <zpl.h>
     #endif
@@ -5015,6 +4954,7 @@ ZPL_END_C_DECLS
     typedef struct zpl_file {
         zpl_file_operations ops;
         zpl_file_descriptor fd;
+        zpl_b32 is_temp;
 
         char const    *filename;
         zpl_file_time last_write_time;
@@ -5225,6 +5165,11 @@ ZPL_END_C_DECLS
     ZPL_DEF void              zpl_file_free_contents(zpl_file_contents *fc);
 
     /**
+     * Writes content to a file
+     */
+    ZPL_DEF zpl_b32           zpl_file_write_contents(char const* filepath, void const* buffer, zpl_isize size, zpl_file_error* err);
+
+    /**
      * Reads the file as array of lines
      *
      * Make sure you free both the returned buffer and the lines (zpl_array)
@@ -5303,7 +5248,61 @@ ZPL_END_C_DECLS
     }
 
     ZPL_END_C_DECLS
-    // file: header/core/filesystem.h
+    // file: header/core/file_stream.h
+
+    /** @file file_stream.c
+    @brief File stream
+    @defgroup fileio File stream
+
+    File streaming operations on memory.
+
+    @{
+    */
+    #ifdef ZPL_EDITOR
+    #include <zpl.h>
+    #endif
+
+    ZPL_BEGIN_C_DECLS
+
+    typedef enum {
+        /* Allows us to write to the buffer directly. Beware: you can not append a new data! */
+        ZPL_FILE_STREAM_WRITABLE = ZPL_BIT(0),
+
+        /* Clones the input buffer so you can write (zpl_file_write*) data into it. */
+        /* Since we work with a clone, the buffer size can dynamically grow as well. */
+        ZPL_FILE_STREAM_CLONE_WRITABLE = ZPL_BIT(1),
+    } zpl_file_stream_flags;
+
+    /**
+     * Opens a new memory stream
+     * @param file
+     * @param allocator
+     */
+    ZPL_DEF void zpl_file_stream_new(zpl_file* file, zpl_allocator allocator);
+
+    /**
+     * Opens a memory stream over an existing buffer
+     * @param  file
+     * @param  allocator
+     * @param  buffer   Memory to create stream from
+     * @param  size     Buffer's size
+     * @param  flags
+     */
+    ZPL_DEF void zpl_file_stream_open(zpl_file* file, zpl_allocator allocator, zpl_u8 *buffer, zpl_isize size, zpl_file_stream_flags flags);
+
+    /**
+     * Retrieves the stream's underlying buffer and buffer size.
+     * @param file memory stream
+     * @param size (Optional) buffer size
+     */
+    ZPL_DEF zpl_u8 *zpl_file_stream_buf(zpl_file* file, zpl_isize *size);
+
+    extern zpl_file_operations const zpl_memory_file_operations;
+
+    //! @}
+
+    ZPL_END_C_DECLS
+    // file: header/core/file_misc.h
 
     #ifdef ZPL_EDITOR
     #include <zpl.h>
@@ -5490,14 +5489,67 @@ ZPL_END_C_DECLS
     //! Return CPU timestamp.
     ZPL_DEF zpl_u64 zpl_rdtsc(void);
 
+    //! Return relative time (in seconds) since the application start.
+    ZPL_DEF zpl_f64 zpl_time_rel(void);
+
     //! Return relative time since the application start.
-    ZPL_DEF zpl_f64 zpl_time_now(void);
+    ZPL_DEF zpl_u64 zpl_time_rel_ms(void);
+
+    //! Return time (in seconds) since 1601-01-01 UTC.
+    ZPL_DEF zpl_f64 zpl_time_utc(void);
 
     //! Return time since 1601-01-01 UTC.
-    ZPL_DEF zpl_f64 zpl_utc_time_now(void);
+    ZPL_DEF zpl_u64 zpl_time_utc_ms(void);
+
+    //! Return local system time since 1601-01-01
+    ZPL_DEF zpl_u64 zpl_time_tz_ms(void);
+
+    //! Return local system time in seconds since 1601-01-01
+    ZPL_DEF zpl_f64 zpl_time_tz(void);
+
+    //! Convert Win32 epoch (1601-01-01 UTC) to UNIX (1970-01-01 UTC)
+    ZPL_DEF_INLINE zpl_u64 zpl_time_win32_to_unix(zpl_u64 ms);
+
+    //! Convert UNIX (1970-01-01 UTC) to Win32 epoch (1601-01-01 UTC)
+    ZPL_DEF_INLINE zpl_u64 zpl_time_unix_to_win32(zpl_u64 ms);
 
     //! Sleep for specified number of milliseconds.
     ZPL_DEF void zpl_sleep_ms(zpl_u32 ms);
+
+    //! Sleep for specified number of seconds.
+    ZPL_DEF_INLINE void zpl_sleep(zpl_f32 s);
+
+    // Deprecated methods
+    ZPL_DEPRECATED_FOR(10.9.0, zpl_time_rel)
+    ZPL_DEF_INLINE zpl_f64 zpl_time_now(void);
+
+    ZPL_DEPRECATED_FOR(10.9.0, zpl_time_utc)
+    ZPL_DEF_INLINE zpl_f64 zpl_utc_time_now(void);
+
+
+    #ifndef ZPL__UNIX_TO_WIN32_EPOCH
+    #define ZPL__UNIX_TO_WIN32_EPOCH 11644473600000ull
+    #endif
+
+    ZPL_IMPL_INLINE zpl_u64 zpl_time_win32_to_unix(zpl_u64 ms) {
+        return ms - ZPL__UNIX_TO_WIN32_EPOCH;
+    }
+
+    ZPL_IMPL_INLINE zpl_u64 zpl_time_unix_to_win32(zpl_u64 ms) {
+        return ms + ZPL__UNIX_TO_WIN32_EPOCH;
+    }
+
+    ZPL_IMPL_INLINE void zpl_sleep(zpl_f32 s) {
+        zpl_sleep_ms((zpl_u32)(s * 1000));
+    }
+
+    ZPL_IMPL_INLINE zpl_f64 zpl_time_now() {
+        return zpl_time_rel();
+    }
+
+    ZPL_IMPL_INLINE zpl_f64 zpl_utc_time_now() {
+        return zpl_time_utc();
+    }
 
     ZPL_END_C_DECLS
     // file: header/core/random.h
@@ -5776,8 +5828,8 @@ ZPL_END_C_DECLS
     ZPL_DEF zpl_u32 zpl_adler32(void const *data, zpl_isize len);
 
     ZPL_DEF zpl_u32 zpl_crc32(void const *data, zpl_isize len);
-    ZPL_DEF zpl_u64 zpl_crc64(void const *data, zpl_isize len);
 
+    // These use FNV-1 algorithm
     ZPL_DEF zpl_u32 zpl_fnv32(void const *data, zpl_isize len);
     ZPL_DEF zpl_u64 zpl_fnv64(void const *data, zpl_isize len);
     ZPL_DEF zpl_u32 zpl_fnv32a(void const *data, zpl_isize len);
@@ -5786,7 +5838,10 @@ ZPL_END_C_DECLS
     ZPL_DEF zpl_u8 *zpl_base64_encode(zpl_allocator a, void const *data, zpl_isize len);
     ZPL_DEF zpl_u8 *zpl_base64_decode(zpl_allocator a, void const *data, zpl_isize len);
 
+    //! Based on MurmurHash3
     ZPL_DEF zpl_u32 zpl_murmur32_seed(void const *data, zpl_isize len, zpl_u32 seed);
+
+    //! Based on MurmurHash2
     ZPL_DEF zpl_u64 zpl_murmur64_seed(void const *data, zpl_isize len, zpl_u64 seed);
 
     //! Default seed of 0x9747b28c
@@ -5895,55 +5950,6 @@ ZPL_END_C_DECLS
 
     //! Match all occurences in an input string and output them into captures. Array of captures is allocated on the heap and needs to be freed afterwards.
     ZPL_DEF zpl_b32         zpl_re_match_all(zpl_re *re, char const *str, zpl_isize str_len, zpl_isize max_capture_count, zpl_re_capture **out_captures);
-
-    ZPL_END_C_DECLS
-#endif
-
-#if defined(ZPL_MODULE_EVENT)
-    // file: header/event.h
-
-    /** @file event.c
-    @brief Event handler
-
-    @n
-    @n Event handler
-    @n
-    @n Uses hash table to store array of callbacks per
-    @n each valid event type.
-    @n
-    @n Each event callback receives an anonymous pointer
-    @n which has to be casted to proper base type.
-    @n
-    @n Usage:
-    @n - Initialize event pool.
-    @n - Declare your event callbacks and any data layout
-    @n   used by the events.
-    @n - Add event callbacks to the pool. (Returns callback ID.)
-    @n - Trigger arbitrary event in pool with specified dataset.
-    @n - (Optional) Remove arbitrary event callback
-    @n   by refering to it through event type and its callback ID.
-    @n
-
-    @{
-    */
-    #ifdef ZPL_EDITOR
-    #include <zpl.h>
-    #endif
-
-    ZPL_BEGIN_C_DECLS
-
-    typedef void *zpl_event_data;
-    typedef void (*zpl_event_cb)(zpl_event_data evt);
-    typedef zpl_event_cb* zpl_event_block; ///< zpl_array
-
-    #define ZPL_EVENT_CAST(Type, name) Type * name = cast(Type *)evt
-    ZPL_TABLE_DECLARE(static, zpl_event_pool, zpl_event_pool_, zpl_event_block);
-
-    ZPL_DEF void    zpl_event_init   (zpl_event_pool *pool, zpl_allocator alloc);
-    ZPL_DEF void    zpl_event_destroy(zpl_event_pool *pool);
-    ZPL_DEF zpl_u64 zpl_event_add    (zpl_event_pool *pool, zpl_u64 slot, zpl_event_cb cb);
-    ZPL_DEF void    zpl_event_remove (zpl_event_pool *pool, zpl_u64 slot, zpl_u64 index);
-    ZPL_DEF void    zpl_event_trigger(zpl_event_pool *pool, zpl_u64 slot, zpl_event_data evt);
 
     ZPL_END_C_DECLS
 #endif
@@ -6966,11 +6972,11 @@ ZPL_END_C_DECLS
     //! This method takes text form of JSON document as a source and parses its contents into JSON object structure we can work with. It also optionally handles comments that usually appear in documents used for configuration.
     //! @param root JSON object we store data to.
     //! @param len Text length. (reserved)
-    //! @param source Text to be processed.
+    //! @param source Text to be processed. This string will be modified during the process!
     //! @param allocator Memory allocator to use. (ex. zpl_heap())
     //! @param handle_comments Whether to handle possible comments or not. Note that if we won't handle comments in a document containing them, the parser will error out. See remark in source code.
     //! @param err_code Variable we will store error code in.
-    ZPL_DEF void zpl_json_parse(zpl_json_object *root, zpl_usize len, char const *source, zpl_allocator allocator, zpl_b32 handle_comments,
+    ZPL_DEF void zpl_json_parse(zpl_json_object *root, zpl_usize len, char *source, zpl_allocator allocator, zpl_b32 handle_comments,
                                 zpl_u8 *err_code);
 
     //! Exports JSON5 document into text form and outputs it into a file.
@@ -6980,6 +6986,14 @@ ZPL_END_C_DECLS
     //! @param obj JSON object we export data from.
     //! @param indent Text indentation used during export. Use 0 for root objects.
     ZPL_DEF void zpl_json_write(zpl_file *file, zpl_json_object *obj, zpl_isize indent);
+
+    //! Exports JSON5 document into text form and returns a zpl_string
+
+    //! This method takes JSON object tree and exports it into valid JSON5 form with the support of various styles that were preserved during import or set up programatically.
+    //! @param obj JSON object we export data from.
+    //! @param indent Text indentation used during export. Use 0 for root objects.
+    //! @return zpl_string
+    ZPL_DEF zpl_string zpl_json_write_string(zpl_allocator a, zpl_json_object *obj, zpl_isize indent);
 
     //! Releases used resources by a JSON object.
 
@@ -7359,7 +7373,7 @@ ZPL_END_C_DECLS
             zpl_jobs_proc proc;
             void *data;
 
-            zpl_i32 priority;
+            zpl_f32 priority;
         } zpl_thread_job;
 
         typedef struct {
@@ -7390,7 +7404,7 @@ ZPL_END_C_DECLS
         ZPL_DEF void    zpl_jobs_enqueue(zpl_thread_pool *pool, zpl_jobs_proc proc, void *data);
 
         //! Enqueue a job with specific priority with specified data.
-        ZPL_DEF void    zpl_jobs_enqueue_with_priority(zpl_thread_pool *pool, zpl_jobs_proc proc, void *data, zpl_i32 priority);
+        ZPL_DEF void    zpl_jobs_enqueue_with_priority(zpl_thread_pool *pool, zpl_jobs_proc proc, void *data, zpl_f32 priority);
 
         //! Process all jobs and check all threads. Should be called by Main Thread in a tight loop.
         ZPL_DEF zpl_b32 zpl_jobs_process(zpl_thread_pool *pool);
@@ -7561,6 +7575,7 @@ ZPL_END_C_DECLS
 #if defined(_MSC_VER)
     #pragma warning(push)
     #pragma warning(disable : 4201)
+    #pragma warning(disable : 4996) // Disable deprecated POSIX functions warning
     #pragma warning(disable : 4127) // Conditional expression is constant
 #endif
 
@@ -9084,6 +9099,10 @@ ZPL_END_C_DECLS
     #   include <windows.h>
     #endif
 
+    #if defined(ZPL_SYSTEM_WINDOWS) && !defined(ZPL_COMPILER_GCC)
+    #include <io.h>
+    #endif
+
     ZPL_BEGIN_C_DECLS
 
     #if defined(ZPL_SYSTEM_WINDOWS) || defined (ZPL_SYSTEM_CYGWIN)
@@ -9276,7 +9295,6 @@ ZPL_END_C_DECLS
 
             fd->i = open(filename, os_mode, S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH | S_IWOTH);
             if (fd->i < 0) {
-              printf("aaa %ld\n", fd->i);
                 // TODO: More file errors
                 return ZPL_FILE_ERROR_INVALID;
             }
@@ -9293,9 +9311,10 @@ ZPL_END_C_DECLS
 
         f->ops = ops;
         f->fd = fd;
+        f->dir = NULL;
+        f->last_write_time = 0;
         f->filename = zpl_alloc_array(zpl_heap_allocator( ), char, len + 1);
         zpl_memcopy(cast(char *) f->filename, cast(char *) filename, len + 1);
-        f->last_write_time = zpl_fs_last_write_time(f->filename);
 
         return err;
     }
@@ -9325,6 +9344,12 @@ ZPL_END_C_DECLS
     #else
         if (f->fd.i < 0) return ZPL_FILE_ERROR_INVALID;
     #endif
+        
+        if (f->is_temp)
+        {
+            f->ops.close(f->fd);
+            return ZPL_FILE_ERROR_NONE;
+        }
 
         if (!f->ops.read_at) f->ops = zpl_default_file_operations;
         f->ops.close(f->fd);
@@ -9350,6 +9375,8 @@ ZPL_END_C_DECLS
     char const *zpl_file_name(zpl_file *f) { return f->filename ? f->filename : ""; }
 
     zpl_b32 zpl_file_has_changed(zpl_file *f) {
+        if (f->is_temp)
+            return false;
         zpl_b32 result = false;
         zpl_file_time last_write_time = zpl_fs_last_write_time(f->filename);
         if (f->last_write_time != last_write_time) {
@@ -9383,17 +9410,13 @@ ZPL_END_C_DECLS
         ZPL_ASSERT_NOT_NULL(file);
         ZPL_ASSERT_NOT_NULL(handle);
 
+        if (file->is_temp)
+            return;
+
         zpl_zero_item(file);
 
         file->fd.p = handle;
         file->ops = zpl_default_file_operations;
-    }
-
-
-    zpl_i64 zpl_file_size(zpl_file *f) {
-        LARGE_INTEGER size;
-        GetFileSizeEx(f->fd.p, &size);
-        return size.QuadPart;
     }
 
     zpl_file_error zpl_file_truncate(zpl_file *f, zpl_i64 size) {
@@ -9437,15 +9460,6 @@ ZPL_END_C_DECLS
         return &zpl__std_files[std];
     }
 
-    zpl_i64 zpl_file_size(zpl_file *f) {
-        zpl_i64 size = 0;
-        zpl_i64 prev_offset = zpl_file_tell(f);
-        zpl_file_seek_to_end(f);
-        size = zpl_file_tell(f);
-        zpl_file_seek(f, prev_offset);
-        return size;
-    }
-
     zpl_file_error zpl_file_truncate(zpl_file *f, zpl_i64 size) {
         zpl_file_error err = ZPL_FILE_ERROR_NONE;
         int i = ftruncate(f->fd.i, size);
@@ -9457,14 +9471,20 @@ ZPL_END_C_DECLS
 
     #endif
 
+    zpl_i64 zpl_file_size(zpl_file *f) {
+        zpl_i64 size = 0;
+        zpl_i64 prev_offset = zpl_file_tell(f);
+        zpl_file_seek_to_end(f);
+        size = zpl_file_tell(f);
+        zpl_file_seek(f, prev_offset);
+        return size;
+    }
+
     zpl_file_error zpl_file_temp(zpl_file *file) {
-    #if defined(ZPL_SYSTEM_EMSCRIPTEN)
-        ZPL_PANIC("zpl_file_temp is not supported for emscripten");
-    #else
         zpl_zero_item(file);
         FILE *fd = NULL;
 
-    #if ZPL_SYSTEM_WINDOWS && !defined(ZPL_COMPILER_GCC)
+    #if defined(ZPL_SYSTEM_WINDOWS) && !defined(ZPL_COMPILER_GCC)
         errno_t errcode = tmpfile_s(&fd);
 
         if (errcode != 0) {
@@ -9476,9 +9496,13 @@ ZPL_END_C_DECLS
 
         if (fd == NULL) { return ZPL_FILE_ERROR_INVALID; }
 
-        file->fd.p = fd;
-        file->ops = zpl_default_file_operations;
+    #if defined(ZPL_SYSTEM_WINDOWS) && !defined(ZPL_COMPILER_GCC)
+        file->fd.i = _get_osfhandle(_fileno(fd));
+    #else 
+        file->fd.i = fileno(fd);
     #endif
+        file->ops = zpl_default_file_operations;
+        file->is_temp = true;
         return ZPL_FILE_ERROR_NONE;
     }
 
@@ -9512,6 +9536,25 @@ ZPL_END_C_DECLS
         fc->size = 0;
     }
 
+    zpl_b32 zpl_file_write_contents(char const* filepath, void const* buffer, zpl_isize size, zpl_file_error* err) {
+        zpl_file f = { 0 };
+        zpl_file_error open_err;
+        zpl_b32 write_ok;
+        open_err = zpl_file_open_mode(&f, ZPL_FILE_MODE_WRITE, filepath);
+
+        if (open_err != ZPL_FILE_ERROR_NONE)
+        {
+            if (err)
+                *err = open_err;
+
+            return false;
+        }
+
+        write_ok = zpl_file_write(&f, buffer, size);
+        zpl_file_close(&f);
+        return write_ok;
+    }
+
     char *zpl_file_read_lines(zpl_allocator alloc, zpl_array(char *)*lines, char const *filename, zpl_b32 strip_whitespace) {
         zpl_file f = { 0 };
         zpl_file_open(&f, filename);
@@ -9532,7 +9575,151 @@ ZPL_END_C_DECLS
     #endif
 
     ZPL_END_C_DECLS
-    // file: source/core/filesystem.c
+    // file: source/core/file_stream.c
+
+    #ifdef ZPL_EDITOR
+    #include <zpl.h>
+    #endif
+
+    ////////////////////////////////////////////////////////////////
+    //
+    // Memory streaming
+    //
+    //
+
+    ZPL_BEGIN_C_DECLS
+
+    typedef struct {
+        zpl_u8 magic;
+        zpl_u8 *buf; //< zpl_array OR plain buffer if we can't write
+        zpl_isize cursor;
+        zpl_allocator alloc;
+
+        zpl_file_stream_flags flags;
+        zpl_isize cap;
+    } zpl__memory_fd;
+
+    #define ZPL__FILE_STREAM_FD_MAGIC 37
+
+    ZPL_ALWAYS_INLINE zpl_file_descriptor zpl__file_stream_fd_make(zpl__memory_fd* d) {
+        zpl_file_descriptor fd = {0};
+        fd.p = (void*)d;
+        return fd;
+    }
+
+    ZPL_ALWAYS_INLINE zpl__memory_fd *zpl__file_stream_from_fd(zpl_file_descriptor fd) {
+        zpl__memory_fd *d = (zpl__memory_fd*)fd.p;
+        ZPL_ASSERT(d->magic == ZPL__FILE_STREAM_FD_MAGIC);
+        return d;
+    }
+
+    void zpl_file_stream_new(zpl_file* file, zpl_allocator allocator) {
+        ZPL_ASSERT_NOT_NULL(file);
+        zpl__memory_fd *d = (zpl__memory_fd*)zpl_alloc(allocator, zpl_size_of(zpl__memory_fd));
+        zpl_zero_item(file);
+        d->magic = ZPL__FILE_STREAM_FD_MAGIC;
+        d->alloc = allocator;
+        d->flags = ZPL_FILE_STREAM_CLONE_WRITABLE;
+        d->cap = 0;
+        zpl_array_init(d->buf, allocator);
+        file->ops = zpl_memory_file_operations;
+        file->fd = zpl__file_stream_fd_make(d);
+        file->dir = NULL;
+        file->last_write_time = 0;
+        file->filename = NULL;
+        file->is_temp = true;
+    }
+    void zpl_file_stream_open(zpl_file* file, zpl_allocator allocator, zpl_u8 *buffer, zpl_isize size, zpl_file_stream_flags flags) {
+        ZPL_ASSERT_NOT_NULL(file);
+        zpl__memory_fd *d = (zpl__memory_fd*)zpl_alloc(allocator, zpl_size_of(zpl__memory_fd));
+        zpl_zero_item(file);
+        d->magic = ZPL__FILE_STREAM_FD_MAGIC;
+        d->alloc = allocator;
+        d->flags = flags;
+        if (d->flags & ZPL_FILE_STREAM_CLONE_WRITABLE) {
+            zpl_array_init_reserve(d->buf, allocator, size);
+            zpl_memcopy(d->buf, buffer, size);
+            d->cap = zpl_array_count(d->buf) = size;
+        } else {
+            d->buf = buffer;
+            d->cap = size;
+        }
+        file->ops = zpl_memory_file_operations;
+        file->fd = zpl__file_stream_fd_make(d);
+        file->dir = NULL;
+        file->last_write_time = 0;
+        file->filename = NULL;
+        file->is_temp = true;
+    }
+
+    zpl_u8 *zpl_file_stream_buf(zpl_file* file, zpl_isize *size) {
+        ZPL_ASSERT_NOT_NULL(file);
+        zpl__memory_fd *d = zpl__file_stream_from_fd(file->fd);
+        if (size) *size = d->cap;
+        return d->buf;
+    }
+
+    zpl_internal ZPL_FILE_SEEK_PROC(zpl__memory_file_seek) {
+        zpl__memory_fd *d = zpl__file_stream_from_fd(fd);
+        zpl_isize buflen = d->cap;
+
+        if (whence == ZPL_SEEK_WHENCE_BEGIN)
+            d->cursor = 0;
+        else if (whence == ZPL_SEEK_WHENCE_END)
+            d->cursor = buflen;
+
+        d->cursor = zpl_max(0, zpl_clamp(d->cursor + offset, 0, buflen));
+        if (new_offset) *new_offset = d->cursor;
+        return true;
+    }
+
+    zpl_internal ZPL_FILE_READ_AT_PROC(zpl__memory_file_read) {
+        zpl_unused(stop_at_newline);
+        zpl__memory_fd *d = zpl__file_stream_from_fd(fd);
+        zpl_memcopy(buffer, d->buf + offset, size);
+        if (bytes_read) *bytes_read = size;
+        return true;
+    }
+
+    zpl_internal ZPL_FILE_WRITE_AT_PROC(zpl__memory_file_write) {
+        zpl__memory_fd *d = zpl__file_stream_from_fd(fd);
+        if (!(d->flags & (ZPL_FILE_STREAM_CLONE_WRITABLE|ZPL_FILE_STREAM_WRITABLE)))
+            return false;
+        zpl_isize buflen = d->cap;
+        zpl_isize extralen = zpl_max(0, size-(buflen-offset));
+        zpl_isize rwlen = size-extralen;
+        zpl_isize new_cap = buflen+extralen;
+        if (d->flags & ZPL_FILE_STREAM_CLONE_WRITABLE) {
+            if(zpl_array_capacity(d->buf) < new_cap) {
+                zpl_array_grow(d->buf, (zpl_i64)(new_cap));
+            }
+        }
+        zpl_memcopy(d->buf + offset, buffer, rwlen);
+
+        if ((d->flags & ZPL_FILE_STREAM_CLONE_WRITABLE) && extralen > 0) {
+            zpl_memcopy(d->buf + offset + rwlen, zpl_ptr_add_const(buffer, rwlen), extralen);
+            d->cap = zpl_array_count(d->buf) = new_cap;
+        } else {
+            extralen = 0;
+        }
+
+        if (bytes_written) *bytes_written = (rwlen+extralen);
+        return true;
+    }
+
+    zpl_internal ZPL_FILE_CLOSE_PROC(zpl__memory_file_close) {
+        zpl__memory_fd *d = zpl__file_stream_from_fd(fd);
+        zpl_allocator alloc = d->alloc;
+        if (d->flags & ZPL_FILE_STREAM_CLONE_WRITABLE)
+            zpl_array_free(d->buf);
+        zpl_free(alloc, d);
+    }
+
+    zpl_file_operations const zpl_memory_file_operations = { zpl__memory_file_read, zpl__memory_file_write,
+        zpl__memory_file_seek, zpl__memory_file_close };
+
+    ZPL_END_C_DECLS
+    // file: source/core/file_misc.c
 
     #ifdef ZPL_EDITOR
     #include <zpl.h>
@@ -9822,7 +10009,7 @@ ZPL_END_C_DECLS
         // remove trailing slashses
         if (directory[length - 1] == '\\') { directory[length - 1] = '\0'; }
 
-        // attach search parttern
+        // attach search pattern
         zpl_string findpath = zpl_string_make(alloc, directory);
         findpath = zpl_string_appendc(findpath, "\\");
         findpath = zpl_string_appendc(findpath, "*");
@@ -9963,6 +10150,9 @@ ZPL_END_C_DECLS
     }
 
     void zpl_file_dirinfo_refresh(zpl_file *file) {
+        if (file->is_temp)
+            return;
+
         if (file->dir) {
             zpl__dirinfo_free_entry(file->dir);
             zpl_mfree(file->dir);
@@ -10427,6 +10617,7 @@ ZPL_END_C_DECLS
 
     #if defined(ZPL_SYSTEM_MACOS) || ZPL_SYSTEM_UNIX
         #include <time.h>
+        #include <sys/time.h>
     #endif
 
     #if defined(ZPL_SYSTEM_MACOS)
@@ -10437,6 +10628,10 @@ ZPL_END_C_DECLS
 
     #if defined(ZPL_SYSTEM_EMSCRIPTEN)
         #include <emscripten.h>
+    #endif
+
+    #if defined(ZPL_SYSTEM_WINDOWS)
+        #include <timezoneapi.h>
     #endif
 
     ZPL_BEGIN_C_DECLS
@@ -10489,10 +10684,8 @@ ZPL_END_C_DECLS
             #if defined(__aarch64__)
                 int64_t r = 0;
                 asm volatile("mrs %0, cntvct_el0" : "=r"(r));
-            #elif defined(__ARM_ARCH_7A__)
-                uint32_t r = 0;
-                asm volatile("mrc p15, 0, %0, c9, c13, 0" : "=r"(r));
             #elif (__ARM_ARCH >= 6)
+                uint32_t r = 0;
                 uint32_t pmccntr;
                 uint32_t pmuseren;
                 uint32_t pmcntenset;
@@ -10517,9 +10710,9 @@ ZPL_END_C_DECLS
 
     #if defined(ZPL_SYSTEM_WINDOWS) || defined(ZPL_SYSTEM_CYGWIN)
 
-        zpl_f64 zpl_time_now(void) {
+        zpl_u64 zpl_time_rel_ms(void) {
             zpl_local_persist LARGE_INTEGER win32_perf_count_freq = { 0 };
-            zpl_f64 result;
+            zpl_u64 result;
             LARGE_INTEGER counter;
             zpl_local_persist LARGE_INTEGER win32_perf_counter = { 0 };
             if (!win32_perf_count_freq.QuadPart) {
@@ -10530,11 +10723,11 @@ ZPL_END_C_DECLS
 
             QueryPerformanceCounter(&counter);
 
-            result = (counter.QuadPart - win32_perf_counter.QuadPart) / cast(zpl_f64)(win32_perf_count_freq.QuadPart);
+            result = (counter.QuadPart - win32_perf_counter.QuadPart) * 1000 / (win32_perf_count_freq.QuadPart);
             return result;
         }
 
-        zpl_f64 zpl_utc_time_now(void) {
+        zpl_u64 zpl_time_utc_ms(void) {
             FILETIME ft;
             ULARGE_INTEGER li;
 
@@ -10542,7 +10735,21 @@ ZPL_END_C_DECLS
             li.LowPart = ft.dwLowDateTime;
             li.HighPart = ft.dwHighDateTime;
 
-            return li.QuadPart / 10 / 10e5;
+            return li.QuadPart / 1000;
+        }
+
+        zpl_u64 zpl_time_tz_ms(void) {
+            FILETIME ft;
+            SYSTEMTIME st, lst;
+            ULARGE_INTEGER li;
+
+            GetSystemTime(&st);
+            SystemTimeToTzSpecificLocalTime(NULL, &st, &lst);
+            SystemTimeToFileTime(&lst, &ft);
+            li.LowPart = ft.dwLowDateTime;
+            li.HighPart = ft.dwHighDateTime;
+
+            return li.QuadPart / 1000;
         }
 
         void zpl_sleep_ms(zpl_u32 ms) { Sleep(ms); }
@@ -10550,21 +10757,21 @@ ZPL_END_C_DECLS
     #else
 
         #if defined(ZPL_SYSTEM_LINUX) || defined(ZPL_SYSTEM_FREEBSD) || defined(ZPL_SYSTEM_OPENBSD) || defined(ZPL_SYSTEM_EMSCRIPTEN)
-            zpl_f64 zpl__unix_getime(void) {
+            zpl_u64 zpl__unix_gettime(void) {
                 struct timespec t;
-                zpl_f64 result;
+                zpl_u64 result;
 
                 clock_gettime(1 /*CLOCK_MONOTONIC*/, &t);
-                result = t.tv_sec + 1.0e-9 * t.tv_nsec;
+                result = 1000 * t.tv_sec + 1.0e-6 * t.tv_nsec;
                 return result;
             }
         #endif
 
-        zpl_f64 zpl_time_now(void) {
+        zpl_u64 zpl_time_rel_ms(void) {
         #if defined(ZPL_SYSTEM_OSX)
-            zpl_f64 result;
+            zpl_u64 result;
 
-            zpl_local_persist zpl_f64 timebase = 0.0;
+            zpl_local_persist zpl_u64 timebase = 0;
             zpl_local_persist zpl_u64 timestart = 0;
 
             if (!timestart) {
@@ -10572,24 +10779,24 @@ ZPL_END_C_DECLS
                 mach_timebase_info(&tb);
                 timebase = tb.numer;
                 timebase /= tb.denom;
-                timestart = mach_absolute_time( );
+                timestart = mach_absolute_time();
             }
 
             // NOTE: mach_absolute_time() returns things in nanoseconds
-            result = 1.0e-9 * (mach_absolute_time( ) - timestart) * timebase;
+            result = 1.0e-6 * (mach_absolute_time() - timestart) * timebase;
             return result;
         #else
-            zpl_local_persist zpl_f64 unix_timestart = 0.0;
+            zpl_local_persist zpl_u64 unix_timestart = 0.0;
 
-            if (!unix_timestart) { unix_timestart = zpl__unix_getime( ); }
+            if (!unix_timestart) { unix_timestart = zpl__unix_gettime( ); }
 
-            zpl_f64 now = zpl__unix_getime( );
+            zpl_u64 now = zpl__unix_gettime( );
 
             return (now - unix_timestart);
         #endif
         }
 
-        zpl_f64 zpl_utc_time_now(void) {
+        zpl_u64 zpl_time_utc_ms(void) {
             struct timespec t;
         #if defined(ZPL_SYSTEM_OSX)
             clock_serv_t cclock;
@@ -10602,16 +10809,39 @@ ZPL_END_C_DECLS
         #else
             clock_gettime(0 /*CLOCK_REALTIME*/, &t);
         #endif
-            return (cast(zpl_u64) t.tv_sec * 1000000ull + t.tv_nsec / 1000 + 11644473600000000ull) / 10e5;
+            return (t.tv_sec * 1000 + t.tv_nsec * 1e-6 + ZPL__UNIX_TO_WIN32_EPOCH);
         }
 
         void zpl_sleep_ms(zpl_u32 ms) {
-            struct timespec req = { cast(time_t) ms / 1000, cast(long)((ms % 1000) * 1000000) };
+            struct timespec req = { cast(time_t)(ms * 1e-3), cast(long)((ms % 1000) * 1e6) };
             struct timespec rem = { 0, 0 };
             nanosleep(&req, &rem);
         }
 
+        zpl_u64 zpl_time_tz_ms(void) {
+            struct tm t;
+            zpl_u64 result = zpl_time_utc_ms() - ZPL__UNIX_TO_WIN32_EPOCH;
+            zpl_u16 ms = result % 1000;
+            result *= 1e-3;
+            localtime_r((const time_t*)&result, &t);
+            result = (zpl_u64)mktime(&t);
+            return (result - timezone + t.tm_isdst * 3600) * 1000 + ms + ZPL__UNIX_TO_WIN32_EPOCH;
+        }
     #endif
+
+    zpl_f64 zpl_time_rel(void) {
+        return (zpl_f64)(zpl_time_rel_ms() * 1e-3);
+    }
+
+    zpl_f64 zpl_time_utc(void) {
+        return (zpl_f64)(zpl_time_utc_ms() * 1e-3);
+    }
+
+    zpl_f64 zpl_time_tz(void) {
+        return (zpl_f64)(zpl_time_tz_ms() * 1e-3);
+    }
+
+
 
     ZPL_END_C_DECLS
     // file: source/core/random.c
@@ -10633,12 +10863,12 @@ ZPL_END_C_DECLS
         zpl_f64 start, remaining, end, curr = 0;
         zpl_u64 interval = 100000ll;
 
-        start     = zpl_time_now();
+        start     = zpl_time_rel();
         remaining = (interval - cast(zpl_u64)(interval*start)%interval) / cast(zpl_f64)interval;
         end       = start + remaining;
 
         do {
-            curr = zpl_time_now();
+            curr = zpl_time_rel();
             accum += cast(zpl_u32)curr;
         } while (curr >= end);
         return accum;
@@ -10681,7 +10911,7 @@ ZPL_END_C_DECLS
         r->offsets[2] = 0;
         r->offsets[3] = 1;
     #endif
-        time = cast(zpl_u64)zpl_utc_time_now();
+        time = zpl_time_tz_ms();
         r->offsets[4] = cast(zpl_u32)(time >> 32);
         r->offsets[5] = cast(zpl_u32)time;
         r->offsets[6] = zpl__get_noise_from_time();
@@ -11153,7 +11383,7 @@ ZPL_END_C_DECLS
 
         t->enabled = true;
         t->remaining_calls = t->initial_calls;
-        t->next_call_ts = zpl_time_now( ) + delay_start;
+        t->next_call_ts = zpl_time_rel( ) + delay_start;
     }
 
     void zpl_timer_stop(zpl_timer *t) {
@@ -11165,7 +11395,7 @@ ZPL_END_C_DECLS
     void zpl_timer_update(zpl_timer_pool pool) {
         ZPL_ASSERT(pool);
 
-        zpl_f64 now = zpl_time_now( );
+        zpl_f64 now = zpl_time_rel( );
 
         for (zpl_isize i = 0; i < zpl_array_count(pool); ++i) {
             zpl_timer *t = pool + i;
@@ -11269,74 +11499,11 @@ ZPL_END_C_DECLS
         0xb40bbe37, 0xc30c8ea1, 0x5a05df1b, 0x2d02ef8d,
     };
 
-    zpl_global zpl_u64 const ZPL__CRC64_TABLE[256] = {
-        0x0000000000000000ull, 0x42f0e1eba9ea3693ull, 0x85e1c3d753d46d26ull, 0xc711223cfa3e5bb5ull, 0x493366450e42ecdfull,
-        0x0bc387aea7a8da4cull, 0xccd2a5925d9681f9ull, 0x8e224479f47cb76aull, 0x9266cc8a1c85d9beull, 0xd0962d61b56fef2dull,
-        0x17870f5d4f51b498ull, 0x5577eeb6e6bb820bull, 0xdb55aacf12c73561ull, 0x99a54b24bb2d03f2ull, 0x5eb4691841135847ull,
-        0x1c4488f3e8f96ed4ull, 0x663d78ff90e185efull, 0x24cd9914390bb37cull, 0xe3dcbb28c335e8c9ull, 0xa12c5ac36adfde5aull,
-        0x2f0e1eba9ea36930ull, 0x6dfeff5137495fa3ull, 0xaaefdd6dcd770416ull, 0xe81f3c86649d3285ull, 0xf45bb4758c645c51ull,
-        0xb6ab559e258e6ac2ull, 0x71ba77a2dfb03177ull, 0x334a9649765a07e4ull, 0xbd68d2308226b08eull, 0xff9833db2bcc861dull,
-        0x388911e7d1f2dda8ull, 0x7a79f00c7818eb3bull, 0xcc7af1ff21c30bdeull, 0x8e8a101488293d4dull, 0x499b3228721766f8ull,
-        0x0b6bd3c3dbfd506bull, 0x854997ba2f81e701ull, 0xc7b97651866bd192ull, 0x00a8546d7c558a27ull, 0x4258b586d5bfbcb4ull,
-        0x5e1c3d753d46d260ull, 0x1cecdc9e94ace4f3ull, 0xdbfdfea26e92bf46ull, 0x990d1f49c77889d5ull, 0x172f5b3033043ebfull,
-        0x55dfbadb9aee082cull, 0x92ce98e760d05399ull, 0xd03e790cc93a650aull, 0xaa478900b1228e31ull, 0xe8b768eb18c8b8a2ull,
-        0x2fa64ad7e2f6e317ull, 0x6d56ab3c4b1cd584ull, 0xe374ef45bf6062eeull, 0xa1840eae168a547dull, 0x66952c92ecb40fc8ull,
-        0x2465cd79455e395bull, 0x3821458aada7578full, 0x7ad1a461044d611cull, 0xbdc0865dfe733aa9ull, 0xff3067b657990c3aull,
-        0x711223cfa3e5bb50ull, 0x33e2c2240a0f8dc3ull, 0xf4f3e018f031d676ull, 0xb60301f359dbe0e5ull, 0xda050215ea6c212full,
-        0x98f5e3fe438617bcull, 0x5fe4c1c2b9b84c09ull, 0x1d14202910527a9aull, 0x93366450e42ecdf0ull, 0xd1c685bb4dc4fb63ull,
-        0x16d7a787b7faa0d6ull, 0x5427466c1e109645ull, 0x4863ce9ff6e9f891ull, 0x0a932f745f03ce02ull, 0xcd820d48a53d95b7ull,
-        0x8f72eca30cd7a324ull, 0x0150a8daf8ab144eull, 0x43a04931514122ddull, 0x84b16b0dab7f7968ull, 0xc6418ae602954ffbull,
-        0xbc387aea7a8da4c0ull, 0xfec89b01d3679253ull, 0x39d9b93d2959c9e6ull, 0x7b2958d680b3ff75ull, 0xf50b1caf74cf481full,
-        0xb7fbfd44dd257e8cull, 0x70eadf78271b2539ull, 0x321a3e938ef113aaull, 0x2e5eb66066087d7eull, 0x6cae578bcfe24bedull,
-        0xabbf75b735dc1058ull, 0xe94f945c9c3626cbull, 0x676dd025684a91a1ull, 0x259d31cec1a0a732ull, 0xe28c13f23b9efc87ull,
-        0xa07cf2199274ca14ull, 0x167ff3eacbaf2af1ull, 0x548f120162451c62ull, 0x939e303d987b47d7ull, 0xd16ed1d631917144ull,
-        0x5f4c95afc5edc62eull, 0x1dbc74446c07f0bdull, 0xdaad56789639ab08ull, 0x985db7933fd39d9bull, 0x84193f60d72af34full,
-        0xc6e9de8b7ec0c5dcull, 0x01f8fcb784fe9e69ull, 0x43081d5c2d14a8faull, 0xcd2a5925d9681f90ull, 0x8fdab8ce70822903ull,
-        0x48cb9af28abc72b6ull, 0x0a3b7b1923564425ull, 0x70428b155b4eaf1eull, 0x32b26afef2a4998dull, 0xf5a348c2089ac238ull,
-        0xb753a929a170f4abull, 0x3971ed50550c43c1ull, 0x7b810cbbfce67552ull, 0xbc902e8706d82ee7ull, 0xfe60cf6caf321874ull,
-        0xe224479f47cb76a0ull, 0xa0d4a674ee214033ull, 0x67c58448141f1b86ull, 0x253565a3bdf52d15ull, 0xab1721da49899a7full,
-        0xe9e7c031e063acecull, 0x2ef6e20d1a5df759ull, 0x6c0603e6b3b7c1caull, 0xf6fae5c07d3274cdull, 0xb40a042bd4d8425eull,
-        0x731b26172ee619ebull, 0x31ebc7fc870c2f78ull, 0xbfc9838573709812ull, 0xfd39626eda9aae81ull, 0x3a28405220a4f534ull,
-        0x78d8a1b9894ec3a7ull, 0x649c294a61b7ad73ull, 0x266cc8a1c85d9be0ull, 0xe17dea9d3263c055ull, 0xa38d0b769b89f6c6ull,
-        0x2daf4f0f6ff541acull, 0x6f5faee4c61f773full, 0xa84e8cd83c212c8aull, 0xeabe6d3395cb1a19ull, 0x90c79d3fedd3f122ull,
-        0xd2377cd44439c7b1ull, 0x15265ee8be079c04ull, 0x57d6bf0317edaa97ull, 0xd9f4fb7ae3911dfdull, 0x9b041a914a7b2b6eull,
-        0x5c1538adb04570dbull, 0x1ee5d94619af4648ull, 0x02a151b5f156289cull, 0x4051b05e58bc1e0full, 0x87409262a28245baull,
-        0xc5b073890b687329ull, 0x4b9237f0ff14c443ull, 0x0962d61b56fef2d0ull, 0xce73f427acc0a965ull, 0x8c8315cc052a9ff6ull,
-        0x3a80143f5cf17f13ull, 0x7870f5d4f51b4980ull, 0xbf61d7e80f251235ull, 0xfd913603a6cf24a6ull, 0x73b3727a52b393ccull,
-        0x31439391fb59a55full, 0xf652b1ad0167feeaull, 0xb4a25046a88dc879ull, 0xa8e6d8b54074a6adull, 0xea16395ee99e903eull,
-        0x2d071b6213a0cb8bull, 0x6ff7fa89ba4afd18ull, 0xe1d5bef04e364a72ull, 0xa3255f1be7dc7ce1ull, 0x64347d271de22754ull,
-        0x26c49cccb40811c7ull, 0x5cbd6cc0cc10fafcull, 0x1e4d8d2b65facc6full, 0xd95caf179fc497daull, 0x9bac4efc362ea149ull,
-        0x158e0a85c2521623ull, 0x577eeb6e6bb820b0ull, 0x906fc95291867b05ull, 0xd29f28b9386c4d96ull, 0xcedba04ad0952342ull,
-        0x8c2b41a1797f15d1ull, 0x4b3a639d83414e64ull, 0x09ca82762aab78f7ull, 0x87e8c60fded7cf9dull, 0xc51827e4773df90eull,
-        0x020905d88d03a2bbull, 0x40f9e43324e99428ull, 0x2cffe7d5975e55e2ull, 0x6e0f063e3eb46371ull, 0xa91e2402c48a38c4ull,
-        0xebeec5e96d600e57ull, 0x65cc8190991cb93dull, 0x273c607b30f68faeull, 0xe02d4247cac8d41bull, 0xa2dda3ac6322e288ull,
-        0xbe992b5f8bdb8c5cull, 0xfc69cab42231bacfull, 0x3b78e888d80fe17aull, 0x7988096371e5d7e9ull, 0xf7aa4d1a85996083ull,
-        0xb55aacf12c735610ull, 0x724b8ecdd64d0da5ull, 0x30bb6f267fa73b36ull, 0x4ac29f2a07bfd00dull, 0x08327ec1ae55e69eull,
-        0xcf235cfd546bbd2bull, 0x8dd3bd16fd818bb8ull, 0x03f1f96f09fd3cd2ull, 0x41011884a0170a41ull, 0x86103ab85a2951f4ull,
-        0xc4e0db53f3c36767ull, 0xd8a453a01b3a09b3ull, 0x9a54b24bb2d03f20ull, 0x5d45907748ee6495ull, 0x1fb5719ce1045206ull,
-        0x919735e51578e56cull, 0xd367d40ebc92d3ffull, 0x1476f63246ac884aull, 0x568617d9ef46bed9ull, 0xe085162ab69d5e3cull,
-        0xa275f7c11f7768afull, 0x6564d5fde549331aull, 0x279434164ca30589ull, 0xa9b6706fb8dfb2e3ull, 0xeb46918411358470ull,
-        0x2c57b3b8eb0bdfc5ull, 0x6ea7525342e1e956ull, 0x72e3daa0aa188782ull, 0x30133b4b03f2b111ull, 0xf7021977f9cceaa4ull,
-        0xb5f2f89c5026dc37ull, 0x3bd0bce5a45a6b5dull, 0x79205d0e0db05dceull, 0xbe317f32f78e067bull, 0xfcc19ed95e6430e8ull,
-        0x86b86ed5267cdbd3ull, 0xc4488f3e8f96ed40ull, 0x0359ad0275a8b6f5ull, 0x41a94ce9dc428066ull, 0xcf8b0890283e370cull,
-        0x8d7be97b81d4019full, 0x4a6acb477bea5a2aull, 0x089a2aacd2006cb9ull, 0x14dea25f3af9026dull, 0x562e43b4931334feull,
-        0x913f6188692d6f4bull, 0xd3cf8063c0c759d8ull, 0x5dedc41a34bbeeb2ull, 0x1f1d25f19d51d821ull, 0xd80c07cd676f8394ull,
-        0x9afce626ce85b507ull,
-    };
-
     zpl_u32 zpl_crc32(void const *data, zpl_isize len) {
         zpl_isize remaining;
         zpl_u32 result = ~(cast(zpl_u32) 0);
         zpl_u8 const *c = cast(zpl_u8 const *) data;
         for (remaining = len; remaining--; c++) result = (result >> 8) ^ (ZPL__CRC32_TABLE[(result ^ *c) & 0xff]);
-        return ~result;
-    }
-
-    zpl_u64 zpl_crc64(void const *data, zpl_isize len) {
-        zpl_isize remaining;
-        zpl_u64 result = ~(cast(zpl_u64) 0);
-        zpl_u8 const *c = cast(zpl_u8 const *) data;
-        for (remaining = len; remaining--; c++) result = (result >> 8) ^ (ZPL__CRC64_TABLE[(result ^ *c) & 0xff]);
         return ~result;
     }
 
@@ -11604,7 +11771,8 @@ ZPL_END_C_DECLS
             case 4: h ^= cast(zpl_u64)(data2[3]) << 24;
             case 3: h ^= cast(zpl_u64)(data2[2]) << 16;
             case 2: h ^= cast(zpl_u64)(data2[1]) << 8;
-            case 1: h ^= cast(zpl_u64)(data2[0]); h *= m;
+            case 1: h ^= cast(zpl_u64)(data2[0]); 
+                    h *= m;
         };
 
         h ^= h >> r;
@@ -12430,7 +12598,7 @@ ZPL_END_C_DECLS
         {
             zpl_b32 ok = zpl_re_match(re, p, end - p, cps, max_capture_count, &offset);
             if (!ok) {
-                zpl_buffer_free2(cps);
+                zpl_buffer_free(cps);
                 return false;
             }
 
@@ -12441,69 +12609,9 @@ ZPL_END_C_DECLS
             }
         }
 
-        zpl_buffer_free2(cps);
+        zpl_buffer_free(cps);
 
         return true;
-    }
-
-    ZPL_END_C_DECLS
-#endif
-
-#if defined(ZPL_MODULE_EVENT)
-    // file: source/event.c
-
-    ////////////////////////////////////////////////////////////////
-    //
-    // Event Handler
-    //
-    //
-    #ifdef ZPL_EDITOR
-    #include <zpl.h>
-    #endif
-
-    ZPL_BEGIN_C_DECLS
-
-    ZPL_TABLE_DEFINE(zpl_event_pool, zpl_event_pool_, zpl_event_block);
-
-    void zpl_event_init(zpl_event_pool *pool, zpl_allocator alloc) { zpl_event_pool_init(pool, alloc); }
-
-    void zpl_event_destroy(zpl_event_pool *pool) {
-        for (zpl_isize i = 0; i < zpl_array_count(pool->entries); ++i) {
-            zpl_event_block *block = &pool->entries[i].value;
-
-            if (block) { zpl_array_free(*block); }
-        }
-
-        zpl_event_pool_destroy(pool);
-    }
-
-    zpl_u64 zpl_event_add(zpl_event_pool *pool, zpl_u64 slot, zpl_event_cb cb) {
-        zpl_event_block *block = zpl_event_pool_get(pool, slot);
-
-        if (!block) {
-            zpl_event_block arr;
-            zpl_array_init(arr, zpl_heap_allocator( ));
-            zpl_event_pool_set(pool, slot, arr);
-            block = zpl_event_pool_get(pool, slot);
-        }
-
-        zpl_u64 offset = zpl_array_count(block);
-        zpl_array_append(*block, cb);
-        return offset;
-    }
-
-    void zpl_event_remove(zpl_event_pool *pool, zpl_u64 slot, zpl_u64 index) {
-        zpl_event_block *block = zpl_event_pool_get(pool, slot);
-
-        if (block) { zpl_array_remove_at(*block, (zpl_isize)index); }
-    }
-
-    void zpl_event_trigger(zpl_event_pool *pool, zpl_u64 slot, zpl_event_data evt) {
-        zpl_event_block *block = zpl_event_pool_get(pool, slot);
-
-        if (block) {
-            for (zpl_isize i = 0; i < zpl_array_count(*block); ++i) { (*block)[i](evt); }
-        }
     }
 
     ZPL_END_C_DECLS
@@ -13055,15 +13163,6 @@ ZPL_END_C_DECLS
     // Math
     //
 
-    /* NOTE: To remove the need for memcpy */
-    static void zpl__memcpy_4byte(void *dest, void const *src, zpl_isize size) {
-        zpl_isize i;
-        unsigned int *d, *s;
-        d = (unsigned int *)dest;
-        s = (unsigned int *)src;
-        for (i = 0; i < size / 4; i++) { *d++ = *s++; }
-    }
-
     zpl_f32 zpl_to_radians(zpl_f32 degrees) { return degrees * ZPL_TAU / 360.0f; }
     zpl_f32 zpl_to_degrees(zpl_f32 radians) { return radians * 360.0f / ZPL_TAU; }
 
@@ -13075,13 +13174,15 @@ ZPL_END_C_DECLS
     }
 
     zpl_f32 zpl_copy_sign(zpl_f32 x, zpl_f32 y) {
-        int ix, iy;
-        ix = *(int *)&x;
-        iy = *(int *)&y;
+        zpl_i32 ix, iy;
+        zpl_f32 r;
+        zpl_memcopy(&ix, &x, zpl_size_of(x));
+        zpl_memcopy(&iy, &y, zpl_size_of(y));
 
         ix &= 0x7fffffff;
         ix |= iy & 0x80000000;
-        return *(zpl_f32 *)&ix;
+        zpl_memcopy(&r, &ix, zpl_size_of(ix));
+        return r;
     }
 
     zpl_f32 zpl_remainder(zpl_f32 x, zpl_f32 y) { return x - (zpl_round(x / y) * y); }
@@ -13096,12 +13197,14 @@ ZPL_END_C_DECLS
 
     zpl_f64 zpl_copy_sign64(zpl_f64 x, zpl_f64 y) {
         zpl_i64 ix, iy;
-        ix = *(zpl_i64 *)&x;
-        iy = *(zpl_i64 *)&y;
+        zpl_f64 r;
+        zpl_memcopy(&ix, &x, zpl_size_of(x));
+        zpl_memcopy(&iy, &y, zpl_size_of(y));
 
         ix &= 0x7fffffffffffffff;
         ix |= iy & 0x8000000000000000;
-        return *cast(zpl_f64 *) & ix;
+        zpl_memcopy(&r, &ix, zpl_size_of(ix));
+        return r;
     }
 
     zpl_f64 zpl_floor64(zpl_f64 x)                { return cast(zpl_f64)((x >= 0.0) ? cast(zpl_i64) x : cast(zpl_i64)(x - 0.9999999999999999)); }
@@ -13658,11 +13761,11 @@ ZPL_END_C_DECLS
         int i, j;
         zpl_f32 temp1[2][2], temp2[2][2];
         if (mat1 == out) {
-            zpl__memcpy_4byte(temp1, mat1, sizeof(temp1));
+            zpl_memcopy(temp1, mat1, sizeof(temp1));
             mat1 = temp1;
         }
         if (mat2 == out) {
-            zpl__memcpy_4byte(temp2, mat2, sizeof(temp2));
+            zpl_memcopy(temp2, mat2, sizeof(temp2));
             mat2 = temp2;
         }
         for (j = 0; j < 2; j++) {
@@ -13739,11 +13842,11 @@ ZPL_END_C_DECLS
         int i, j;
         zpl_f32 temp1[3][3], temp2[3][3];
         if (mat1 == out) {
-            zpl__memcpy_4byte(temp1, mat1, sizeof(temp1));
+            zpl_memcopy(temp1, mat1, sizeof(temp1));
             mat1 = temp1;
         }
         if (mat2 == out) {
-            zpl__memcpy_4byte(temp2, mat2, sizeof(temp2));
+            zpl_memcopy(temp2, mat2, sizeof(temp2));
             mat2 = temp2;
         }
         for (j = 0; j < 3; j++) {
@@ -13851,11 +13954,11 @@ ZPL_END_C_DECLS
         int i, j;
         zpl_f32 temp1[4][4], temp2[4][4];
         if (mat1 == out) {
-            zpl__memcpy_4byte(temp1, mat1, sizeof(temp1));
+            zpl_memcopy(temp1, mat1, sizeof(temp1));
             mat1 = temp1;
         }
         if (mat2 == out) {
-            zpl__memcpy_4byte(temp2, mat2, sizeof(temp2));
+            zpl_memcopy(temp2, mat2, sizeof(temp2));
             mat2 = temp2;
         }
         for (j = 0; j < 4; j++) {
@@ -14770,7 +14873,7 @@ ZPL_END_C_DECLS
     #undef jx
 
 
-    void zpl_json_parse(zpl_json_object *root, zpl_usize len, char const *source, zpl_allocator a, zpl_b32 handle_comments,
+    void zpl_json_parse(zpl_json_object *root, zpl_usize len, char *source, zpl_allocator a, zpl_b32 handle_comments,
                         zpl_u8 *err_code) {
 
         if (!root || !source)
@@ -14911,6 +15014,18 @@ ZPL_END_C_DECLS
         } else {
             if (!o->cfg_mode) zpl_fprintf(f, "}\n");
         }
+    }
+
+    zpl_string zpl_json_write_string(zpl_allocator a, zpl_json_object *obj, zpl_isize indent) {
+        zpl_file tmp;
+        zpl_file_stream_new(&tmp, a);
+        zpl_json_write(&tmp, obj, indent);
+        zpl_file_seek(&tmp, 0);
+        zpl_i64 fsize = zpl_file_size(&tmp)-1;
+        zpl_string output = zpl_string_make_reserve(a, fsize+1);
+        zpl_file_read(&tmp, output, fsize);
+        zpl_file_close(&tmp);
+        return output;
     }
 
     void zpl__json_write_value(zpl_file *f, zpl_json_object *o, zpl_json_object *t, zpl_isize indent, zpl_b32 is_inline, zpl_b32 is_last) {
@@ -16712,13 +16827,13 @@ ZPL_END_C_DECLS
                 zpl_thread_destroy(&tw->thread);
             }
 
-            zpl_buffer_free(pool->workers, pool->alloc);
+            zpl_buffer_free(pool->workers);
             zpl_array_free(pool->jobs);
             zpl_array_free(pool->queue);
             zpl_array_free(pool->available);
         }
 
-        void zpl_jobs_enqueue_with_priority(zpl_thread_pool *pool, zpl_jobs_proc proc, void *data, zpl_i32 priority) {
+        void zpl_jobs_enqueue_with_priority(zpl_thread_pool *pool, zpl_jobs_proc proc, void *data, zpl_f32 priority) {
             ZPL_ASSERT_NOT_NULL(proc);
             zpl_f32 treshold = 0.0f;
 
@@ -16750,7 +16865,7 @@ ZPL_END_C_DECLS
 
         void zpl_jobs_enqueue(zpl_thread_pool *pool, zpl_jobs_proc proc, void *data) {
             ZPL_ASSERT_NOT_NULL(proc);
-            zpl_jobs_enqueue_with_priority(pool, proc, data, 1);
+            zpl_jobs_enqueue_with_priority(pool, proc, data, 1.0f);
         }
 
         zpl_thread_local zpl_thread_pool *zpl__thread_pool;
@@ -16758,7 +16873,7 @@ ZPL_END_C_DECLS
         ZPL_COMPARE_PROC(zpl___jobs_cmp) {
             zpl_thread_job *p = (zpl_thread_job *)(zpl__thread_pool->jobs + *(zpl_u32 *)a);
             zpl_thread_job *q = (zpl_thread_job *)(zpl__thread_pool->jobs + *(zpl_u32 *)b);
-            return p->priority < q->priority ? 1 : p->priority > q->priority;
+            return cast(zpl_i32)(p->priority < q->priority ? 1.0f : p->priority > q->priority);
         }
 
         ZPL_COMPARE_PROC_PTR(zpl__jobs_cmp(zpl_thread_pool *pool)) {
@@ -16879,6 +16994,7 @@ ZPL_END_C_DECLS
             ZPL_ASSERT_MSG(zpl__co_internals.is_ready, "Coroutines module is not initialized. Call zpl_co_init first!");
             ZPL_ASSERT_NOT_NULL(co);
 
+            zpl_zero_item(co);
             co->f = f;
             zpl_atomic32_store(&co->status, ZPL_CO_READY);
             zpl_atomic32_store(&co->resume, 0);
@@ -16959,7 +17075,7 @@ ZPL_END_C_DECLS
 
 #endif // ZPL_IMPLEMENTATION
 
-#if !defined(ZPL_PREFIX_TYPES)
+#if defined(ZPL_EXPOSE_TYPES)
     typedef zpl_u8 u8;
     typedef zpl_i8 i8;
     typedef zpl_u16 u16;
@@ -16978,7 +17094,7 @@ ZPL_END_C_DECLS
     typedef zpl_isize isize;
     typedef zpl_uintptr uintptr;
     typedef zpl_intptr intptr;
-#endif // ZPL_PREFIX_TYPES
+#endif // ZPL_EXPOSE_TYPES
 
 #endif // ZPL_H
 
@@ -17000,7 +17116,8 @@ ZPL_END_C_DECLS
 // header/core/string.h
 // header/core/stringlib.h
 // header/core/file.h
-// header/core/filesystem.h
+// header/core/file_stream.h
+// header/core/file_misc.h
 // header/core/print.h
 // header/core/time.h
 // header/core/random.h
@@ -17032,7 +17149,8 @@ ZPL_END_C_DECLS
 // source/core/string.c
 // source/core/stringlib.c
 // source/core/file.c
-// source/core/filesystem.c
+// source/core/file_stream.c
+// source/core/file_misc.c
 // source/core/print.c
 // source/core/time.c
 // source/core/random.c

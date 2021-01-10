@@ -265,9 +265,9 @@ int32_t client_write_update(librg_world *w, librg_event *e) {
     vec3 position = {0};
 
     /* write our new random position */
-    u32 x = (zpl_random_gen_u32(&r)%40); position.x = (float)(x-20.0f);
-    u32 y = (zpl_random_gen_u32(&r)%40); position.y = (float)(y-20.0f);
-    u32 z = (zpl_random_gen_u32(&r)%40); position.z = (float)(z-20.0f);
+    zpl_u32 x = (zpl_random_gen_u32(&r)%40); position.x = (float)(x-20.0f);
+    zpl_u32 y = (zpl_random_gen_u32(&r)%40); position.y = (float)(y-20.0f);
+    zpl_u32 z = (zpl_random_gen_u32(&r)%40); position.z = (float)(z-20.0f);
 
     memcpy(buffer, &position, sizeof(vec3));
     return sizeof(vec3);
