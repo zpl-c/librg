@@ -315,14 +315,14 @@ Owner, is an artificial concept that represents a relation of the entity to some
 
 Making an entity owned allows to do multiple things:
 
-* Fetching entities owned by specific user via [librg_world_fetch_owner](def/query.md#librg_world_fetch_owner)
-* Querying nearby entities based of current [radius](librg_entity_radius_set) via [librg_world_query](def/query.md#librg_world_query)
+* Fetching entities owned by specific user via [librg_world_fetch_owner](defs/query.md#librg_world_fetch_owner)
+* Querying nearby entities based of current [radius](librg_entity_radius_set) via [librg_world_query](defs/query.md#librg_world_query)
 * Setting up global and relational visibility via [librg_entity_visibility_owner_set](#librg_entity_visibility_owner_set) that will be used by query methods
-* Writing and reading world (serialization and replication) via [librg_world_write](def/query.md#librg_world_write) methods
+* Writing and reading world (serialization and replication) via [librg_world_write](defs/query.md#librg_world_write) methods
 
-Each call to the method will generate and set a new ownership token, which is in turn will be used in the next [librg_world_write](def/query.md#librg_world_write) call.
+Each call to the method will generate and set a new ownership token, which is in turn will be used in the next [librg_world_write](defs/query.md#librg_world_write) call.
 Ownership token is used to validate control settings for an entity, and with outdated token and updates coming into
-[librg_world_read](def/query.md#librg_world_read) of local world that are targeting the entity will be discarded.
+[librg_world_read](defs/query.md#librg_world_read) of local world that are targeting the entity will be discarded.
 For more details please refer to the documentation for those methods.
 
 ##### Signature
@@ -368,7 +368,7 @@ Sets current entity visibility radius.
 
 Visibility radius influences only entities that are owned.
 It represents a linear/circular/spherical (depending on world configuration) radius of entity visibility in terms of nearby chunks,
-and used whilist general visibility calculations in the [librg_world_query](def/query.md#librg_world_query) method.
+and used whilist general visibility calculations in the [librg_world_query](defs/query.md#librg_world_query) method.
 If property set for an entity that is not owned, but the owner is later on changed, it will be still applied, since the value is stored in the internal storage.
 
 ##### Signature
