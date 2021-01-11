@@ -2,6 +2,10 @@
 #include "librg.h"
 #include <assert.h>
 
+/**
+ * SECTION WITH HANDLERS
+ */
+
 int32_t myread_create(librg_world *w, librg_event *e) {
     int64_t owner_id = librg_event_owner_get(w, e);
     int64_t entity_id = librg_event_entity_get(w, e);
@@ -31,6 +35,10 @@ int32_t myread_remove(librg_world *w, librg_event *e) {
     return 0;
 }
 
+/**
+ * SECTION WITH MAIN LOGIC
+ */
+
 int main() {
     librg_world *world = librg_world_create();
 
@@ -53,10 +61,10 @@ int main() {
         zpl_file_close(&f);
     }
 
-    /* owner id doesnot have to much original owner id from example-packing.c */
+    /* owner id does not have to match original owner id from example-packing.c */
     /* think of it as a owner translation, if you encoded data for owner 42 */
     /* the one who reads on this side will be the one who was supposed to read it */
-    /* even if his local owner id will be different */
+    /* even if his local owner id will be different from original value on other side */
     /* but for simplicity sake, we will keep it here 42 as well */
 
     const int owner = 42;

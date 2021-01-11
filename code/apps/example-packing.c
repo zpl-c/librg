@@ -1,6 +1,10 @@
 #define LIBRG_IMPL
 #include "librg.h"
 
+/**
+ * SECTION WITH HANDLERS
+ */
+
 int32_t mywrite_create(librg_world *w, librg_event *e) {
     char *buffer = librg_event_buffer_get(w, e);
     const char *str = "Hello world!";
@@ -34,6 +38,10 @@ int32_t mywrite_remove(librg_world *w, librg_event *e) {
     return 0;
 }
 
+/**
+ * SECTION WITH MAIN LOGIC
+ */
+
 int main() {
     #define entity_amt 4
     const int entities[entity_amt] = {
@@ -64,7 +72,7 @@ int main() {
     /* since we've placed our entities in chunks 0,1,2,3 */
     /* and our owner entity is in chunk 1, with visibility radius of 1 */
     /* it means it should see only entities in chunks 0,1,2 */
-    /* (3 other entities plus itself from 5 total) */
+    /* (3 other entities plus it's own entity from (4+1) total entities in the world) */
 
     /* write owner viewport to the buffer */
     char buffer[256] = {0}; size_t total_size = 256;

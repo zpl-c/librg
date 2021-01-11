@@ -68,7 +68,7 @@ Check out [example](#example-1) below, for more details and demo.
 int32_t librg_world_read(
     librg_world *world,
     int64_t owner_id,
-    char *buffer,       /* out */
+    char *buffer,       /* in */
     size_t size,
     void *userdata
 )
