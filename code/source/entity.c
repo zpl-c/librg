@@ -339,39 +339,4 @@ int8_t librg_entity_visibility_owner_get(librg_world *world, int64_t entity_id, 
     return (value ? *value : LIBRG_VISIBLITY_DEFAULT);
 }
 
-#if 0
-// int8_t librg_entity_type_set(librg_world *world, int64_t entity_id, uint8_t type) {
-//     LIBRG_ASSERT(world); if (!world) return LIBRG_WORLD_INVALID;
-//     librg_world_t *wld = (librg_world_t *)world;
-
-//     librg_entity_t *entity = librg_table_ent_get(&wld->entity_map, entity_id);
-//     if (entity == NULL) return LIBRG_ENTITY_UNTRACKED;
-
-//     entity->type = type;
-//     return LIBRG_OK;
-// }
-
-// int16_t librg_entity_type_get(librg_world *world, int64_t entity_id) {
-//     LIBRG_ASSERT(world); if (!world) return LIBRG_WORLD_INVALID;
-//     librg_world_t *wld = (librg_world_t *)world;
-
-//     librg_entity_t *entity = librg_table_ent_get(&wld->entity_map, entity_id);
-//     if (entity == NULL) return LIBRG_ENTITY_UNTRACKED;
-
-//     return entity->type;
-// }
-
-
-
-int librg_entity_refresh_set(librg_world *, int64_t entity_id, int type, float value); // ? {
-    return LIBRG_OK
-}
-
-int librg_entity_refresh_get(librg_world *, int64_t entity_id, int *type, float *value) {
-    return LIBRG_OK
-}
-// TODO: entity visibility
-
-#endif
-
 LIBRG_END_C_DECLS
