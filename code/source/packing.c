@@ -255,9 +255,10 @@ int32_t librg_world_read(librg_world *world, int64_t owner_id, const char *buffe
             else if (seg->type == LIBRG_WRITE_UPDATE) {
                 /* try to check if entity exists, and if it is foreign OR owner and token are correct */
                 action_id = (librg_entity_tracked(world, val->id) == LIBRG_TRUE
-                    && (entity_blob->flag_foreign
-                        || (entity_blob->owner_id == owner_id
-                            && entity_blob->ownership_token == val->token)))
+                    && entity_blob
+                    && (entity_blob->flag_foreign || (entity_blob->owner_id == owner_id
+                        && entity_blob->ownership_token == val->token)
+                    ))
                     ? LIBRG_READ_UPDATE
                     : LIBRG_ERROR_UPDATE;
             }
