@@ -4,5 +4,8 @@ queries:
  - uses: security-and-quality
  - uses: security-extended
 
+paths-ignore:
+  - code/vendor
+
 # Documentation for configuring CodeQL is located here:
 # https://docs.github.com/en/free-pro-team@latest/github/finding-security-vulnerabilities-and-errors-in-your-code/configuring-code-scanning
