@@ -63,3 +63,8 @@ endif
 	@mkdir -p build
 	@echo '=> Building $(@F)'
 	$(CXX) $(CXXFLAGS) $^ $(LDFLAGS) -o build/$(@F)
+
+.SILENT:
+
+embed:
+	./misc/embed.sh

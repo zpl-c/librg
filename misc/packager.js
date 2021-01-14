@@ -32,7 +32,7 @@ const versionSet = (version) => {
     fs.writeFileSync(basefile, data)
 }
 
-const embedIncludes = () => {
+const embedIncludes = (print) => {
     if (!fs.existsSync(workdir)) fs.mkdirSync(workdir)
 
     let data = fs.readFileSync(basefile, 'utf8')
@@ -61,7 +61,9 @@ const embedIncludes = () => {
         return content
     })
 
-    fs.writeFileSync(path.join(workdir, 'librg.h'), lines.join('\n'))
+    const code = lines.join('\n')
+    if (print) console.log(code)
+    else fs.writeFileSync(path.join(workdir, 'librg.h'), code)
 }
 
 class Bumper extends Plugin {
