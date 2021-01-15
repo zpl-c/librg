@@ -27,6 +27,7 @@ GitHub:
   https://github.com/zpl-c/zpl
 
 Version History:
+  10.13.0 - Initial ARM threading support
   10.12.1 - Fix missing zpL_alloc_str
   10.12.0 - Add zpl_crc64
   10.11.1 - Fix zpl_time_utc_ms on 32-bit OSes
@@ -297,8 +298,8 @@ Version History:
 #define ZPL_H
 
 #define ZPL_VERSION_MAJOR 10
-#define ZPL_VERSION_MINOR 12
-#define ZPL_VERSION_PATCH 1
+#define ZPL_VERSION_MINOR 13
+#define ZPL_VERSION_PATCH 0
 #define ZPL_VERSION_PRE ""
 
 // file: zpl_hedley.h
@@ -2252,7 +2253,7 @@ ZPL_DIAGNOSTIC_POP
 
 /* Architecture-specific overrides */
 #if defined(__ARM_ARCH)
-    #define ZPL_DISABLE_THREADING
+    // #define ZPL_DISABLE_THREADING
 #endif
 
 /* Distributions */
@@ -7093,7 +7094,7 @@ ZPL_END_C_DECLS
     // TODO: Be specific with memory order?
     // e.g. relaxed, acquire, release, acquire_release
 
-    #if !defined(__cplusplus) && !defined(ZPL_COMPILER_MSVC)
+    #if !defined(__STDC_NO_ATOMICS__) && !defined(__cplusplus)
     # include <stdatomic.h>
     # define zpl_atomic(X) volatile _Atomic(X)
     #else
@@ -15644,6 +15645,75 @@ ZPL_END_C_DECLS
 #endif
 
 #if defined(ZPL_MODULE_THREADING)
+    // file: source/threading/fence.c
+
+    #ifdef ZPL_EDITOR
+    #include <zpl.h>
+    #endif
+
+    ZPL_BEGIN_C_DECLS
+
+    #if defined(_MSC_VER)
+         /* Microsoft C/C++-compatible compiler */
+         #include <intrin.h>
+    #elif defined(__GNUC__) && (defined(__x86_64__) || defined(__i386__))
+         /* GCC-compatible compiler, targeting x86/x86-64 */
+         #include <x86intrin.h>
+    #elif defined(__GNUC__) && defined(__ARM_NEON__)
+         /* GCC-compatible compiler, targeting ARM with NEON */
+         #include <arm_neon.h>
+    #elif defined(__GNUC__) && defined(__IWMMXT__)
+         /* GCC-compatible compiler, targeting ARM with WMMX */
+         #include <mmintrin.h>
+    #elif (defined(__GNUC__) || defined(__xlC__)) && (defined(__VEC__) || defined(__ALTIVEC__))
+         /* XLC or GCC-compatible compiler, targeting PowerPC with VMX/VSX */
+         #include <altivec.h>
+    #elif defined(__GNUC__) && defined(__SPE__)
+         /* GCC-compatible compiler, targeting PowerPC with SPE */
+         #include <spe.h>
+    #endif
+
+    void zpl_yield_thread(void) {
+        #if defined(ZPL_SYSTEM_WINDOWS)
+            _mm_pause();
+        #elif defined(ZPL_SYSTEM_OSX)
+            __asm__ volatile ("" : : : "memory");
+        #elif defined(ZPL_CPU_X86)
+            _mm_pause();
+        #endif
+    }
+
+    void zpl_mfence(void) {
+        #if defined(ZPL_SYSTEM_WINDOWS)
+            _ReadWriteBarrier();
+        #elif defined(ZPL_SYSTEM_OSX)
+            __sync_synchronize();
+        #elif defined(ZPL_CPU_X86)
+            _mm_mfence();
+        #endif
+    }
+
+    void zpl_sfence(void) {
+        #if defined(ZPL_SYSTEM_WINDOWS)
+            _WriteBarrier();
+        #elif defined(ZPL_SYSTEM_OSX)
+            __asm__ volatile ("" : : : "memory");
+        #elif defined(ZPL_CPU_X86)
+            _mm_sfence();
+        #endif
+    }
+
+    void zpl_lfence(void) {
+        #if defined(ZPL_SYSTEM_WINDOWS)
+            _ReadBarrier();
+        #elif defined(ZPL_SYSTEM_OSX)
+            __asm__ volatile ("" : : : "memory");
+        #elif defined(ZPL_CPU_X86)
+            _mm_lfence();
+        #endif
+    }
+
+    ZPL_END_C_DECLS
     // file: source/threading/atomic.c
 
     #ifdef ZPL_EDITOR
@@ -15986,6 +16056,62 @@ ZPL_END_C_DECLS
             #endif
         }
 
+    #elif !defined(__STDC_NO_ATOMICS__) && !defined(__cplusplus)
+        zpl_i32 zpl_atomic32_load (zpl_atomic32 const *a)      { return a->value;  }
+        void zpl_atomic32_store(zpl_atomic32 *a, zpl_atomicarg(zpl_i32) value) { a->value = value; }
+
+        zpl_i32 zpl_atomic32_compare_exchange(zpl_atomic32 *a, zpl_atomicarg(zpl_i32) expected, zpl_atomicarg(zpl_i32) desired) {
+            zpl_atomicarg(zpl_i32) original = a->value;
+            atomic_compare_exchange_strong(&a->value, &expected, desired);
+            return original;
+        }
+
+        zpl_i32 zpl_atomic32_exchange(zpl_atomic32 *a, zpl_atomicarg(zpl_i32) desired) {
+            return atomic_exchange(&a->value, desired);
+        }
+
+        zpl_i32 zpl_atomic32_fetch_add(zpl_atomic32 *a, zpl_atomicarg(zpl_i32) operand) {
+            return atomic_fetch_add(&a->value, operand);
+        }
+
+        zpl_i32 zpl_atomic32_fetch_and(zpl_atomic32 *a, zpl_atomicarg(zpl_i32) operand) {
+            return atomic_fetch_and(&a->value, operand);
+        }
+
+        zpl_i32 zpl_atomic32_fetch_or(zpl_atomic32 *a, zpl_atomicarg(zpl_i32) operand) {
+            return atomic_fetch_or(&a->value, operand);
+        }
+
+        zpl_i64 zpl_atomic64_load(zpl_atomic64 const *a) {
+            return a->value;
+        }
+
+        void zpl_atomic64_store(zpl_atomic64 *a, zpl_atomicarg(zpl_i64) value) {
+            a->value = value;
+        }
+
+        zpl_i64 zpl_atomic64_compare_exchange(zpl_atomic64 *a, zpl_atomicarg(zpl_i64) expected, zpl_atomicarg(zpl_i64) desired) {
+            zpl_atomicarg(zpl_i64) original;
+            atomic_compare_exchange_strong(&a->value, &expected, desired);
+            return original;
+        }
+
+        zpl_i64 zpl_atomic64_exchange(zpl_atomic64 *a, zpl_atomicarg(zpl_i64) desired) {
+            return atomic_exchange(&a->value, desired);
+        }
+
+        zpl_i64 zpl_atomic64_fetch_add(zpl_atomic64 *a, zpl_atomicarg(zpl_i64) operand) {
+            return atomic_fetch_add(&a->value, operand);
+        }
+
+        zpl_i64 zpl_atomic64_fetch_and(zpl_atomic64 *a, zpl_atomicarg(zpl_i64) operand) {
+            return atomic_fetch_and(&a->value, operand);
+        }
+
+        zpl_i64 zpl_atomic64_fetch_or(zpl_atomic64 *a, zpl_atomicarg(zpl_i64) operand) {
+            return atomic_fetch_or(&a->value, operand);
+        }
+
     #else
         #error TODO: Implement Atomics for this CPU
     #endif
@@ -16109,83 +16235,6 @@ ZPL_END_C_DECLS
         }
 
     #endif
-
-    ZPL_END_C_DECLS
-    // file: source/threading/fence.c
-
-    #ifdef ZPL_EDITOR
-    #include <zpl.h>
-    #endif
-
-    ZPL_BEGIN_C_DECLS
-
-    #if defined(_MSC_VER)
-         /* Microsoft C/C++-compatible compiler */
-         #include <intrin.h>
-    #elif defined(__GNUC__) && (defined(__x86_64__) || defined(__i386__))
-         /* GCC-compatible compiler, targeting x86/x86-64 */
-         #include <x86intrin.h>
-    #elif defined(__GNUC__) && defined(__ARM_NEON__)
-         /* GCC-compatible compiler, targeting ARM with NEON */
-         #include <arm_neon.h>
-    #elif defined(__GNUC__) && defined(__IWMMXT__)
-         /* GCC-compatible compiler, targeting ARM with WMMX */
-         #include <mmintrin.h>
-    #elif (defined(__GNUC__) || defined(__xlC__)) && (defined(__VEC__) || defined(__ALTIVEC__))
-         /* XLC or GCC-compatible compiler, targeting PowerPC with VMX/VSX */
-         #include <altivec.h>
-    #elif defined(__GNUC__) && defined(__SPE__)
-         /* GCC-compatible compiler, targeting PowerPC with SPE */
-         #include <spe.h>
-    #endif
-
-    void zpl_yield_thread(void) {
-        #if defined(ZPL_SYSTEM_WINDOWS)
-            _mm_pause();
-        #elif defined(ZPL_SYSTEM_OSX)
-            __asm__ volatile ("" : : : "memory");
-        #elif defined(ZPL_CPU_X86)
-            _mm_pause();
-        #else
-            #error Unknown architecture
-        #endif
-    }
-
-    void zpl_mfence(void) {
-        #if defined(ZPL_SYSTEM_WINDOWS)
-            _ReadWriteBarrier();
-        #elif defined(ZPL_SYSTEM_OSX)
-            __sync_synchronize();
-        #elif defined(ZPL_CPU_X86)
-            _mm_mfence();
-        #else
-            #error Unknown architecture
-        #endif
-    }
-
-    void zpl_sfence(void) {
-        #if defined(ZPL_SYSTEM_WINDOWS)
-            _WriteBarrier();
-        #elif defined(ZPL_SYSTEM_OSX)
-            __asm__ volatile ("" : : : "memory");
-        #elif defined(ZPL_CPU_X86)
-            _mm_sfence();
-        #else
-            #error Unknown architecture
-        #endif
-    }
-
-    void zpl_lfence(void) {
-        #if defined(ZPL_SYSTEM_WINDOWS)
-            _ReadBarrier();
-        #elif defined(ZPL_SYSTEM_OSX)
-            __asm__ volatile ("" : : : "memory");
-        #elif defined(ZPL_CPU_X86)
-            _mm_lfence();
-        #else
-            #error Unknown architecture
-        #endif
-    }
 
     ZPL_END_C_DECLS
     // file: source/threading/sem.c
@@ -16382,6 +16431,8 @@ ZPL_END_C_DECLS
             __asm__("mov %%gs:0x08,%0" : "=r"(thread_id));
         #elif defined(ZPL_ARCH_64_BIT) && defined(ZPL_CPU_X86)
             __asm__("mov %%fs:0x10,%0" : "=r"(thread_id));
+        #elif defined(__ARM_ARCH)
+            thread_id = pthread_self();
         #else
             #error Unsupported architecture for zpl_thread_current_id()
         #endif
