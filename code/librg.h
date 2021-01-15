@@ -149,7 +149,7 @@
 
 #define LIBRG_VERSION_MAJOR 6
 #define LIBRG_VERSION_MINOR 0
-#define LIBRG_VERSION_PATCH 8
+#define LIBRG_VERSION_PATCH 9
 #define LIBRG_VERSION_PRE ""
 
 #include "librg_hedley.h"
