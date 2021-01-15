@@ -299,7 +299,7 @@ Version History:
 
 #define ZPL_VERSION_MAJOR 10
 #define ZPL_VERSION_MINOR 13
-#define ZPL_VERSION_PATCH 0
+#define ZPL_VERSION_PATCH 1
 #define ZPL_VERSION_PRE ""
 
 // file: zpl_hedley.h
@@ -2252,8 +2252,8 @@ ZPL_DIAGNOSTIC_POP
 #endif
 
 /* Architecture-specific overrides */
-#if defined(__ARM_ARCH)
-    // #define ZPL_DISABLE_THREADING
+#if defined(__ARM_ARCH) && !defined(__cplusplus)
+    #define ZPL_DISABLE_THREADING
 #endif
 
 /* Distributions */
@@ -2506,7 +2506,7 @@ defined(__ppc64__) || defined(__aarch64__)
 
 /* Platform CPU */
 
-#if defined(__arm__) || defined(__aarch64__)
+#if defined(__arm__) || defined(__aarch64__) || defined(__ARM_ARCH)
     #ifndef ZPL_CPU_ARM
         #define ZPL_CPU_ARM 1
     #endif
@@ -7094,7 +7094,7 @@ ZPL_END_C_DECLS
     // TODO: Be specific with memory order?
     // e.g. relaxed, acquire, release, acquire_release
 
-    #if !defined(__STDC_NO_ATOMICS__) && !defined(__cplusplus)
+    #if !defined(__STDC_NO_ATOMICS__) && !defined(__cplusplus) && !defined(ZPL_COMPILER_MSVC)
     # include <stdatomic.h>
     # define zpl_atomic(X) volatile _Atomic(X)
     #else
@@ -7575,6 +7575,7 @@ ZPL_END_C_DECLS
     #pragma GCC diagnostic ignored "-Wmissing-braces"
     #pragma GCC diagnostic ignored "-Wmissing-field-initializers"
     #pragma GCC diagnostic ignored "-Wimplicit-fallthrough"
+    #pragma GCC diagnostic ignored "-Wignored-qualifiers"
 #endif
 
 #if defined(_MSC_VER)
@@ -16056,7 +16057,7 @@ ZPL_END_C_DECLS
             #endif
         }
 
-    #elif !defined(__STDC_NO_ATOMICS__) && !defined(__cplusplus)
+    #elif !defined(__STDC_NO_ATOMICS__) && !defined(__cplusplus) && !defined(ZPL_COMPILER_MSVC)
         zpl_i32 zpl_atomic32_load (zpl_atomic32 const *a)      { return a->value;  }
         void zpl_atomic32_store(zpl_atomic32 *a, zpl_atomicarg(zpl_i32) value) { a->value = value; }
 
