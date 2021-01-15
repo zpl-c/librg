@@ -299,7 +299,7 @@ Version History:
 
 #define ZPL_VERSION_MAJOR 10
 #define ZPL_VERSION_MINOR 13
-#define ZPL_VERSION_PATCH 1
+#define ZPL_VERSION_PATCH 2
 #define ZPL_VERSION_PRE ""
 
 // file: zpl_hedley.h
@@ -2252,7 +2252,7 @@ ZPL_DIAGNOSTIC_POP
 #endif
 
 /* Architecture-specific overrides */
-#if defined(__ARM_ARCH) && !defined(__cplusplus)
+#if defined(__ARM_ARCH) && defined(__cplusplus)
     #define ZPL_DISABLE_THREADING
 #endif
 
