@@ -13,10 +13,10 @@
 int main() {
     UNIT_CREATE("librg");
 
-    UNIT_CASE(general);
-    UNIT_CASE(entity);
-    UNIT_CASE(query);
-    UNIT_CASE(packing);
+    UNIT_MODULE(general);
+    UNIT_MODULE(entity);
+    UNIT_MODULE(query);
+    UNIT_MODULE(packing);
 
     return UNIT_RUN();
 }
