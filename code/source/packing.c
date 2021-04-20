@@ -52,7 +52,7 @@ int32_t librg_world_write(librg_world *world, int64_t owner_id, char *buffer, si
     librg_table_i64 next_snapshot = {0};
     librg_table_i64_init(&next_snapshot, wld->allocator);
 
-    int64_t *results = LIBRG_MEM_ALLOC(LIBRG_WORLDWRITE_MAXQUERY * sizeof(int64_t));
+    int64_t *results = (int64_t *)LIBRG_MEM_ALLOC(LIBRG_WORLDWRITE_MAXQUERY * sizeof(int64_t));
     size_t total_amount = LIBRG_WORLDWRITE_MAXQUERY;
     librg_world_query(world, owner_id, results, &total_amount);
 

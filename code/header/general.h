@@ -38,15 +38,15 @@ LIBRG_API int8_t librg_config_chunkoffset_get(librg_world *world, int16_t *x, in
 // !
 // =======================================================================//
 
-LIBRG_API int8_t            librg_event_set(librg_world *world, librg_event_type, librg_event_fn);
-LIBRG_API int8_t            librg_event_remove(librg_world *world, librg_event_type);
+LIBRG_API int8_t  librg_event_set(librg_world *world, librg_event_type, librg_event_fn);
+LIBRG_API int8_t  librg_event_remove(librg_world *world, librg_event_type);
 
-LIBRG_API librg_event_type  librg_event_type_get(librg_world *world, librg_event *event);
-LIBRG_API int64_t           librg_event_owner_get(librg_world *world, librg_event *event);
-LIBRG_API int64_t           librg_event_entity_get(librg_world *world, librg_event *event);
-LIBRG_API char *            librg_event_buffer_get(librg_world *world, librg_event *event);
-LIBRG_API int32_t           librg_event_size_get(librg_world *world, librg_event *event);
-LIBRG_API void *            librg_event_userdata_get(librg_world *world, librg_event *event);
+LIBRG_API int8_t  librg_event_type_get(librg_world *world, librg_event *event);
+LIBRG_API int64_t librg_event_owner_get(librg_world *world, librg_event *event);
+LIBRG_API int64_t librg_event_entity_get(librg_world *world, librg_event *event);
+LIBRG_API char *  librg_event_buffer_get(librg_world *world, librg_event *event);
+LIBRG_API int32_t librg_event_size_get(librg_world *world, librg_event *event);
+LIBRG_API void *  librg_event_userdata_get(librg_world *world, librg_event *event);
 
 // =======================================================================//
 // !

@@ -91,7 +91,7 @@ Usually this method is called within the event callback itself.
 
 ##### Signature
 ```c
-librg_event_type librg_event_type_get(
+int8_t librg_event_type_get(
     librg_world *world,
     librg_event *event
 )
@@ -99,7 +99,7 @@ librg_event_type librg_event_type_get(
 
 ##### Returns
 
-* In case of success: current event type
+* In case of success: positive integer representing current event type (from `librg_event_type`enum)
 * In case of invalid event: `LIBRG_EVENT_INVALID`
 
 -------------------------------

@@ -50,7 +50,7 @@ uint32_t librg_version() {
 }
 
 librg_world *librg_world_create() {
-    librg_world_t *wld = LIBRG_MEM_ALLOC(sizeof(librg_world_t));
+    librg_world_t *wld = (librg_world_t *)LIBRG_MEM_ALLOC(sizeof(librg_world_t));
     zpl_memset(wld, 0, sizeof(librg_world_t));
 
     /* setup initials */
@@ -211,11 +211,11 @@ int8_t librg_event_remove(librg_world *world, librg_event_type id) {
     return LIBRG_OK;
 }
 
-librg_event_type librg_event_type_get(librg_world *world, librg_event *event) {
+int8_t librg_event_type_get(librg_world *world, librg_event *event) {
     LIBRG_ASSERT(event); if (!event) return LIBRG_EVENT_INVALID;
     zpl_unused(world);
     librg_event_t *e = (librg_event_t*)event;
-    return e->type;
+    return (int8_t)e->type;
 }
 
 int64_t librg_event_owner_get(librg_world *world, librg_event *event) {
