@@ -14,7 +14,7 @@ jobs:
         env:
           DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
         with:
-          description:  "**${{ github.repository }}: ${{ github.event.release.name }}**\n\n**Changelog:**\n${{ github.event.release.body }}"
+          description:  "**${{ github.repository }}: [${{ github.event.release.name }}](${{ github.event.release.html_url }})**\n\n**Changelog:**\n${{ github.event.release.body }}"
           nodetail: true
           nofail: true
           color: "0x9999ff"
