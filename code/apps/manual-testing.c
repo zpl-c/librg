@@ -63,7 +63,6 @@ int main() {
     zpl_printf("setting chunk to: %lld\n", chunkId);
     librg_entity_chunk_set(world, myId, chunkId);
     librg_entity_owner_set(world, myId, 1);
-    librg_entity_radius_set(world, myId, observerRadius);
 
     const int totalEnts = 40000;
     for (int i=0;i<totalEnts;i++) {
@@ -82,7 +81,7 @@ int main() {
 
     zpl_f64 tstart = zpl_time_rel();
     size_t amount = RESSIZE;
-    librg_world_query(world, 1, results, &amount);
+    librg_world_query(world, 1, observerRadius, results, &amount);
     zpl_printf("query found %d results of %d in (%.3f ms)\n", amount, totalEnts, zpl_time_rel() - tstart);
     // for (int i=0; i<amount; i++) zpl_printf("result #%d: %lld\n", i, results[i]);
 
@@ -91,7 +90,7 @@ int main() {
     tstart = zpl_time_rel();
 
     size_t buffer_size = 10000;
-    int32_t result = librg_world_write(world, 1, buffer, &buffer_size, NULL);
+    int32_t result = librg_world_write(world, 1, observerRadius, buffer, &buffer_size, NULL);
 
     if (result > 0) {
         printf("AAA, you didnt have enough space to write stuff in your buffer mister\n");

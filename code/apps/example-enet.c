@@ -142,7 +142,6 @@ int server_update() {
                 librg_entity_track(server_world, entity_id);
                 librg_entity_owner_set(server_world, entity_id, event.peer->incomingPeerID);
                 librg_entity_chunk_set(server_world, entity_id, 1);
-                librg_entity_radius_set(server_world, entity_id, 2); /* 2 chunk radius visibility */
                 librg_entity_userdata_set(server_world, entity_id, event.peer); /* save ptr to peer */
 
                 /* allocate and store entity position in the data part of peer */
@@ -191,6 +190,7 @@ int server_update() {
         librg_world_write(
             server_world,
             currentPeer->incomingPeerID,
+            2, /* chunk radius */
             buffer,
             &buffer_length,
             NULL
@@ -341,6 +341,7 @@ int client_update(int ID, librg_world *world) {
     librg_world_write(
         world,
         ID,
+        0,
         buffer,
         &buffer_length,
         NULL

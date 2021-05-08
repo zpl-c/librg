@@ -64,10 +64,10 @@ int main() {
     /* and track a special entity for our owner */
     const int owner = 42;
     const int owner_entity = 777;
+    const int radius = 1;
     librg_entity_track(world, owner_entity);
     librg_entity_chunk_set(world, owner_entity, 1);
     librg_entity_owner_set(world, owner_entity, owner);
-    librg_entity_radius_set(world, owner_entity, 1);
 
     /* since we've placed our entities in chunks 0,1,2,3 */
     /* and our owner entity is in chunk 1, with visibility radius of 1 */
@@ -76,7 +76,7 @@ int main() {
 
     /* write owner viewport to the buffer */
     char buffer[256] = {0}; size_t total_size = 256;
-    librg_world_write(world, owner, buffer, &total_size, NULL);
+    librg_world_write(world, owner, radius, buffer, &total_size, NULL);
 
     /* now our buffer contains packed world data */
     /* specific for that given owner id (42) */

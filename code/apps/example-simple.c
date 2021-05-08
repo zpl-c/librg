@@ -13,17 +13,16 @@ int main() {
     librg_entity_track(world, 1);
     librg_entity_owner_set(world, 1, 1);
     librg_entity_chunk_set(world, 1, 1);
-    librg_entity_radius_set(world, 1, 1);
 
     /* fetch entities via query */
     int64_t entities[64] = {0};
     size_t entity_amount = 64;
-    librg_world_query(world, 1, entities, &entity_amount);
+    librg_world_query(world, 1, 0, entities, &entity_amount);
 
     /* write owner's point of view to a buffer */
     char buffer[256] = {0};
     size_t buffer_legnth = 256;
-    librg_world_write(world, 1, buffer, &buffer_legnth, NULL);
+    librg_world_write(world, 1, 0, buffer, &buffer_legnth, NULL);
     printf("written a buffer of length %d\n", (int)buffer_legnth);
 
     librg_world_destroy(world);
