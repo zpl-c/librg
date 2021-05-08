@@ -179,26 +179,17 @@ int64_t librg_entity_owner_get(librg_world *world, int64_t entity_id) {
     return entity->owner_id;
 }
 
-
-int8_t librg_entity_radius_set(librg_world *world, int64_t entity_id, int8_t observed_chunk_radius) {
-    LIBRG_ASSERT(world); if (!world) return LIBRG_WORLD_INVALID;
-    librg_world_t *wld = (librg_world_t *)world;
-
-    librg_entity_t *entity = librg_table_ent_get(&wld->entity_map, entity_id);
-    if (entity == NULL) return LIBRG_ENTITY_UNTRACKED;
-
-    entity->observed_radius = observed_chunk_radius;
-    return LIBRG_OK;
+LIBRG_DEPRECATED(7.0) int8_t librg_entity_radius_set(librg_world *world, int64_t entity_id, int8_t observed_chunk_radius) {
+    zpl_unused(world);
+    zpl_unused(entity_id);
+    zpl_unused(observed_chunk_radius);
+    return -1;
 }
 
-int8_t librg_entity_radius_get(librg_world *world, int64_t entity_id) {
-    LIBRG_ASSERT(world); if (!world) return LIBRG_WORLD_INVALID;
-    librg_world_t *wld = (librg_world_t *)world;
-
-    librg_entity_t *entity = librg_table_ent_get(&wld->entity_map, entity_id);
-    if (entity == NULL) return LIBRG_ENTITY_UNTRACKED;
-
-    return entity->observed_radius;
+LIBRG_DEPRECATED(7.0) int8_t librg_entity_radius_get(librg_world *world, int64_t entity_id) {
+    zpl_unused(world);
+    zpl_unused(entity_id);
+    return -1;
 }
 
 int8_t librg_entity_dimension_set(librg_world *world, int64_t entity_id, int32_t dimension) {

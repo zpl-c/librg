@@ -122,7 +122,7 @@ static LIBRG_ALWAYS_INLINE void librg_util_chunkrange(librg_world *w, librg_tabl
     return;
 }
 
-int32_t librg_world_query(librg_world *world, int64_t owner_id, int64_t *entity_ids, size_t *entity_amount) {
+int32_t librg_world_query(librg_world *world, int64_t owner_id, uint8_t chunk_radius, int64_t *entity_ids, size_t *entity_amount) {
     LIBRG_ASSERT(world); if (!world) return LIBRG_WORLD_INVALID;
     LIBRG_ASSERT(entity_amount); if (!entity_amount) return LIBRG_NULL_REFERENCE;
     librg_world_t *wld = (librg_world_t *)world;
@@ -150,8 +150,6 @@ int32_t librg_world_query(librg_world *world, int64_t owner_id, int64_t *entity_
         if (entity->chunks[0] == LIBRG_CHUNK_INVALID) continue;
         /* and skip, if used is not an owner of the entity */
         if (entity->owner_id != owner_id) continue;
-        /* and skip if entity is not an observer */
-        if (entity->observed_radius == 0) continue;
 
         /* fetch, or create chunk set in this dimension if does not exist */
         librg_table_i64 *dim_chunks = librg_table_tbl_get(&dimensions, entity->dimension);
@@ -169,7 +167,7 @@ int32_t librg_world_query(librg_world *world, int64_t owner_id, int64_t *entity_
 
             int16_t chx=0, chy=0, chz=0;
             librg_chunk_to_chunkpos(world, entity->chunks[k], &chx, &chy, &chz);
-            librg_util_chunkrange(world, dim_chunks, chx, chy, chz, entity->observed_radius);
+            librg_util_chunkrange(world, dim_chunks, chx, chy, chz, chunk_radius);
         }
     }
 

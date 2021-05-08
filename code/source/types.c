@@ -89,7 +89,6 @@ typedef struct librg_entity_t {
     uint8_t flag_visbility_owner_enabled : 1;
     uint8_t flag_unused2 : 1;
 
-    int8_t observed_radius;
     uint16_t ownership_token;
 
     int32_t dimension;

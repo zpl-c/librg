@@ -37,7 +37,7 @@ LIBRG_STATIC_ASSERT(sizeof(librg_segment_t) == 8, "packed librg_segment_t should
 // !
 // =======================================================================//
 
-int32_t librg_world_write(librg_world *world, int64_t owner_id, char *buffer, size_t *size, void *userdata) {
+int32_t librg_world_write(librg_world *world, int64_t owner_id, uint8_t chunk_radius, char *buffer, size_t *size, void *userdata) {
     LIBRG_ASSERT(world); if (!world) return LIBRG_WORLD_INVALID;
     librg_world_t *wld = (librg_world_t *)world;
     librg_table_i64 *last_snapshot = librg_table_tbl_get(&wld->owner_map, owner_id);
@@ -54,7 +54,7 @@ int32_t librg_world_write(librg_world *world, int64_t owner_id, char *buffer, si
 
     int64_t *results = (int64_t *)LIBRG_MEM_ALLOC(LIBRG_WORLDWRITE_MAXQUERY * sizeof(int64_t));
     size_t total_amount = LIBRG_WORLDWRITE_MAXQUERY;
-    librg_world_query(world, owner_id, results, &total_amount);
+    librg_world_query(world, owner_id, chunk_radius, results, &total_amount);
 
     size_t total_written = 0;
     librg_event_t evt = {0};
