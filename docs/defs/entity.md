@@ -316,7 +316,7 @@ Owner, is an artificial concept that represents a relation of the entity to some
 Making an entity owned allows to do multiple things:
 
 * Fetching entities owned by specific user via [librg_world_fetch_owner](defs/query.md#librg_world_fetch_owner)
-* Querying nearby entities based of current [radius](librg_entity_radius_set) via [librg_world_query](defs/query.md#librg_world_query)
+* Querying nearby entities based of current via [librg_world_query](defs/query.md#librg_world_query)
 * Setting up global and relational visibility via [librg_entity_visibility_owner_set](#librg_entity_visibility_owner_set) that will be used by query methods
 * Writing and reading world (serialization and replication) via [librg_world_write](defs/query.md#librg_world_write) methods
 
@@ -357,52 +357,6 @@ int64_t librg_entity_owner_get(
 ##### Returns
 
 * In case of success: number representing an owner
-* In case of invalid world: `LIBRG_WORLD_INVALID`
-* In case of unknown entity: `LIBRG_ENTITY_UNTRACKED`
-
-------------------------------
-
-## librg_entity_radius_set
-
-Sets current entity visibility radius.
-
-Visibility radius influences only entities that are owned.
-It represents a linear/circular/spherical (depending on world configuration) radius of entity visibility in terms of nearby chunks,
-and used whilist general visibility calculations in the [librg_world_query](defs/query.md#librg_world_query) method.
-If property set for an entity that is not owned, but the owner is later on changed, it will be still applied, since the value is stored in the internal storage.
-
-##### Signature
-```c
-int8_t librg_entity_radius_set(
-    librg_world *world,
-    int64_t entity_id,
-    int8_t observed_chunk_radius
-)
-```
-
-##### Returns
-
-* In case of success: `LIBRG_OK`
-* In case of invalid world: `LIBRG_WORLD_INVALID`
-* In case of unknown entity: `LIBRG_ENTITY_UNTRACKED`
-
-------------------------------
-
-## librg_entity_radius_get
-
-Returns current entity visibility radius.
-
-##### Signature
-```c
-int8_t librg_entity_radius_get(
-    librg_world *world,
-    int64_t entity_id
-)
-```
-
-##### Returns
-
-* In case of success: number representing current radius
 * In case of invalid world: `LIBRG_WORLD_INVALID`
 * In case of unknown entity: `LIBRG_ENTITY_UNTRACKED`
 

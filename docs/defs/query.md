@@ -141,7 +141,7 @@ int32_t librg_world_fetch_ownerarray(
 Method is used for spatial entity filtering.
 It returns all entities that are "visible" to a provided `owner_id`.
 
-The visibility is calculated based on visibility "radius" of each entity that is owned by that owner, and returned as a single array of unique entries.
+Visibility (Chunk) radius represents a linear/circular/spherical (depending on world configuration) radius of visibility in terms of nearby chunks.
 If entity was not properly placed onto a **valid chunk**, it will be filtered out from the query.
 Additionally any visibility overrides are applied on per-entity basis, filtering out those entities that should be (in)visible for the given owner.
 
@@ -157,6 +157,7 @@ Additionally any visibility overrides are applied on per-entity basis, filtering
 int32_t librg_world_query(
     librg_world *world,
     int64_t owner_id,
+    uint8_t chunk_radius,
     int64_t *entity_ids,        /* out */
     size_t *entity_amount       /* in-out */
 )

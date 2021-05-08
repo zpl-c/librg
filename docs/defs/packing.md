@@ -9,6 +9,8 @@ However, instead of returning set of results directly to you, it rather builds a
 and compares it with a previous snapshot (from previous call to this method).
 This way method is able to keep track which entities are considered to be new, existing or forgotten for each owner within his view radius (based on entities that he owns).
 
+Visibility (Chunk) radius represents a linear/circular/spherical (depending on world configuration) radius of visibility in terms of nearby chunks.
+
 Additionally, an event is fired for each entity within owner's view radius, allowing you to write any additional information specific for this owner or this entity.
 For more details on events, please refer to the [events](defs/events.md) page.
 In case you wish to write any additional information, you would need to return length of the data you copied to the buffer. More details in the [example](#example) below.
@@ -29,6 +31,7 @@ If the provided space will not be enough, you need to redefine the macro to incr
 int32_t librg_world_write(
     librg_world *world,
     int64_t owner_id,
+    uint8_t chunk_radius,
     char *buffer,       /* out */
     size_t *size,       /* in-out */
     void *userdata
