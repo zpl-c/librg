@@ -208,8 +208,7 @@
 #define LIBRG_IMPLEMENTATION_DONE
 
 #ifndef LIBRG_CUSTOM_ZPL
-    #define ZPL_CUSTOM_MODULES
-    #define ZPL_MODULE_CORE
+    #define ZPL_NANO
     #define ZPL_IMPL
 
     #include "vendor/zpl.h"
