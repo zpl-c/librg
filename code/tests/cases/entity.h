@@ -46,17 +46,6 @@ MODULE(entity, {
         librg_world_destroy(world);
     });
 
-    IT("should be able to properly set a radius", {
-        librg_world *world = librg_world_create();
-        librg_entity_track(world, 15);
-
-        r = librg_entity_radius_set(world, 15, 15); EQUALS(r, LIBRG_OK);
-        r = librg_entity_radius_get(world, 15); EQUALS(r, 15);
-
-        librg_entity_untrack(world, 15);
-        librg_world_destroy(world);
-    });
-
     IT("should be able to properly set a dimension", {
         librg_world *world = librg_world_create();
         librg_entity_track(world, 15);
@@ -114,7 +103,6 @@ MODULE(entity, {
         r = librg_entity_userdata_set(world, 15, (void *)15); NEQUALS(r, LIBRG_OK);
         r = librg_entity_chunk_set(world, 15, 15); NEQUALS(r, LIBRG_OK);
         r = librg_entity_owner_set(world, 15, 15); NEQUALS(r, LIBRG_OK);
-        r = librg_entity_radius_set(world, 15, 15); NEQUALS(r, LIBRG_OK);
         r = librg_entity_dimension_set(world, 15, 15); NEQUALS(r, LIBRG_OK);
 
         librg_world_destroy(world);
