@@ -31,7 +31,8 @@ int32_t librg_world_fetch_all(librg_world *world, int64_t *entity_ids, size_t *e
 }
 
 int32_t librg_world_fetch_chunk(librg_world *world, librg_chunk chunk, int64_t *entity_ids, size_t *entity_amount) {
-    return librg_world_fetch_chunkarray(world, (librg_chunk[]){chunk}, 1, entity_ids, entity_amount);
+    librg_chunk chunks[1] = {}; chunks[0] = chunk;
+    return librg_world_fetch_chunkarray(world, chunks, 1, entity_ids, entity_amount);
 }
 
 int32_t librg_world_fetch_chunkarray(librg_world *world, const librg_chunk *chunks, size_t chunk_amount, int64_t *entity_ids, size_t *entity_amount) {
