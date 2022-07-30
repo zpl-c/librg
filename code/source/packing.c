@@ -93,6 +93,7 @@ librg_lbl_ww:
             /* preparation */
             if (action_id == LIBRG_WRITE_CREATE) {
                 entity_id   = results[i]; /* it did not exist && not foreign */
+                entity_blob = librg_table_ent_get(&wld->entity_map, entity_id);
                 condition   = librg_table_i64_get(last_snapshot, entity_id) == NULL
                     && librg_entity_foreign(world, entity_id) != LIBRG_TRUE;
             }
@@ -144,6 +145,9 @@ librg_lbl_ww:
 
                     if (action_id == LIBRG_WRITE_OWNER) {
                         val->token = entity_blob->ownership_token;
+                    }
+                    else if (action_id == LIBRG_WRITE_CREATE && entity_blob->owner_id == owner_id) {
+                        val->token = 1;
                     }
                     else if (action_id == LIBRG_WRITE_UPDATE && entity_blob->flag_foreign) {
                         val->token = entity_blob->ownership_token;
@@ -286,6 +290,7 @@ int32_t librg_world_read(librg_world *world, int64_t owner_id, const char *buffe
                 /* mark newly created entity as foreign */
                 librg_entity_t *entity = librg_table_ent_get(&wld->entity_map, val->id);
                 if (!entity) return LIBRG_READ_INVALID; else entity->flag_foreign = LIBRG_TRUE;
+                if (val->token == 1) entity->owner_id = owner_id;
             }
 
             /* fill in event */
