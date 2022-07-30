@@ -106,12 +106,14 @@ int32_t librg_world_fetch_ownerarray(librg_world *world, const int64_t *owner_id
 // =======================================================================//
 
 static LIBRG_ALWAYS_INLINE void librg_util_chunkrange(librg_world *w, librg_table_i64 *ch, int cx, int cy, int cz, int8_t radius) {
+    /* precalculate the radius power 2 for quicker distance check */
     int radius2 = radius * radius;
 
+    /* create a "bubble" by cutting off chunks outside of radius using distance checks */
     for (int z=-radius; z<=radius; z++) {
         for (int y=-radius; y<=radius; y++) {
             for (int x=-radius; x<=radius; x++) {
-                if(x*x+y*y+z*z <= radius2) {
+                if (x*x+y*y+z*z <= radius2) {
                     librg_chunk id = librg_chunk_from_chunkpos(w, cx+x, cy+y, cz+z);
                     if (id != LIBRG_CHUNK_INVALID) librg_table_i64_set(ch, id, 1);
                 }

@@ -279,15 +279,13 @@ librg_chunk librg_chunk_from_chunkpos(librg_world *world, int16_t chunk_x, int16
     int16_t chz = librg_util_chunkoffset_line(chunk_z, wld->chunkoffset.z, wld->worldsize.z);
 
     /* return error if the size is too far off the max world limits */
-    if ((chx <= -wld->worldsize.x || chx >= wld->worldsize.x)
-     || (chy <= -wld->worldsize.y || chy >= wld->worldsize.y)
-     || (chz <= -wld->worldsize.z || chz >= wld->worldsize.z)) {
+    if ((chx < 0 || chx >= wld->worldsize.x)
+     || (chy < 0 || chy >= wld->worldsize.y)
+     || (chz < 0 || chz >= wld->worldsize.z)) {
         return LIBRG_CHUNK_INVALID;
     }
 
     librg_chunk id = (chz * wld->worldsize.y * wld->worldsize.x) + (chy * wld->worldsize.x) + (chx);
-
-    // zpl_printf("(%d, %d, %d): %d\n", chx, chy, chz, id);
 
     if (id < 0 || id > (wld->worldsize.x * wld->worldsize.y * wld->worldsize.z)) {
         return LIBRG_CHUNK_INVALID;
