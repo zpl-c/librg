@@ -19,6 +19,14 @@
  *  Version History:
  * ===================================
  *
+ * 7.0.0
+ *  - Added argument for the query & write radius
+ *  - Deprecated radius within the entity structure
+ *  - Fix for the dimensional offset calculations
+ *  - Fix for the chunk position calculations
+ *  - Fix for the radius overflows within view range
+ *  - Updated zpl & enet dependencies
+ *
  * 6.0.0
  *  - Major library rewrite
  *
