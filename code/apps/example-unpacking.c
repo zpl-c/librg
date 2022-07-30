@@ -9,7 +9,8 @@
 int32_t myread_create(librg_world *w, librg_event *e) {
     int64_t owner_id = librg_event_owner_get(w, e);
     int64_t entity_id = librg_event_entity_get(w, e);
-    printf("entity: %d was created for owner: %d\n", (int)entity_id, (int)owner_id);
+    printf("entity: %d was created for owner: %d, owner: %d\n", (int)entity_id, (int)owner_id, (int)librg_entity_owner_get(w, entity_id));
+
 
     char buffer[64] = {0};
     memcpy(buffer, librg_event_buffer_get(w, e), librg_event_size_get(w, e));
