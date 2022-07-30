@@ -138,9 +138,9 @@ int8_t librg_config_chunkamount_set(librg_world *world, uint16_t x, uint16_t y, 
 int8_t librg_config_chunkamount_get(librg_world *world, uint16_t *x, uint16_t *y, uint16_t *z) {
     LIBRG_ASSERT(world); if (!world) return LIBRG_WORLD_INVALID;
     librg_world_t *wld = (librg_world_t *)world;
-    *x = wld->worldsize.x;
-    *y = wld->worldsize.y;
-    *z = wld->worldsize.z;
+    if (x) *x = wld->worldsize.x;
+    if (y) *y = wld->worldsize.y;
+    if (z) *z = wld->worldsize.z;
     return LIBRG_OK;
 }
 
@@ -156,9 +156,9 @@ int8_t librg_config_chunksize_set(librg_world *world, uint16_t x, uint16_t y, ui
 int8_t librg_config_chunksize_get(librg_world *world, uint16_t *x, uint16_t *y, uint16_t *z) {
     LIBRG_ASSERT(world); if (!world) return LIBRG_WORLD_INVALID;
     librg_world_t *wld = (librg_world_t *)world;
-    *x = wld->chunksize.x;
-    *y = wld->chunksize.y;
-    *z = wld->chunksize.z;
+    if (x) *x = wld->chunksize.x;
+    if (y) *y = wld->chunksize.y;
+    if (z) *z = wld->chunksize.z;
     return LIBRG_OK;
 }
 
@@ -174,9 +174,9 @@ int8_t librg_config_chunkoffset_set(librg_world *world, int16_t x, int16_t y, in
 int8_t librg_config_chunkoffset_get(librg_world *world, int16_t *x, int16_t *y, int16_t *z) {
     LIBRG_ASSERT(world); if (!world) return LIBRG_WORLD_INVALID;
     librg_world_t *wld = (librg_world_t *)world;
-    *x = wld->chunkoffset.x;
-    *y = wld->chunkoffset.y;
-    *z = wld->chunkoffset.z;
+    if (x) *x = wld->chunkoffset.x;
+    if (y) *y = wld->chunkoffset.y;
+    if (z) *z = wld->chunkoffset.z;
     return LIBRG_OK;
 }
 
@@ -260,11 +260,11 @@ void * librg_event_userdata_get(librg_world *world, librg_event *event) {
 // =======================================================================//
 
 LIBRG_ALWAYS_INLINE int16_t librg_util_chunkoffset_line(int16_t v, int16_t off, int16_t size) {
-    int16_t o = 0;
-    if (off == LIBRG_OFFSET_BEG) o = 0;
-    if (off == LIBRG_OFFSET_MID) o = (size/2);
-    if (off == LIBRG_OFFSET_END) o = (size-1);
-    return v + o;
+    float o = 0.0f; /* LIBRG_OFFSET_BEG */
+    if (off == LIBRG_OFFSET_MID) o = (size/2.0f);
+    if (off == LIBRG_OFFSET_END) o = (size);
+    o = o + v;
+    return o >= 0 ? zpl_floor(o) : zpl_ceil(o);
 }
 
 librg_chunk librg_chunk_from_chunkpos(librg_world *world, int16_t chunk_x, int16_t chunk_y, int16_t chunk_z) {

@@ -103,6 +103,33 @@ MODULE(general, {
         librg_world_destroy(world);
     });
 
+    IT("should properly handle set of chunk line calculations", {
+        EQUALS(librg_util_chunkoffset_line(0, LIBRG_OFFSET_BEG, 4), 0);
+        EQUALS(librg_util_chunkoffset_line(0, LIBRG_OFFSET_MID, 4), 2);
+        EQUALS(librg_util_chunkoffset_line(0, LIBRG_OFFSET_END, 4), 4);
+
+        EQUALS(librg_util_chunkoffset_line(2, LIBRG_OFFSET_BEG, 4), 2);
+        EQUALS(librg_util_chunkoffset_line(2, LIBRG_OFFSET_MID, 4), 4);
+        EQUALS(librg_util_chunkoffset_line(2, LIBRG_OFFSET_END, 4), 6);
+
+        EQUALS(librg_util_chunkoffset_line(-2, LIBRG_OFFSET_BEG, 4), -2);
+        EQUALS(librg_util_chunkoffset_line(-2, LIBRG_OFFSET_MID, 4), 0);
+        EQUALS(librg_util_chunkoffset_line(-2, LIBRG_OFFSET_END, 4), 2);
+
+        EQUALS(librg_util_chunkoffset_line(0, LIBRG_OFFSET_BEG, 5), 0);
+        EQUALS(librg_util_chunkoffset_line(0, LIBRG_OFFSET_MID, 5), 2);
+        EQUALS(librg_util_chunkoffset_line(0, LIBRG_OFFSET_END, 5), 5);
+
+        EQUALS(librg_util_chunkoffset_line(2, LIBRG_OFFSET_BEG, 5), 2);
+        EQUALS(librg_util_chunkoffset_line(2, LIBRG_OFFSET_MID, 5), 4);
+        EQUALS(librg_util_chunkoffset_line(2, LIBRG_OFFSET_END, 5), 7);
+
+        EQUALS(librg_util_chunkoffset_line(-2, LIBRG_OFFSET_BEG, 5), -2);
+        EQUALS(librg_util_chunkoffset_line(-2, LIBRG_OFFSET_MID, 5), 0);
+        EQUALS(librg_util_chunkoffset_line(-2, LIBRG_OFFSET_END, 5), 3);
+
+    });
+
     IT("should correctly calculate chunk id for 2d top-left mode", {
         librg_world *world = librg_world_create();
         r = librg_config_chunkamount_set(world, 16, 16, 1); EQUALS(r, LIBRG_OK);
@@ -115,6 +142,13 @@ MODULE(general, {
         id = librg_chunk_from_chunkpos(world, 0, 1, 0); EQUALS(id, 16);
         id = librg_chunk_from_chunkpos(world, 15, 15, 0); EQUALS(id, 255);
         id = librg_chunk_from_chunkpos(world, 18, 18, 0); EQUALS(id, LIBRG_CHUNK_INVALID);
+
+        r = librg_config_chunkamount_set(world, 3, 3, 0); EQUALS(r, LIBRG_OK);
+
+        id = librg_chunk_from_chunkpos(world, 0, 0, 0); EQUALS(id, 0);
+        id = librg_chunk_from_chunkpos(world, 1, 1, 0); EQUALS(id, 4);
+        id = librg_chunk_from_chunkpos(world, -1, -1, 0); EQUALS(id, LIBRG_CHUNK_INVALID);
+        id = librg_chunk_from_chunkpos(world, -1, -2, 0); EQUALS(id, LIBRG_CHUNK_INVALID);
 
         librg_world_destroy(world);
     });
@@ -129,6 +163,24 @@ MODULE(general, {
         id = librg_chunk_from_chunkpos(world, 0, 0, 0); EQUALS(id, 4);
         id = librg_chunk_from_chunkpos(world, 1, 1, 0); EQUALS(id, 8);
         id = librg_chunk_from_chunkpos(world, -1, -1, 0); EQUALS(id, 0);
+
+        librg_world_destroy(world);
+    });
+
+    IT("should correctly calculate chunk id for 2d bottom-right mode", {
+        librg_world *world = librg_world_create();
+        r = librg_config_chunkamount_set(world, 3, 3, 0); EQUALS(r, LIBRG_OK);
+        r = librg_config_chunkoffset_set(world, LIBRG_OFFSET_END, LIBRG_OFFSET_END, 0); EQUALS(r, LIBRG_OK);
+
+        librg_chunk id = LIBRG_CHUNK_INVALID;
+
+        id = librg_chunk_from_chunkpos(world, 0, 0, 0); EQUALS(id, LIBRG_CHUNK_INVALID);
+        id = librg_chunk_from_chunkpos(world, 1, 1, 0); EQUALS(id, LIBRG_CHUNK_INVALID);
+        id = librg_chunk_from_chunkpos(world, -1, 0, 0); EQUALS(id, LIBRG_CHUNK_INVALID);
+        id = librg_chunk_from_chunkpos(world, -1, -1, 0); EQUALS(id, 8);
+        id = librg_chunk_from_chunkpos(world, -2, -2, 0); EQUALS(id, 4);
+        id = librg_chunk_from_chunkpos(world, -3, -3, 0); EQUALS(id, 0);
+        id = librg_chunk_from_chunkpos(world, -3, -1, 0); EQUALS(id, 6);
 
         librg_world_destroy(world);
     });
@@ -171,8 +223,9 @@ MODULE(general, {
 
         librg_chunk id = LIBRG_CHUNK_INVALID;
 
-        id = librg_chunk_from_chunkpos(world,  0,  0,  0); EQUALS(id, 26);
-        id = librg_chunk_from_chunkpos(world, -2, -2, -2); EQUALS(id, 0);
+        id = librg_chunk_from_chunkpos(world,  0,  0,  0); EQUALS(id, LIBRG_CHUNK_INVALID);
+        id = librg_chunk_from_chunkpos(world,  -1, -1,  -1); EQUALS(id, 26);
+        id = librg_chunk_from_chunkpos(world, -3, -3, -3); EQUALS(id, 0);
 
         librg_world_destroy(world);
     });

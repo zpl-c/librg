@@ -209,6 +209,7 @@
 
 #ifndef LIBRG_CUSTOM_ZPL
     #define ZPL_NANO
+    #define ZPL_ENABLE_MATH
     #define ZPL_IMPL
 
     #include "vendor/zpl.h"
