@@ -79,13 +79,27 @@ To read detailed documentation about the library, see examples and quick start g
 
 Additionally you can check [code/apps](code/apps) folder for actual code examples.
 
-## Illustration
+## Illustrations
+
+### World Replication
 
 Here is a simple illustration that attempts to describe how the library works on a simple 2d world of 4x4 chunks.
 For a 3d world of bigger size everything would work in a very similar way, just in 3 dimensions.
 
 <a href="https://user-images.githubusercontent.com/2182108/83945607-87d64400-a814-11ea-8897-3c268b26b0f7.png" target="_blank">
   <img src="https://user-images.githubusercontent.com/2182108/83945607-87d64400-a814-11ea-8897-3c268b26b0f7.png" alt="librg illustration" />
+</a>
+
+<div align="center">
+  <sub>(click on the image to view full-size)</sub>
+</div>
+
+### World Protocol
+
+And this picture showcases the structure of the underlying binary protocol that is used to encode and decode data from/to. The resulting binary buffer could be inserted into any other buffer, saved to disk as a file, or sent via the network using any available method. Putting custom data alongside every entity within the packet allows context-dependant data storage that extends capabilities and allows memory- and bandwidth-efficient entity replication.
+
+<a href="https://user-images.githubusercontent.com/2182108/181924764-3ac8b765-f7a8-4fe0-a713-3928d53a413c.png" target="_blank">
+  <img src="https://user-images.githubusercontent.com/2182108/181924764-3ac8b765-f7a8-4fe0-a713-3928d53a413c.png" alt="librg illustration" />
 </a>
 
 <div align="center">
