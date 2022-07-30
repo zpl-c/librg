@@ -98,8 +98,8 @@ For a 3d world of bigger size everything would work in a very similar way, just 
 
 And this picture showcases the structure of the underlying binary protocol that is used to encode and decode data from/to. The resulting binary buffer could be inserted into any other buffer, saved to disk as a file, or sent via the network using any available method. Putting custom data alongside every entity within the packet allows context-dependant data storage that extends capabilities and allows memory- and bandwidth-efficient entity replication.
 
-<a href="https://user-images.githubusercontent.com/2182108/181923801-0bf79469-a2af-4c57-bfaa-2ac93ccd4d77.png" target="_blank">
-  <img src="https://user-images.githubusercontent.com/2182108/181923801-0bf79469-a2af-4c57-bfaa-2ac93ccd4d77.png" alt="librg illustration" />
+<a href="https://user-images.githubusercontent.com/2182108/181924764-3ac8b765-f7a8-4fe0-a713-3928d53a413c.png" target="_blank">
+  <img src="https://user-images.githubusercontent.com/2182108/181924764-3ac8b765-f7a8-4fe0-a713-3928d53a413c.png" alt="librg illustration" />
 </a>
 
 <div align="center">
