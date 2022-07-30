@@ -243,7 +243,7 @@ int32_t librg_event_size_get(librg_world *world, librg_event *event) {
     LIBRG_ASSERT(event); if (!event) return LIBRG_EVENT_INVALID;
     zpl_unused(world);
     librg_event_t *e = (librg_event_t*)event;
-    return e->size;
+    return (int32_t)e->size;
 }
 
 void * librg_event_userdata_get(librg_world *world, librg_event *event) {
@@ -267,7 +267,7 @@ LIBRG_ALWAYS_INLINE int16_t librg_util_chunkoffset_line(int16_t v, int16_t off, 
     /* integrate the offset */
     o = o + v;
 
-    return o >= 0 ? zpl_floor(o) : zpl_ceil(o);
+    return (int16_t)(o >= 0 ? zpl_floor(o) : zpl_ceil(o));
 }
 
 librg_chunk librg_chunk_from_chunkpos(librg_world *world, int16_t chunk_x, int16_t chunk_y, int16_t chunk_z) {

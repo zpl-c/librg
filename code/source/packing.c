@@ -212,7 +212,7 @@ librg_lbl_ww:
     #undef sz_value
 
     /* if we didnt have enough space, value will be > 0 */
-    return insufficient_size;
+    return (int32_t)insufficient_size;
 }
 
 // =======================================================================//
