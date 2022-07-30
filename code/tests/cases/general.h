@@ -130,6 +130,24 @@ MODULE(general, {
 
     });
 
+    IT("should correctly calculate weird world sizes", {
+        librg_world *world = librg_world_create();
+        r = librg_config_chunkamount_set(world, 1, 3, 1); EQUALS(r, LIBRG_OK);
+        r = librg_config_chunkoffset_set(world, LIBRG_OFFSET_BEG, LIBRG_OFFSET_BEG, LIBRG_OFFSET_BEG); EQUALS(r, LIBRG_OK);
+
+        librg_chunk id = LIBRG_CHUNK_INVALID;
+
+        id = librg_chunk_from_chunkpos(world, 0, 0, 0); EQUALS(id, 0);
+        id = librg_chunk_from_chunkpos(world, 0, 2, 0); EQUALS(id, 2);
+
+        r = librg_config_chunkamount_set(world, 1, 1, 3); EQUALS(r, LIBRG_OK);
+
+        id = librg_chunk_from_chunkpos(world, 0, 0, 0); EQUALS(id, 0);
+        id = librg_chunk_from_chunkpos(world, 0, 0, 2); EQUALS(id, 2);
+
+        librg_world_destroy(world);
+    });
+
     IT("should correctly calculate chunk id for 2d top-left mode", {
         librg_world *world = librg_world_create();
         r = librg_config_chunkamount_set(world, 16, 16, 1); EQUALS(r, LIBRG_OK);
@@ -260,5 +278,95 @@ MODULE(general, {
         id = librg_chunk_from_realpos(world, 16.f, 17.f, 18.f); EQUALS(id, 273);
 
         librg_world_destroy(world);
+    });
+
+    IT("should calculate chunk coords from chunk id from weird world size", {
+        librg_world *world = librg_world_create();
+        r = librg_config_chunkamount_set(world, 1, 1, 3); EQUALS(r, LIBRG_OK);
+        r = librg_config_chunkoffset_set(world, LIBRG_OFFSET_BEG, LIBRG_OFFSET_BEG, LIBRG_OFFSET_BEG); EQUALS(r, LIBRG_OK);
+
+        int16_t x = 0;
+        int16_t y = 0;
+        int16_t z = 0;
+
+        r = librg_chunk_to_chunkpos(world, 0, &x, &y, &z); EQUALS(r, LIBRG_OK); EQUALS(x, 0); EQUALS(y, 0); EQUALS(z, 0);
+        r = librg_chunk_to_chunkpos(world, 2, &x, &y, &z); EQUALS(r, LIBRG_OK); EQUALS(x, 0); EQUALS(y, 0); EQUALS(z, 2);
+
+        r = librg_config_chunkamount_set(world, 3, 3, 3); EQUALS(r, LIBRG_OK);
+        r = librg_config_chunkoffset_set(world, LIBRG_OFFSET_BEG, LIBRG_OFFSET_BEG, LIBRG_OFFSET_BEG); EQUALS(r, LIBRG_OK);
+
+        r = librg_chunk_to_chunkpos(world, 26, &x, &y, &z); EQUALS(r, LIBRG_OK); EQUALS(x, 2); EQUALS(y, 2); EQUALS(z, 2);
+    });
+
+    IT("should calculate chunk coords from chunk id from world size 3x3 and offsets", {
+        librg_world *world = librg_world_create();
+        r = librg_config_chunkoffset_set(world, LIBRG_OFFSET_MID, LIBRG_OFFSET_MID, LIBRG_OFFSET_MID); EQUALS(r, LIBRG_OK);
+
+        int16_t x = 0;
+        int16_t y = 0;
+        int16_t z = 0;
+
+        r = librg_config_chunkamount_set(world, 3, 1, 1); EQUALS(r, LIBRG_OK);
+        r = librg_chunk_to_chunkpos(world, 2, &x, &y, &z); EQUALS(r, LIBRG_OK); EQUALS(x, 1); EQUALS(y, 0); EQUALS(z, 0);
+        r = librg_chunk_to_chunkpos(world, 0, &x, &y, &z); EQUALS(r, LIBRG_OK); EQUALS(x, -1); EQUALS(y, 0); EQUALS(z, 0);
+
+        r = librg_config_chunkamount_set(world, 1, 3, 1); EQUALS(r, LIBRG_OK);
+        r = librg_chunk_to_chunkpos(world, 2, &x, &y, &z); EQUALS(r, LIBRG_OK); EQUALS(x, 0); EQUALS(y, 1); EQUALS(z, 0);
+        r = librg_chunk_to_chunkpos(world, 0, &x, &y, &z); EQUALS(r, LIBRG_OK); EQUALS(x, 0); EQUALS(y, -1); EQUALS(z, 0);
+
+        r = librg_config_chunkamount_set(world, 1, 1, 3); EQUALS(r, LIBRG_OK);
+        r = librg_chunk_to_chunkpos(world, 2, &x, &y, &z); EQUALS(r, LIBRG_OK); EQUALS(x, 0); EQUALS(y, 0); EQUALS(z, 1);
+        r = librg_chunk_to_chunkpos(world, 0, &x, &y, &z); EQUALS(r, LIBRG_OK); EQUALS(x, 0); EQUALS(y, 0); EQUALS(z, -1);
+
+        r = librg_config_chunkamount_set(world, 3, 3, 1); EQUALS(r, LIBRG_OK);
+        r = librg_chunk_to_chunkpos(world, 4, &x, &y, &z); EQUALS(r, LIBRG_OK); EQUALS(x, 0); EQUALS(y, 0); EQUALS(z, 0);
+        r = librg_chunk_to_chunkpos(world, 0, &x, &y, &z); EQUALS(r, LIBRG_OK); EQUALS(x, -1); EQUALS(y, -1); EQUALS(z, 0);
+        r = librg_chunk_to_chunkpos(world, 8, &x, &y, &z); EQUALS(r, LIBRG_OK); EQUALS(x, 1); EQUALS(y, 1); EQUALS(z, 0);
+
+        r = librg_config_chunkamount_set(world, 1, 3, 3); EQUALS(r, LIBRG_OK);
+        r = librg_chunk_to_chunkpos(world, 4, &x, &y, &z); EQUALS(r, LIBRG_OK); EQUALS(x, 0); EQUALS(y, 0); EQUALS(z, 0);
+        r = librg_chunk_to_chunkpos(world, 0, &x, &y, &z); EQUALS(r, LIBRG_OK); EQUALS(x, 0); EQUALS(y, -1); EQUALS(z, -1);
+        r = librg_chunk_to_chunkpos(world, 8, &x, &y, &z); EQUALS(r, LIBRG_OK); EQUALS(x, 0); EQUALS(y, 1); EQUALS(z, 1);
+
+        r = librg_config_chunkamount_set(world, 3, 3, 3); EQUALS(r, LIBRG_OK);
+        r = librg_chunk_to_chunkpos(world, 13, &x, &y, &z); EQUALS(r, LIBRG_OK); EQUALS(x, 0); EQUALS(y, 0); EQUALS(z, 0);
+        r = librg_chunk_to_chunkpos(world, 0, &x, &y, &z); EQUALS(r, LIBRG_OK); EQUALS(x, -1); EQUALS(y, -1); EQUALS(z, -1);
+        r = librg_chunk_to_chunkpos(world, 26, &x, &y, &z); EQUALS(r, LIBRG_OK); EQUALS(x, 1); EQUALS(y, 1); EQUALS(z, 1);
+    });
+
+    IT("should calculate chunk coords from chunk id from world size 4x4 and offsets", {
+        librg_world *world = librg_world_create();
+        r = librg_config_chunkoffset_set(world, LIBRG_OFFSET_MID, LIBRG_OFFSET_MID, LIBRG_OFFSET_MID); EQUALS(r, LIBRG_OK);
+
+        int16_t x = 0;
+        int16_t y = 0;
+        int16_t z = 0;
+
+        r = librg_config_chunkamount_set(world, 4, 1, 1); EQUALS(r, LIBRG_OK);
+        r = librg_chunk_to_chunkpos(world, 2, &x, &y, &z); EQUALS(r, LIBRG_OK); EQUALS(x, 0); EQUALS(y, 0); EQUALS(z, 0);
+        r = librg_chunk_to_chunkpos(world, 0, &x, &y, &z); EQUALS(r, LIBRG_OK); EQUALS(x, -2); EQUALS(y, 0); EQUALS(z, 0);
+
+        r = librg_config_chunkamount_set(world, 1, 4, 1); EQUALS(r, LIBRG_OK);
+        r = librg_chunk_to_chunkpos(world, 2, &x, &y, &z); EQUALS(r, LIBRG_OK); EQUALS(x, 0); EQUALS(y, 0); EQUALS(z, 0);
+        r = librg_chunk_to_chunkpos(world, 0, &x, &y, &z); EQUALS(r, LIBRG_OK); EQUALS(x, 0); EQUALS(y, -2); EQUALS(z, 0);
+
+        r = librg_config_chunkamount_set(world, 1, 1, 4); EQUALS(r, LIBRG_OK);
+        r = librg_chunk_to_chunkpos(world, 2, &x, &y, &z); EQUALS(r, LIBRG_OK); EQUALS(x, 0); EQUALS(y, 0); EQUALS(z, 0);
+        r = librg_chunk_to_chunkpos(world, 0, &x, &y, &z); EQUALS(r, LIBRG_OK); EQUALS(x, 0); EQUALS(y, 0); EQUALS(z, -2);
+
+        r = librg_config_chunkamount_set(world, 4, 4, 1); EQUALS(r, LIBRG_OK);
+        r = librg_chunk_to_chunkpos(world, 10, &x, &y, &z); EQUALS(r, LIBRG_OK); EQUALS(x, 0); EQUALS(y, 0); EQUALS(z, 0);
+        r = librg_chunk_to_chunkpos(world, 0, &x, &y, &z); EQUALS(r, LIBRG_OK); EQUALS(x, -2); EQUALS(y, -2); EQUALS(z, 0);
+        r = librg_chunk_to_chunkpos(world, 15, &x, &y, &z); EQUALS(r, LIBRG_OK); EQUALS(x, 1); EQUALS(y, 1); EQUALS(z, 0);
+
+        r = librg_config_chunkamount_set(world, 1, 4, 4); EQUALS(r, LIBRG_OK);
+        r = librg_chunk_to_chunkpos(world, 10, &x, &y, &z); EQUALS(r, LIBRG_OK); EQUALS(x, 0); EQUALS(y, 0); EQUALS(z, 0);
+        r = librg_chunk_to_chunkpos(world, 0, &x, &y, &z); EQUALS(r, LIBRG_OK); EQUALS(x, 0); EQUALS(y, -2); EQUALS(z, -2);
+        r = librg_chunk_to_chunkpos(world, 15, &x, &y, &z); EQUALS(r, LIBRG_OK); EQUALS(x, 0); EQUALS(y, 1); EQUALS(z, 1);
+
+        r = librg_config_chunkamount_set(world, 4, 4, 4); EQUALS(r, LIBRG_OK);
+        r = librg_chunk_to_chunkpos(world, 42, &x, &y, &z); EQUALS(r, LIBRG_OK); EQUALS(x, 0); EQUALS(y, 0); EQUALS(z, 0);
+        r = librg_chunk_to_chunkpos(world, 0, &x, &y, &z); EQUALS(r, LIBRG_OK); EQUALS(x, -2); EQUALS(y, -2); EQUALS(z, -2);
+        r = librg_chunk_to_chunkpos(world, 63, &x, &y, &z); EQUALS(r, LIBRG_OK); EQUALS(x, 1); EQUALS(y, 1); EQUALS(z, 1);
     });
 });

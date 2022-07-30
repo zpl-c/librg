@@ -263,7 +263,10 @@ LIBRG_ALWAYS_INLINE int16_t librg_util_chunkoffset_line(int16_t v, int16_t off, 
     float o = 0.0f; /* LIBRG_OFFSET_BEG */
     if (off == LIBRG_OFFSET_MID) o = (size/2.0f);
     if (off == LIBRG_OFFSET_END) o = (size);
+
+    /* integrate the offset */
     o = o + v;
+
     return o >= 0 ? zpl_floor(o) : zpl_ceil(o);
 }
 
@@ -275,7 +278,16 @@ librg_chunk librg_chunk_from_chunkpos(librg_world *world, int16_t chunk_x, int16
     int16_t chy = librg_util_chunkoffset_line(chunk_y, wld->chunkoffset.y, wld->worldsize.y);
     int16_t chz = librg_util_chunkoffset_line(chunk_z, wld->chunkoffset.z, wld->worldsize.z);
 
-    librg_chunk id = (chz * wld->worldsize.y * wld->worldsize.z) + (chy * wld->worldsize.y) + (chx);
+    /* return error if the size is too far off the max world limits */
+    if ((chx <= -wld->worldsize.x || chx >= wld->worldsize.x)
+     || (chy <= -wld->worldsize.y || chy >= wld->worldsize.y)
+     || (chz <= -wld->worldsize.z || chz >= wld->worldsize.z)) {
+        return LIBRG_CHUNK_INVALID;
+    }
+
+    librg_chunk id = (chz * wld->worldsize.y * wld->worldsize.x) + (chy * wld->worldsize.x) + (chx);
+
+    // zpl_printf("(%d, %d, %d): %d\n", chx, chy, chz, id);
 
     if (id < 0 || id > (wld->worldsize.x * wld->worldsize.y * wld->worldsize.z)) {
         return LIBRG_CHUNK_INVALID;
@@ -292,14 +304,14 @@ int8_t librg_chunk_to_chunkpos(librg_world *world, librg_chunk id, int16_t *chun
         return LIBRG_CHUNK_INVALID;
     }
 
-    int16_t z = (int16_t)(id / (wld->worldsize.z * wld->worldsize.y));
-    int16_t r1 = (int16_t)(id % (wld->worldsize.z * wld->worldsize.y));
-    int16_t y = r1 / wld->worldsize.y;
-    int16_t x = r1 % wld->worldsize.y;
+    int16_t z = (int16_t)(id / (wld->worldsize.x * wld->worldsize.y));
+    int16_t r1 = (int16_t)(id % (wld->worldsize.x * wld->worldsize.y));
+    int16_t y = r1 / wld->worldsize.x;
+    int16_t x = r1 % wld->worldsize.x;
 
-    *chunk_x = x - librg_util_chunkoffset_line(0, wld->chunkoffset.x, wld->worldsize.x);
-    *chunk_y = y - librg_util_chunkoffset_line(0, wld->chunkoffset.y, wld->worldsize.y);
-    *chunk_z = z - librg_util_chunkoffset_line(0, wld->chunkoffset.z, wld->worldsize.z);
+    if (chunk_x) *chunk_x = x - librg_util_chunkoffset_line(0, wld->chunkoffset.x, wld->worldsize.x);
+    if (chunk_y) *chunk_y = y - librg_util_chunkoffset_line(0, wld->chunkoffset.y, wld->worldsize.y);
+    if (chunk_z) *chunk_z = z - librg_util_chunkoffset_line(0, wld->chunkoffset.z, wld->worldsize.z);
 
     return LIBRG_OK;
 }
