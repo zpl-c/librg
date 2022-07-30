@@ -520,4 +520,59 @@ MODULE(query, {
 
         librg_world_destroy(world);
     });
+
+    IT("should query entities with boundary checks on top-left", {
+        librg_world *world = librg_world_create();
+        r = librg_config_chunkamount_set(world, 10, 10, 1); EQUALS(r, LIBRG_OK);
+        r = librg_config_chunkoffset_set(world, LIBRG_OFFSET_BEG, LIBRG_OFFSET_BEG, LIBRG_OFFSET_BEG);
+
+        r = librg_entity_track(world, 1); EQUALS(r, LIBRG_OK);
+        r = librg_entity_track(world, 2); EQUALS(r, LIBRG_OK);
+        r = librg_entity_track(world, 3); EQUALS(r, LIBRG_OK);
+
+        r = librg_entity_chunk_set(world, 1, librg_chunk_from_chunkpos(world, 9, 3, 0)); EQUALS(r, LIBRG_OK);
+        r = librg_entity_chunk_set(world, 2, librg_chunk_from_chunkpos(world, 4, 4, 0)); EQUALS(r, LIBRG_OK);
+        r = librg_entity_chunk_set(world, 3, librg_chunk_from_chunkpos(world, 0, 4, 0)); EQUALS(r, LIBRG_OK);
+
+        r = librg_entity_owner_set(world, 3, 1); EQUALS(r, LIBRG_OK);
+
+        int64_t results[16] = {0};
+        size_t amt = 16;
+        librg_world_query(world, 1, 4, results, &amt);
+        EQUALS(amt, 2);
+        EQUALS(results[0], 3); // own entity first
+        EQUALS(results[1], 2);
+
+        librg_world_destroy(world);
+    });
+
+    IT("should query entities with boundary checks on mid-mid", {
+        librg_world *world = librg_world_create();
+        librg_chunk chid = LIBRG_CHUNK_INVALID;
+
+        r = librg_config_chunkamount_set(world, 9, 9, 1); EQUALS(r, LIBRG_OK);
+        r = librg_config_chunkoffset_set(world, LIBRG_OFFSET_MID, LIBRG_OFFSET_MID, LIBRG_OFFSET_MID);
+
+        r = librg_entity_track(world, 1); EQUALS(r, LIBRG_OK);
+        r = librg_entity_track(world, 2); EQUALS(r, LIBRG_OK);
+        r = librg_entity_track(world, 3); EQUALS(r, LIBRG_OK);
+
+        chid = librg_chunk_from_chunkpos(world, 4, -1, 0); NEQUALS(chid, LIBRG_CHUNK_INVALID);
+        r = librg_entity_chunk_set(world, 1, chid); EQUALS(r, LIBRG_OK);
+        chid = librg_chunk_from_chunkpos(world, -3, 0, 0); NEQUALS(chid, LIBRG_CHUNK_INVALID);
+        r = librg_entity_chunk_set(world, 2, chid); EQUALS(r, LIBRG_OK);
+        chid = librg_chunk_from_chunkpos(world, -4, 0, 0); NEQUALS(chid, LIBRG_CHUNK_INVALID);
+        r = librg_entity_chunk_set(world, 3, chid); EQUALS(r, LIBRG_OK);
+
+        r = librg_entity_owner_set(world, 3, 1); EQUALS(r, LIBRG_OK);
+
+        int64_t results[16] = {0};
+        size_t amt = 16;
+        librg_world_query(world, 1, 4, results, &amt);
+        EQUALS(amt, 2);
+        EQUALS(results[0], 3); // own entity first
+        EQUALS(results[1], 2);
+
+        librg_world_destroy(world);
+    });
 });
