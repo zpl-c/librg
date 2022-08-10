@@ -19,7 +19,7 @@
   <sub>
     Built with love using <a href="https://github.com/zpl-c/zpl"><strong>zpl</strong></a>
     &bull; Brought to you by <a href="https://github.com/inlife">@inlife</a>,
-    <a href="https://github.com/zaklaus">@zaklaus</a>
+    <a href="https://github.com/zpl-zak">@zpl-zak</a>
     and other <a href="https://github.com/zpl-c/librg/graphs/contributors">contributors</a>
   </sub>
 </div>
