@@ -302,10 +302,10 @@ int8_t librg_chunk_to_chunkpos(librg_world *world, librg_chunk id, int16_t *chun
         return LIBRG_CHUNK_INVALID;
     }
 
-    int16_t z = (int16_t)(id / (wld->worldsize.x * wld->worldsize.y));
-    int16_t r1 = (int16_t)(id % (wld->worldsize.x * wld->worldsize.y));
-    int16_t y = r1 / wld->worldsize.x;
-    int16_t x = r1 % wld->worldsize.x;
+    int64_t z = (int64_t)(id / (wld->worldsize.x * wld->worldsize.y));
+    int64_t r1 = (int64_t)(id % (wld->worldsize.x * wld->worldsize.y));
+    int64_t y = r1 / wld->worldsize.x;
+    int64_t x = r1 % wld->worldsize.x;
 
     if (chunk_x) *chunk_x = x - librg_util_chunkoffset_line(0, wld->chunkoffset.x, wld->worldsize.x);
     if (chunk_y) *chunk_y = y - librg_util_chunkoffset_line(0, wld->chunkoffset.y, wld->worldsize.y);

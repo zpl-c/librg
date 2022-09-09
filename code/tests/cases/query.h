@@ -600,4 +600,34 @@ MODULE(query, {
 
         librg_world_destroy(world);
     });
+
+    IT("should query entities within big worlds", {
+        librg_world *world = librg_world_create();
+
+        r = librg_config_chunksize_set(world, 10, 10, UINT16_MAX); EQUALS(r, LIBRG_OK);
+        r = librg_config_chunkamount_set(world, 1024, 1024, 1); EQUALS(r, LIBRG_OK);
+        r = librg_config_chunkoffset_set(world, LIBRG_OFFSET_MID, LIBRG_OFFSET_MID, LIBRG_OFFSET_MID);
+
+        r = librg_entity_track(world, 1); EQUALS(r, LIBRG_OK);
+        r = librg_entity_track(world, 2); EQUALS(r, LIBRG_OK);
+        r = librg_entity_track(world, 3); EQUALS(r, LIBRG_OK);
+
+        librg_chunk test_chunk = 32768;
+
+        r = librg_entity_chunk_set(world, 1, test_chunk); EQUALS(r, LIBRG_OK);
+        r = librg_entity_chunk_set(world, 2, test_chunk); EQUALS(r, LIBRG_OK);
+        r = librg_entity_chunk_set(world, 3, test_chunk); EQUALS(r, LIBRG_OK);
+
+        r = librg_entity_owner_set(world, 2, 100); EQUALS(r, LIBRG_OK);
+
+        int64_t results[16] = {0}; size_t amt = 16;
+        librg_world_query(world, 100, 0, results, &amt);
+
+        EQUALS(amt, 3);
+        EQUALS(results[0], 2); // own entity first
+        EQUALS(results[1], 1);
+        EQUALS(results[2], 3);
+
+        librg_world_destroy(world);
+    })
 });
