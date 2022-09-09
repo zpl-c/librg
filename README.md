@@ -47,6 +47,32 @@ It came a long way of stripping out things that were non-essential, slowly sculp
  * no external dependencies
  * built-in unit test coverage
 
+## Networking integration
+
+The overall interface of the library was made in such a way that majority of the networking libraries are supported.
+
+All you would need to have from a library is:
+
+1. Ability to send and receive a `char *` buffer
+2. Ability to read or set that buffer size
+3. Ability to indentify who is the receiver or sender of the data with an integer id
+
+And that is pretty much it!
+
+A list of what kind of libraries are supported:
+
+* [`ENet`](https://github.com/zpl-c/enet)
+* [`GameNetworkingSockets`](https://github.com/ValveSoftware/GameNetworkingSockets)
+* [`yojimbo`](https://github.com/networkprotocol/yojimbo)
+* [`SLikeNet`](https://github.com/SLikeSoft/SLikeNet)
+* [`KCP`](https://github.com/skywind3000/kcp)
+* [`Raknet`](https://github.com/facebookarchive/RakNet)
+* `Websocket`
+* `WebRTC`
+* Any other `UDP` or `TCP` based library
+
+> Note: you can check an example for network [integration for enet](https://github.com/zpl-c/librg/blob/master/code/apps/example-enet.c).
+
 ## F.A.Q.
 
 1.  **Is this a networking library?**
