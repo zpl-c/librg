@@ -37,15 +37,29 @@ Main responsibilities of the library include:
 The library was born to solve complexities of setting up and managing the flow of multi-player games and dedicated game servers.
 It came a long way of stripping out things that were non-essential, slowly sculpting into its current form, which you are able to see and use today.
 
+## Why you need it
+
+#### Without librg
+
+Usually, the networked game world consists of a set of networked players and a bunch of networked entities. The typical variant of setting up the synchronization relations between entities and players is to set up Everything-to-Everyone connections. That is the most simple to set up approach, which, unfortunately, at later stages, many entities become bandwidth-inefficient. 
+
+![world_without_librg](https://user-images.githubusercontent.com/2182108/189517945-afa096dd-f2f5-42cb-a0b9-22c2b81bc03b.png)
+
+#### With librg
+
+With librg, you can considerably decrease bandwidth usage by building radius & visibility-based entity relations. Entities will be synchronized only with the players they are visible to.
+
+![world_with_librg](https://user-images.githubusercontent.com/2182108/189517948-afb2dfc9-f632-4a87-bf63-47e3bab5cc42.png)
+
 ## Features
 
- * cross-platform support
- * lightweight, single-header
- * supports 2d/3d worlds of various sizes
- * compile- and run-time configurable
- * written in C99 (portability reasons)
- * no external dependencies
- * built-in unit test coverage
+ * Support for 2d/3d worlds of various sizes
+ * Virtual world support
+ * Custom entity visibility methods
+ * Advanced entity querying
+ * Events for entity-to-entity status changes
+ * Networked LOD support (based on variable radius)
+ * Cross-platform, lightweight, single-header
 
 ## Networking integration
 
@@ -169,4 +183,11 @@ In case you are working from **Windows**, and/or are not able to use `make`, you
 3. `cmake ../misc -G"Visual Studio 16 2019"` (or any configuration you have)
 4. `cmake --open .` (opens VS with the solution)
 5. And repeat steps from above
+
+For developers it offers nice benefits:
+
+ * compile- and run-time configurable
+ * written in C99 (portability reasons)
+ * no external dependencies
+ * built-in unit test coverage
 
