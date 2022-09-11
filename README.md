@@ -41,7 +41,9 @@ It came a long way of stripping out things that were non-essential, slowly sculp
 
 #### Without librg
 
-Usually, the networked game world consists of a set of networked players and a bunch of networked entities. The typical variant of setting up the synchronization relations between entities and players is to set up Everything-to-Everyone connections. That is the most simple to set up approach, which, unfortunately, at later stages, many entities become bandwidth-inefficient. 
+Usually, the networked game world consists of a set of networked players and a bunch of networked entities. The typical variant of setting up the synchronization relations between entities and players is to set up Everything-to-Everyone connections. 
+
+This is the most basic setup to follow. However, with an increasing amount of entities, it becomes rather bandwidth-inefficient.
 
 ![world_without_librg](https://user-images.githubusercontent.com/2182108/189517945-afa096dd-f2f5-42cb-a0b9-22c2b81bc03b.png)
 
@@ -63,9 +65,9 @@ With librg, you can considerably decrease bandwidth usage by building radius & v
 
 ## Networking integration
 
-The overall interface of the library was made in such a way that majority of the networking libraries are supported.
+The overall interface of the library was made with support of majority of network libraries in mind
 
-All you would need to have from a library is:
+The networking library has to support:
 
 1. Ability to send and receive a `char *` buffer
 2. Ability to read or set that buffer size
@@ -123,7 +125,7 @@ Additionally you can check [code/apps](code/apps) folder for actual code example
 
 ### World Replication
 
-Here is a simple illustration that attempts to describe how the library works on a simple 2d world of 4x4 chunks.
+Here is a simple illustration that attempts to replicate how the library works on a simple 2d world of 4x4 chunks.
 For a 3d world of bigger size everything would work in a very similar way, just in 3 dimensions.
 
 <a href="https://user-images.githubusercontent.com/2182108/83945607-87d64400-a814-11ea-8897-3c268b26b0f7.png" target="_blank">
