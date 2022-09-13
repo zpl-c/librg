@@ -34,6 +34,10 @@ GitHub:
   https://github.com/zpl-c/zpl
 
 Version History:
+  18.0.3  - fix emscripten support
+  18.0.2  - fix global-buffer-overflow in print module
+          - raise ZPL_PRINTF_MAXLEN to 64kb
+  18.0.1  - fix ADT parser wrongly assuming that an IP address is a real number
   18.0.0  - removed coroutines module
           - removed timer module
           - rename zpl_adt_get -> zpl_adt_query
@@ -400,7 +404,7 @@ License:
 
 #define ZPL_VERSION_MAJOR 18
 #define ZPL_VERSION_MINOR 0
-#define ZPL_VERSION_PATCH 0
+#define ZPL_VERSION_PATCH 3
 #define ZPL_VERSION_PRE ""
 
  // file: zpl_hedley.h
@@ -2466,7 +2470,6 @@ License:
 #        ifdef ZPL_MODULE_JOBS
 #        undef ZPL_MODULE_JOBS /* user */
 #        endif
-
 #        undef ZPL_MODULE_THREADING
 #    endif
 #    if defined(ZPL_DISABLE_JOBS) && defined(ZPL_MODULE_JOBS)
@@ -5732,7 +5735,7 @@ License:
          ZPL_BEGIN_C_DECLS
 
          #ifndef ZPL_PRINTF_MAXLEN
-         #define ZPL_PRINTF_MAXLEN 4096
+         #define ZPL_PRINTF_MAXLEN 65536
          #endif
 
          ZPL_DEF zpl_isize zpl_printf(char const *fmt, ...);
@@ -10198,7 +10201,7 @@ License:
          #    include <dirent.h>
          #endif
 
-         #if defined(ZPL_SYSTEM_UNIX) && !defined(ZPL_SYSTEM_FREEBSD) && !defined(ZPL_SYSTEM_OPENBSD) && !defined(ZPL_SYSTEM_CYGWIN)
+         #if defined(ZPL_SYSTEM_UNIX) && !defined(ZPL_SYSTEM_FREEBSD) && !defined(ZPL_SYSTEM_OPENBSD) && !defined(ZPL_SYSTEM_CYGWIN) && !defined(ZPL_SYSTEM_EMSCRIPTEN)
          #    include <sys/sendfile.h>
          #endif
 
@@ -10300,6 +10303,9 @@ License:
          #    if defined(ZPL_SYSTEM_OSX)
                  return copyfile(existing_filename, new_filename, NULL, COPYFILE_DATA) == 0;
          #    elif defined(ZPL_SYSTEM_OPENBSD)
+                 ZPL_NOT_IMPLEMENTED;
+                 return 0;
+         #    elif defined(ZPL_SYSTEM_EMSCRIPTEN)
                  ZPL_NOT_IMPLEMENTED;
                  return 0;
          #    else
@@ -11038,6 +11044,7 @@ License:
 
              if (info && (info->width == 0 || info->flags & ZPL_FMT_MINUS)) {
                  if (info->precision > 0) len = info->precision < len ? info->precision : len;
+                 if (res+len > max_len) return res;
                  res += zpl_strlcpy(text, str, len);
                  text += res;
 
@@ -11054,6 +11061,7 @@ License:
                      while (padding-- > 0 && remaining-- > 0) *text++ = pad, res++;
                  }
 
+                 if (res+len > max_len) return res;
                  res += zpl_strlcpy(text, str, len);
              }
 
@@ -17210,13 +17218,15 @@ License:
          zpl_i8 exp=0,orig_exp=0;
          zpl_u8 neg_zero=0;
          zpl_u8 lead_digit=0;
+         zpl_u8 node_type=0;
+         zpl_u8 node_props=0;
 
          /* skip false positives and special cases */
          if (!!zpl_strchr("eE", *p) || (!!zpl_strchr(".+-", *p) && !zpl_char_is_hex_digit(*(p+1)) && *(p+1) != '.')) {
              return ++base_str;
          }
 
-         node->type = ZPL_ADT_TYPE_INTEGER;
+         node_type = ZPL_ADT_TYPE_INTEGER;
          neg_zero = false;
 
          zpl_isize ib = 0;
@@ -17229,19 +17239,19 @@ License:
          }
 
          if (*e == '.') {
-             node->type = ZPL_ADT_TYPE_REAL;
-             node->props = ZPL_ADT_PROPS_IS_PARSED_REAL;
+             node_type = ZPL_ADT_TYPE_REAL;
+             node_props = ZPL_ADT_PROPS_IS_PARSED_REAL;
              lead_digit = false;
              buf[ib++] = '0';
              do {
                  buf[ib++] = *e;
              } while (zpl_char_is_digit(*++e));
          } else {
-             if (!zpl_strncmp(e, "0x", 2) || !zpl_strncmp(e, "0X", 2)) { node->props = ZPL_ADT_PROPS_IS_HEX; }
+             if (!zpl_strncmp(e, "0x", 2) || !zpl_strncmp(e, "0X", 2)) { node_props = ZPL_ADT_PROPS_IS_HEX; }
              while (zpl_char_is_hex_digit(*e) || zpl_char_to_lower(*e) == 'x') { buf[ib++] = *e++; }
 
              if (*e == '.') {
-                 node->type = ZPL_ADT_TYPE_REAL;
+                 node_type = ZPL_ADT_TYPE_REAL;
                  lead_digit = true;
                  zpl_u32 step = 0;
 
@@ -17252,6 +17262,11 @@ License:
 
                  if (step < 2) { buf[ib++] = '0'; }
              }
+         }
+
+         /* check if we have a dot here, this is a false positive (IP address, ...) */
+         if (*e == '.') {
+             return ++base_str;
          }
 
          zpl_f32 eb = 10;
@@ -17269,7 +17284,7 @@ License:
              orig_exp = exp = (zpl_u8)zpl_str_to_i64(expbuf, NULL, 10);
          }
 
-         if (node->type == ZPL_ADT_TYPE_INTEGER) {
+         if (node_type == ZPL_ADT_TYPE_INTEGER) {
              node->integer = zpl_str_to_i64(buf, 0, 0);
      #ifndef ZPL_PARSER_DISABLE_ANALYSIS
              /* special case: negative zero */
@@ -17293,7 +17308,7 @@ License:
              base2 = (zpl_i32)zpl_str_to_i64(base_string2, 0, 0);
              if (exp) {
                  exp = exp * (!(eb == 10.0f) ? -1 : 1);
-                 node->props = ZPL_ADT_PROPS_IS_EXP;
+                 node_props = ZPL_ADT_PROPS_IS_EXP;
              }
 
              /* special case: negative zero */
@@ -17303,6 +17318,9 @@ License:
      #endif
              while (orig_exp-- > 0) { node->real *= eb; }
          }
+
+         node->type = node_type;
+         node->props = node_props;
 
      #ifndef ZPL_PARSER_DISABLE_ANALYSIS
          node->base = base;

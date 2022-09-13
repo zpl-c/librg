@@ -1,5 +1,7 @@
 # Folders
 build/*
+build_web/*
+emsdk
 misc/deploy/
 node_modules/
 pkg/
