@@ -629,5 +629,49 @@ MODULE(query, {
         EQUALS(results[2], 3);
 
         librg_world_destroy(world);
-    })
+    });
+
+    IT("it should run query with exact value on limit", {
+        librg_world *world = librg_world_create();
+
+        r = librg_entity_track(world, 1); EQUALS(r, LIBRG_OK);
+        r = librg_entity_track(world, 2); EQUALS(r, LIBRG_OK);
+        r = librg_entity_track(world, 3); EQUALS(r, LIBRG_OK);
+
+        r = librg_entity_chunk_set(world, 1, 1); EQUALS(r, LIBRG_OK);
+        r = librg_entity_chunk_set(world, 2, 1); EQUALS(r, LIBRG_OK);
+        r = librg_entity_chunk_set(world, 3, 1); EQUALS(r, LIBRG_OK);
+
+        r = librg_entity_owner_set(world, 2, 100); EQUALS(r, LIBRG_OK);
+
+        int64_t results[10] = {0}; size_t amt = 3;
+        r = librg_world_query(world, 100, 1, results, &amt); EQUALS(r, 0);
+
+        EQUALS(amt, 3);
+        EQUALS(results[0], 2);
+
+        librg_world_destroy(world);
+    });
+
+    IT("it should properly calculate recommended size for the query", {
+        librg_world *world = librg_world_create();
+
+        r = librg_entity_track(world, 1); EQUALS(r, LIBRG_OK);
+        r = librg_entity_track(world, 2); EQUALS(r, LIBRG_OK);
+        r = librg_entity_track(world, 3); EQUALS(r, LIBRG_OK);
+
+        r = librg_entity_chunk_set(world, 1, 1); EQUALS(r, LIBRG_OK);
+        r = librg_entity_chunk_set(world, 2, 1); EQUALS(r, LIBRG_OK);
+        r = librg_entity_chunk_set(world, 3, 1); EQUALS(r, LIBRG_OK);
+
+        r = librg_entity_owner_set(world, 2, 100); EQUALS(r, LIBRG_OK);
+
+        int64_t results[10] = {0}; size_t amt = 2;
+        r = librg_world_query(world, 100, 1, results, &amt); EQUALS(r, 1);
+
+        EQUALS(amt, 2);
+        EQUALS(results[0], 2);
+
+        librg_world_destroy(world);
+    });
 });

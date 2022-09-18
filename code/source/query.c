@@ -132,12 +132,15 @@ int32_t librg_world_query(librg_world *world, int64_t owner_id, uint8_t chunk_ra
 
     size_t buffer_limit = *entity_amount;
     size_t total_count = zpl_array_count(wld->entity_map.entries);
+    size_t result_amount = 0;
 
-    librg_table_i64 results = {0};
     librg_table_tbl dimensions = {0};
-
-    librg_table_i64_init(&results, wld->allocator);
     librg_table_tbl_init(&dimensions, wld->allocator);
+
+    /* mini helper for pushing entity */
+    /* if it will overflow do not push, just increase counter for future statistics */
+    #define librg_push_entity(entity_id) \
+        { if (result_amount + 1 <= buffer_limit) entity_ids[result_amount++] = entity_id; else result_amount++; }
 
     /* generate a map of visible chunks (only counting owned entities) */
     for (size_t i=0; i < total_count; ++i) {
@@ -146,7 +149,7 @@ int32_t librg_world_query(librg_world *world, int64_t owner_id, uint8_t chunk_ra
 
         /* allways add self-owned entities */
         if (entity->owner_id == owner_id) {
-            librg_table_i64_set(&results, entity_id, 1);
+            librg_push_entity(entity_id);
         }
 
         /* immidiately skip, if entity was not placed correctly */
@@ -176,7 +179,7 @@ int32_t librg_world_query(librg_world *world, int64_t owner_id, uint8_t chunk_ra
 
     /* a slightly increased buffer_limit, that includes own entities */
     /* that allows us to prevent edge-cases where the code below will include our entities in the result as well */
-    size_t owned_entities = zpl_array_count(results.entries);
+    size_t owned_entities = result_amount; /*zpl_array_count(results.entries);*/
     size_t buffer_limit_extended = buffer_limit + owned_entities;
 
     /* iterate on all entities, and check if they are inside of the interested chunks */
@@ -185,13 +188,15 @@ int32_t librg_world_query(librg_world *world, int64_t owner_id, uint8_t chunk_ra
         librg_entity_t *entity = &wld->entity_map.entries[i].value;
         librg_table_i64 *chunks = librg_table_tbl_get(&dimensions, entity->dimension);
 
+        if (entity->owner_id == owner_id) continue;
+
         /* owner visibility (personal)*/
         int8_t vis_owner = librg_entity_visibility_owner_get(world, entity_id, owner_id);
         if (vis_owner == LIBRG_VISIBLITY_NEVER) {
             continue; /* prevent from being included */
         }
         else if (vis_owner == LIBRG_VISIBLITY_ALWAYS) {
-            librg_table_i64_set(&results, entity_id, 1); /* always included */
+            librg_push_entity(entity_id);
             continue;
         }
 
@@ -201,7 +206,7 @@ int32_t librg_world_query(librg_world *world, int64_t owner_id, uint8_t chunk_ra
             continue; /* prevent from being included */
         }
         else if (vis_global == LIBRG_VISIBLITY_ALWAYS) {
-            librg_table_i64_set(&results, entity_id, 1); /* always included */
+            librg_push_entity(entity_id);
             continue;
         }
 
@@ -218,27 +223,23 @@ int32_t librg_world_query(librg_world *world, int64_t owner_id, uint8_t chunk_ra
 
                 /* add entity and continue to the next one */
                 if (entity->chunks[j] == chunk) {
-                    librg_table_i64_set(&results, entity_id, 1);
+                    librg_push_entity(entity_id);
                     break;
                 }
             }
         }
     }
 
-    /* copy/transform results to a plain array */
-    size_t count = zpl_array_count(results.entries);
-    for (size_t i = 0; i < LIBRG_MIN(buffer_limit, count); ++i)
-        entity_ids[i] = results.entries[i].key;
-
     /* free up temp data */
     for (int i = 0; i < zpl_array_count(dimensions.entries); ++i)
         librg_table_i64_destroy(&dimensions.entries[i].value);
 
     librg_table_tbl_destroy(&dimensions);
-    librg_table_i64_destroy(&results);
 
-    *entity_amount = LIBRG_MIN(buffer_limit, count);
-    return LIBRG_MAX(0, (int32_t)(count - buffer_limit));
+    #undef librg_push_entity
+
+    *entity_amount = LIBRG_MIN(buffer_limit, result_amount);
+    return LIBRG_MAX(0, (int32_t)(result_amount - buffer_limit));
 }
 
 LIBRG_END_C_DECLS
