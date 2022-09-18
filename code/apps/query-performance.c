@@ -54,7 +54,9 @@ int main() {
     // [test] found 171 entities in (7804.661 ms)
     //
     // after switch to internal memory
-    //
+    // [test] found 171 entities in (4308.592 ms)
+    // [test] found 171 entities in (4234.625 ms)
+    // [test] found 171 entities in (4221.636 ms)
 
     librg_world_destroy(world);
     return 0;
