@@ -45,6 +45,9 @@ test: code/tests/unit
 apps: $(APPS)
 	@echo '> Building apps'
 
+app: code/apps/$(NAME)
+	@echo '> Building app $(NAME)'
+
 web:
 	emcc $(LEVEL) -s WASM=1 -s EXTRA_EXPORTED_RUNTIME_METHODS='["cwrap"]' \
 		-DLIBRG_EMSCRIPTEN=1 -I code/ code/apps/library.c -o build/librg.js
@@ -56,12 +59,12 @@ endif
 
 % : %.c
 	@mkdir -p build
-	@echo '=> Building $(@F)'
+	@echo '> Building $(@F)'
 	$(CC) $(CFLAGS) $^ $(LDFLAGS) -o build/$(@F)
 
 % : %.cc
 	@mkdir -p build
-	@echo '=> Building $(@F)'
+	@echo '> Building $(@F)'
 	$(CXX) $(CXXFLAGS) $^ $(LDFLAGS) -o build/$(@F)
 
 .SILENT:
