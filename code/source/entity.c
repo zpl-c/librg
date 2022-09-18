@@ -66,6 +66,14 @@ int8_t librg_entity_untrack(librg_world *world, int64_t entity_id) {
             librg_table_i64_destroy(snapshot);
             librg_table_tbl_remove(&wld->owner_map, entity->owner_id);
         }
+
+        /* cleanup owner-entity pair */
+        for (int i = 0; i < zpl_array_count(wld->owner_entity_pairs); ++i) {
+            if (wld->owner_entity_pairs[i].entity_id == entity_id) {
+                zpl_array_remove_at(wld->owner_entity_pairs, i);
+                break;
+            }
+        }
     }
 
     /* cleanup owner visibility */
@@ -141,6 +149,35 @@ int8_t librg_entity_owner_set(librg_world *world, int64_t entity_id, int64_t own
 
     if (entity->flag_foreign == LIBRG_TRUE) {
         return LIBRG_ENTITY_FOREIGN;
+    }
+
+    /* update owner-entity pairing */
+    if (owner_id != LIBRG_OWNER_INVALID) {
+        bool ownership_pair_found = false;
+        for (int i = 0; i < zpl_array_count(wld->owner_entity_pairs) && !ownership_pair_found; ++i) {
+            if (wld->owner_entity_pairs[i].entity_id == entity_id) {
+                ownership_pair_found = true;
+
+                /* update owner if we found the entity */
+                if (wld->owner_entity_pairs[i].owner_id != owner_id) {
+                    wld->owner_entity_pairs[i].owner_id = owner_id;
+                }
+            }
+        }
+        if (!ownership_pair_found) {
+            librg_owner_entity_pair_t pair = { owner_id, entity_id };
+            zpl_array_append(wld->owner_entity_pairs, pair);
+        }
+    } else {
+        if (entity->owner_id != LIBRG_OWNER_INVALID) {
+            /* cleanup owner-entity pair */
+            for (int i = 0; i < zpl_array_count(wld->owner_entity_pairs); ++i) {
+                if (wld->owner_entity_pairs[i].entity_id == entity_id) {
+                    zpl_array_remove_at(wld->owner_entity_pairs, i);
+                    break;
+                }
+            }
+        }
     }
 
     entity->owner_id = owner_id;

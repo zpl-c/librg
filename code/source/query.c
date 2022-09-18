@@ -143,9 +143,11 @@ int32_t librg_world_query(librg_world *world, int64_t owner_id, uint8_t chunk_ra
         { if (result_amount + 1 <= buffer_limit) entity_ids[result_amount++] = entity_id; else result_amount++; }
 
     /* generate a map of visible chunks (only counting owned entities) */
-    for (size_t i=0; i < total_count; ++i) {
-        uint64_t entity_id = wld->entity_map.entries[i].key;
-        librg_entity_t *entity = &wld->entity_map.entries[i].value;
+    for (int i = 0; i < zpl_array_count(wld->owner_entity_pairs); ++i) {
+        if (wld->owner_entity_pairs[i].owner_id != owner_id) continue;
+
+        uint64_t entity_id = wld->owner_entity_pairs[i].entity_id;
+        librg_entity_t *entity = librg_table_ent_get(&wld->entity_map, entity_id);
 
         /* allways add self-owned entities */
         if (entity->owner_id == owner_id) {

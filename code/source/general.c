@@ -66,6 +66,7 @@ librg_world *librg_world_create() {
     librg_table_ent_init(&wld->entity_map, wld->allocator);
     librg_table_tbl_init(&wld->owner_map, wld->allocator);
     zpl_random_init(&wld->random);
+    zpl_array_init(wld->owner_entity_pairs, wld->allocator);
 
     return (librg_world *)wld;
 }
@@ -93,6 +94,8 @@ int8_t librg_world_destroy(librg_world *world) {
 
         librg_table_tbl_destroy(&wld->owner_map);
     }
+
+    zpl_array_free(wld->owner_entity_pairs);
 
     /* mark it invalid */
     wld->valid = LIBRG_FALSE;

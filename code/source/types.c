@@ -111,6 +111,11 @@ typedef struct librg_event_t {
     void      * userdata;       /* userpointer that is passed from librg_world_write/librg_world_read fns */
 } librg_event_t;
 
+typedef struct librg_owner_entity_pair_t {
+    int64_t     owner_id;       /* id of the owner who this event is called for */
+    int64_t     entity_id;      /* id of an entity which this event is called about */
+} librg_owner_entity_pair_t;
+
 typedef struct librg_world_t {
     uint8_t valid;
     zpl_allocator allocator;
@@ -123,6 +128,10 @@ typedef struct librg_world_t {
     librg_event_fn handlers[LIBRG_PACKAGING_TOTAL];
     librg_table_ent entity_map;
     librg_table_tbl owner_map;
+
+    /* owner-entity pair, needed for more effective query */
+    /* achieved by caching only owned entities and reducing the first iteration cycle */
+    zpl_array(librg_owner_entity_pair_t) owner_entity_pairs;
 
     void *userdata;
 } librg_world_t;
