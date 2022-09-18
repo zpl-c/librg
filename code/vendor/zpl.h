@@ -34,6 +34,7 @@ GitHub:
   https://github.com/zpl-c/zpl
 
 Version History:
+  18.1.0  - added table _clear method
   18.0.4  - fix memory arena alignment & added tests
   18.0.3  - fix emscripten support
   18.0.2  - fix global-buffer-overflow in print module
@@ -405,7 +406,7 @@ License:
 
 #define ZPL_VERSION_MAJOR 18
 #define ZPL_VERSION_MINOR 1
-#define ZPL_VERSION_PATCH 0
+#define ZPL_VERSION_PATCH 1
 #define ZPL_VERSION_PRE ""
 
  // file: zpl_hedley.h
@@ -4340,7 +4341,7 @@ License:
          }                                                                                                               \
                                                                                                                          \
          void ZPL_JOIN2(FUNC, clear)(NAME * h) {                                                                         \
-             zpl_array_clear(h->hashes);                                                                                 \
+             for (int i = 0; i < zpl_array_count(h->hashes); i++) h->hashes[i] = -1;                                     \
              zpl_array_clear(h->entries);                                                                                \
          }                                                                                                               \
                                                                                                                          \

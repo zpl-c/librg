@@ -2,7 +2,7 @@
 // #define LIBRG_ENTITY_MAXCHUNKS 1
 #include "librg.h"
 
-#define MAX_ENTITY 1000000
+#define MAX_ENTITY 1000
 #define QUERY_ATTEMPTS 1000
 
 int main() {

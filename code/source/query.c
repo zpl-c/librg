@@ -134,9 +134,6 @@ int32_t librg_world_query(librg_world *world, int64_t owner_id, uint8_t chunk_ra
     size_t total_count = zpl_array_count(wld->entity_map.entries);
     size_t result_amount = 0;
 
-    librg_table_tbl dimensions = {0};
-    librg_table_tbl_init(&dimensions, wld->allocator);
-
     /* mini helper for pushing entity */
     /* if it will overflow do not push, just increase counter for future statistics */
     #define librg_push_entity(entity_id) \
@@ -150,9 +147,7 @@ int32_t librg_world_query(librg_world *world, int64_t owner_id, uint8_t chunk_ra
         librg_entity_t *entity = librg_table_ent_get(&wld->entity_map, entity_id);
 
         /* allways add self-owned entities */
-        if (entity->owner_id == owner_id) {
-            librg_push_entity(entity_id);
-        }
+        librg_push_entity(entity_id);
 
         /* immidiately skip, if entity was not placed correctly */
         if (entity->chunks[0] == LIBRG_CHUNK_INVALID) continue;
@@ -160,12 +155,12 @@ int32_t librg_world_query(librg_world *world, int64_t owner_id, uint8_t chunk_ra
         if (entity->owner_id != owner_id) continue;
 
         /* fetch, or create chunk set in this dimension if does not exist */
-        librg_table_i64 *dim_chunks = librg_table_tbl_get(&dimensions, entity->dimension);
+        librg_table_i64 *dim_chunks = librg_table_tbl_get(&wld->dimensions, entity->dimension);
 
         if (!dim_chunks) {
             librg_table_i64 _chunks = {0};
-            librg_table_tbl_set(&dimensions, entity->dimension, _chunks);
-            dim_chunks = librg_table_tbl_get(&dimensions, entity->dimension);
+            librg_table_tbl_set(&wld->dimensions, entity->dimension, _chunks);
+            dim_chunks = librg_table_tbl_get(&wld->dimensions, entity->dimension);
             librg_table_i64_init(dim_chunks, wld->allocator);
         }
 
@@ -179,16 +174,11 @@ int32_t librg_world_query(librg_world *world, int64_t owner_id, uint8_t chunk_ra
         }
     }
 
-    /* a slightly increased buffer_limit, that includes own entities */
-    /* that allows us to prevent edge-cases where the code below will include our entities in the result as well */
-    size_t owned_entities = result_amount; /*zpl_array_count(results.entries);*/
-    size_t buffer_limit_extended = buffer_limit + owned_entities;
-
     /* iterate on all entities, and check if they are inside of the interested chunks */
-    for (size_t i=0; i < LIBRG_MIN(buffer_limit_extended, total_count); ++i) {
+    for (size_t i=0; i < total_count; ++i) {
         uint64_t entity_id = wld->entity_map.entries[i].key;
         librg_entity_t *entity = &wld->entity_map.entries[i].value;
-        librg_table_i64 *chunks = librg_table_tbl_get(&dimensions, entity->dimension);
+        librg_table_i64 *chunks = librg_table_tbl_get(&wld->dimensions, entity->dimension);
 
         if (entity->owner_id == owner_id) continue;
 
@@ -233,10 +223,10 @@ int32_t librg_world_query(librg_world *world, int64_t owner_id, uint8_t chunk_ra
     }
 
     /* free up temp data */
-    for (int i = 0; i < zpl_array_count(dimensions.entries); ++i)
-        librg_table_i64_destroy(&dimensions.entries[i].value);
+    for (int i = 0; i < zpl_array_count(wld->dimensions.entries); ++i)
+        librg_table_i64_destroy(&wld->dimensions.entries[i].value);
 
-    librg_table_tbl_destroy(&dimensions);
+    librg_table_tbl_clear(&wld->dimensions);
 
     #undef librg_push_entity
 

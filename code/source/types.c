@@ -129,6 +129,8 @@ typedef struct librg_world_t {
     librg_table_ent entity_map;
     librg_table_tbl owner_map;
 
+    librg_table_tbl dimensions;
+
     /* owner-entity pair, needed for more effective query */
     /* achieved by caching only owned entities and reducing the first iteration cycle */
     zpl_array(librg_owner_entity_pair_t) owner_entity_pairs;
