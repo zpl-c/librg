@@ -153,9 +153,9 @@ int8_t librg_config_chunkamount_get(librg_world *world, uint16_t *x, uint16_t *y
 int8_t librg_config_chunksize_set(librg_world *world, uint16_t x, uint16_t y, uint16_t z) {
     LIBRG_ASSERT(world); if (!world) return LIBRG_WORLD_INVALID;
     librg_world_t *wld = (librg_world_t *)world;
-    wld->chunksize.x = x;
-    wld->chunksize.y = y;
-    wld->chunksize.z = z;
+    wld->chunksize.x = x == 0 ? 1 : x;
+    wld->chunksize.y = y == 0 ? 1 : y;
+    wld->chunksize.z = z == 0 ? 1 : z;
     return LIBRG_OK;
 }
 
