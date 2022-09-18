@@ -35,12 +35,14 @@ LIBRG_API int8_t        librg_entity_dimension_set(librg_world *world, int64_t e
 LIBRG_API int32_t       librg_entity_dimension_get(librg_world *world, int64_t entity_id);
 LIBRG_API int8_t        librg_entity_owner_set(librg_world *world, int64_t entity_id, int64_t owner_id);
 LIBRG_API int64_t       librg_entity_owner_get(librg_world *world, int64_t entity_id);
-LIBRG_API int8_t        librg_entity_radius_set(librg_world *world, int64_t entity_id, int8_t observed_chunk_radius);
-LIBRG_API int8_t        librg_entity_radius_get(librg_world *world, int64_t entity_id);
 LIBRG_API int8_t        librg_entity_visibility_global_set(librg_world *world, int64_t entity_id, librg_visibility value);
 LIBRG_API int8_t        librg_entity_visibility_global_get(librg_world *world, int64_t entity_id);
 LIBRG_API int8_t        librg_entity_visibility_owner_set(librg_world *world, int64_t entity_id, int64_t owner_id, librg_visibility value);
 LIBRG_API int8_t        librg_entity_visibility_owner_get(librg_world *world, int64_t entity_id, int64_t owner_id);
+
+/* deprecated since 7.0 */
+LIBRG_API int8_t        librg_entity_radius_set(librg_world *world, int64_t entity_id, int8_t observed_chunk_radius);
+LIBRG_API int8_t        librg_entity_radius_get(librg_world *world, int64_t entity_id);
 
 #if 0 /* for future releases */
 LIBRG_API int8_t        librg_entity_behavior_set(librg_world *world, int64_t entity_id, librg_behavior key, int32_t value);

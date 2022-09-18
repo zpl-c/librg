@@ -18,6 +18,7 @@ LIBRG_API int8_t        librg_world_destroy(librg_world *world);
 LIBRG_API int8_t        librg_world_valid(librg_world *world);
 LIBRG_API int8_t        librg_world_userdata_set(librg_world *world, void *data);
 LIBRG_API void *        librg_world_userdata_get(librg_world *world);
+LIBRG_API int64_t       librg_world_entities_tracked();
 
 // =======================================================================//
 // !

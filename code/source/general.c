@@ -120,6 +120,12 @@ void *librg_world_userdata_get(librg_world *world) {
     return wld->userdata;
 }
 
+int64_t librg_world_entities_tracked(librg_world *world) {
+    LIBRG_ASSERT(world); if (!world) return LIBRG_WORLD_INVALID;
+    librg_world_t *wld = (librg_world_t *)world;
+    return zpl_array_count(wld->entity_map.entries);
+}
+
 // =======================================================================//
 // !
 // ! Runtime configuration
