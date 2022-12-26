@@ -375,7 +375,7 @@ Possible values:
  * `LIBRG_VISIBLITY_NEVER` - specified entity will be always invisible, regardless of proximity
  * `LIBRG_VISIBLITY_ALWAYS` - specified entity will be always visible, regardless of proximity
 
-> Note: For the owner of the entity the entity will remain visible regardless of the visibility setting.
+> Note: For the owner of the entity the entity will remain visible unless [owner-to-entity invisibility](#librg_entity_visibility_owner_set) is set.
 
 ##### Signature
 ```c
@@ -404,7 +404,7 @@ Possible values:
  * `LIBRG_VISIBLITY_NEVER` - specified entity will be always invisible, regardless of proximity
  * `LIBRG_VISIBLITY_ALWAYS` - specified entity will be always visible, regardless of proximity
 
-> Note: For the owner of the entity the entity will remain visible regardless of the visibility setting.
+> Note: For the owner of the entity the entity will remain visible unless [owner-to-entity invisibility](#librg_entity_visibility_owner_set) is set.
 
 ##### Signature
 ```c
@@ -436,8 +436,6 @@ Possible values:
  * `LIBRG_VISIBLITY_NEVER` - specified entity will be always invisible, regardless of proximity
  * `LIBRG_VISIBLITY_ALWAYS` - specified entity will be always visible, regardless of proximity
 
-> Note: For the owner of the entity the entity will remain visible regardless of the visibility setting.
-
 ##### Signature
 ```c
 int8_t librg_entity_visibility_owner_set(
@@ -465,8 +463,6 @@ Possible values:
  * `LIBRG_VISIBLITY_DEFAULT` - the default value of the visibility setting
  * `LIBRG_VISIBLITY_NEVER` - specified entity will be always invisible, regardless of proximity
  * `LIBRG_VISIBLITY_ALWAYS` - specified entity will be always visible, regardless of proximity
-
-> Note: For the owner of the entity the entity will remain visible regardless of the visibility setting.
 
 ##### Signature
 ```c
