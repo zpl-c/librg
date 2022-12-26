@@ -338,11 +338,6 @@ int8_t librg_entity_visibility_owner_set(librg_world *world, int64_t entity_id, 
     librg_entity_t *entity = librg_table_ent_get(&wld->entity_map, entity_id);
     if (entity == NULL) return LIBRG_ENTITY_UNTRACKED;
 
-    /* prevent setting visibility, for your own entity, it will be always visible */
-    if (entity->owner_id == owner_id) {
-        return LIBRG_ENTITY_VISIBILITY_IGNORED;
-    }
-
     if (!entity->flag_visbility_owner_enabled) {
         entity->flag_visbility_owner_enabled = LIBRG_TRUE;
         librg_table_i8_init(&entity->owner_visibility_map, wld->allocator);

@@ -147,7 +147,11 @@ int32_t librg_world_query(librg_world *world, int64_t owner_id, uint8_t chunk_ra
         librg_entity_t *entity = librg_table_ent_get(&wld->entity_map, entity_id);
 
         /* allways add self-owned entities */
-        librg_push_entity(entity_id);
+        int8_t vis_owner = librg_entity_visibility_owner_get(world, entity_id, owner_id);
+        if (vis_owner != LIBRG_VISIBLITY_NEVER) {
+            /* prevent from being included */
+            librg_push_entity(entity_id);
+        }
 
         /* immidiately skip, if entity was not placed correctly */
         if (entity->chunks[0] == LIBRG_CHUNK_INVALID) continue;
