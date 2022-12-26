@@ -3,7 +3,7 @@
 </div>
 
 <div align="center">
-    <a href="https://github.com/zpl-c/librg/actions"><img src="https://img.shields.io/github/workflow/status/zpl-c/librg/tests?label=Tests&style=for-the-badge" alt="build status" /></a>
+    <a href="https://github.com/zpl-c/librg/actions"><img src="https://img.shields.io/github/actions/workflow/status/zpl-c/librg/tests.yml?branch=master&label=Tests&style=for-the-badge" alt="build status" /></a>
     <img src="https://img.shields.io/github/package-json/v/zpl-c/librg?style=for-the-badge" alt="version" /></a>
     <a href="https://discord.gg/2fZVEym"><img src="https://img.shields.io/discord/354670964400848898?color=7289DA&style=for-the-badge" alt="discord" /></a>
     <a href="LICENSE"><img src="https://img.shields.io/github/license/zpl-c/librg?style=for-the-badge" alt="license" /></a>
