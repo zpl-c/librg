@@ -94,6 +94,25 @@ int8_t librg_entity_foreign(
 
 ------------------------------
 
+## librg_entity_owned
+
+Checks if a particular entity is actually a owned entity.
+
+##### Signature
+```c
+int8_t librg_entity_owned(
+    librg_world *world,
+    int64_t entity_id
+)
+```
+
+##### Returns
+
+* In case of truth: `LIBRG_TRUE`
+* In all other cases: `LIBRG_FALSE`
+
+------------------------------
+
 ## librg_entity_count
 
 A helper method that returns current amount of entities that are being tracked in the world
