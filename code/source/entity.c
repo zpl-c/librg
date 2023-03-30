@@ -104,6 +104,16 @@ int8_t librg_entity_foreign(librg_world *world, int64_t entity_id) {
     return entity->flag_foreign == LIBRG_TRUE;
 }
 
+int8_t librg_entity_owned(librg_world *world, int64_t entity_id) {
+    LIBRG_ASSERT(world); if (!world) return LIBRG_FALSE;
+    librg_world_t *wld = (librg_world_t *)world;
+
+    librg_entity_t *entity = librg_table_ent_get(&wld->entity_map, entity_id);
+    if (entity == NULL) return LIBRG_FALSE;
+
+    return entity->owner_id != LIBRG_OWNER_INVALID;
+}
+
 int32_t librg_entity_count(librg_world *world) {
     LIBRG_ASSERT(world); if (!world) return LIBRG_WORLD_INVALID;
     librg_world_t *wld = (librg_world_t *)world;
