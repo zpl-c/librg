@@ -72,7 +72,8 @@ int32_t librg_world_fetch_chunkarray(librg_world *world, const librg_chunk *chun
 }
 
 int32_t librg_world_fetch_owner(librg_world *world, int64_t owner_id, int64_t *entity_ids, size_t *entity_amount) {
-    return librg_world_fetch_ownerarray(world, (int64_t[]){owner_id}, 1, entity_ids, entity_amount);
+    int64_t owner_ids[1]; owner_ids[0] = owner_id;
+    return librg_world_fetch_ownerarray(world, owner_ids, 1, entity_ids, entity_amount);
 }
 
 int32_t librg_world_fetch_ownerarray(librg_world *world, const int64_t *owner_ids, size_t owner_amount, int64_t *entity_ids, size_t *entity_amount) {
