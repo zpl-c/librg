@@ -12,7 +12,7 @@
 <br />
 
 <div align="center">
-  Making multi-player gamedev simpler since 2017. Single-header cross-platform world replication in pure C99.
+  Making multi-player game dev simpler since 2017. Single-header cross-platform world replication in pure C99.
 </div>
 
 <div align="center">
@@ -28,14 +28,14 @@
 
 **librg** is a lightweight library that serves as a middleware between data-transferring libraries (networking, file-streaming, etc.) and core application/game logic.
 
-Main responsibilities of the library include:
- * entity tracking (tracks which entity belongs to what world, and what states do they have)
+The main responsibilities of the library include:
+ * entity tracking (tracks which entity belongs to what world and what states they have)
  * owner tracking (tracks which participant owns what entity)
- * area of interest management (controls what can and cannot be seen a participant)
+ * Area of interest management (controls what can and cannot be seen by a participant)
  * world replication (re-creates a limited representation in a destination world of what is considered visible to a participant in the source world)
 
-The library was born to solve complexities of setting up and managing the flow of multi-player games and dedicated game servers.
-It came a long way of stripping out things that were non-essential, slowly sculpting into its current form, which you are able to see and use today.
+The library was born to solve the complexities of setting up and managing the flow of multi-player games and dedicated game servers.
+It came a long way in stripping out things that were non-essential, slowly sculpting into its current form, which you are able to see and use today.
 
 ## Why you need it
 
@@ -53,7 +53,7 @@ With librg, you can considerably decrease bandwidth usage by building radius & v
 
 ![world_with_librg](https://user-images.githubusercontent.com/2182108/189517948-afb2dfc9-f632-4a87-bf63-47e3bab5cc42.png)
 
-## Features
+## Benefits
 
  * Support for 2d/3d worlds of various sizes
  * Virtual world support
@@ -65,13 +65,13 @@ With librg, you can considerably decrease bandwidth usage by building radius & v
 
 ## Networking integration
 
-The overall interface of the library was made with support of majority of network libraries in mind
+The overall interface of the library was made with the support of most network libraries in mind.
 
 The networking library has to support:
 
 1. Ability to send and receive a `char *` buffer
 2. Ability to read or set that buffer size
-3. Ability to indentify who is the receiver or sender of the data with an integer id
+3. Ability to identify who is the receiver or sender of the data with an integer id
 
 And that is pretty much it!
 
@@ -87,46 +87,60 @@ A list of what kind of libraries are supported:
 * `WebRTC`
 * Any other `UDP` or `TCP` based library
 
-> Note: you can check an example for network [integration for enet](https://github.com/zpl-c/librg/blob/master/code/apps/example-enet.c).
+> Note: you can check an example for the network [integration for enet](https://github.com/zpl-c/librg/blob/master/code/apps/example-enet.c).
+
+## Installation
+
+`librg` is a single-header library, which means to use it, you only need to get the latest (or specific) version of the said header file from the [releases](https://github.com/zpl-c/librg/releases) section of this repository, add it to your project, and start enjoying the benefits.
+
+Alternatively, if you feel comfortable in your CLI, you can just do the following;
+
+```sh
+curl -L https://github.com/zpl-c/librg/releases/latest/download/librg.h > librg.h
+
+# OR
+
+wget https://github.com/zpl-c/librg/releases/latest/download/librg.h -O librg.h
+```
 
 ## F.A.Q.
 
 1.  **Is this a networking library?**
 
-    * Not really, no. It is intended to be used with netwoking in mind, but it does not have any networking capabilities on its own.
+    * Not really, no. It is intended to be used with networking in mind, but it does not have any networking capabilities on its own.
 
 2. **Can I use any networking library with it?**
 
-    * Yes. All you need is an ability to read data to and from the buffer, and most libraries do support that. Theoretically it can be anything as low level as pure `UDP`, and up to `Websocket`/`WebRTC`.
+    * Yes. All you need is the ability to read data to and from the buffer, which most libraries support. Theoretically, it can be anything as low level as pure `UDP`, and up to `WebSocket`/`WebRTC`.
 
 3. **The repository contains a bunch of `*.h` and `*.c` files, and yet you suggest it is a single-header library, how is that possible?**
 
-    * The library is spread into multiple files so it is easier to work with it while developing, however each time a new release is created, a "bundled" version of the header file is created and pushed directly to the [releases](https://github.com/zpl-c/librg/releases) page.
+    * The library is spread into multiple files so it is easier to work with it while developing, however, each time a new release is created, a "bundled" version of the header file is created and pushed directly to the [releases](https://github.com/zpl-c/librg/releases) page.
 
 4. **Does librg offer an entity system?**
 
-     * No, the library does not manage nor actually create its own entities, it rather expects you to provide your own entity/object handle to attach some internal data onto it, which in context of the library is called "tracking".
+     * No, the library does not manage nor actually create its own entities, it rather expects you to provide your own entity/object handle to attach some internal data onto it, which in the context of the library is called "tracking".
 
 5. **How do I pack data, do you provide methods for that?**
 
-    * No, the library does not provide any data-packing/serialization methods. It's recommended you use some existing library for that (`protobuf`, `flatbuffers`, `msgpack`, etc.), or make your own implementation.
+    * No, the library does not provide any data-packing/serialization methods. You should use some existing library for that (`protobuf`, `flatbuffers`, `msgpack`, etc.), or make your own implementation.
 
 6. **I see you mention chunks, does it mean my game/app should be chunk-based?**
 
-    * No. Chunks are only used internally, to artificially divide the space of the world on statically sized squares/cubes so that querying would work efficiently. Even if your game does use chunks, their amount/sizes/offsets are not required to much and be the same.
+    * No. Chunks are only used internally to artificially divide the world's space into statically sized squares/cubes so that querying would work efficiently. Even if your game does use chunks, their amount/sizes/offsets are not required to much and should be the same.
 
 ## Documentation
 
-To read detailed documentation about the library, see examples and quick start guide, please visit our [documentation page](https://zpl-c.github.io/librg/#/quickstart).
+To read detailed documentation about the library, see examples, and a quick start guide, please visit our [documentation page](https://zpl-c.github.io/librg/#/quickstart).
 
-Additionally you can check [code/apps](code/apps) folder for actual code examples.
+Additionally, you can check [code/apps](code/apps) folder for actual code examples.
 
 ## Illustrations
 
 ### World Replication
 
-Here is a simple illustration that attempts to replicate how the library works on a simple 2d world of 4x4 chunks.
-For a 3d world of bigger size everything would work in a very similar way, just in 3 dimensions.
+Here is a simple illustration that attempts to replicate how the library works on a simple 2D world of 4x4 chunks.
+For a 3D world of bigger size, everything would work in a very similar way, just in 3 dimensions.
 
 <a href="https://user-images.githubusercontent.com/2182108/83945607-87d64400-a814-11ea-8897-3c268b26b0f7.png" target="_blank">
   <img src="https://user-images.githubusercontent.com/2182108/83945607-87d64400-a814-11ea-8897-3c268b26b0f7.png" alt="librg illustration" />
@@ -165,20 +179,20 @@ If you have tested it, and your result is different from the one in the table, p
 
 #### Legend:
 
-* ❔ - Library was not tested on this platform/compiler yet
-* ✅ - Library successfully compiles and all tests are executed properly
+* ❔ - The library was not tested on this platform/compiler yet
+* ✅ - The library successfully compiles, and all tests are executed properly
 
 
 ## Development
 
-If you wish to contribute, add new feature, optimizations, or overall improvements, here are the instructions on how to do that:
+If you wish to contribute, add new features, optimizations, or overall improvements, here are the instructions on how to do that:
 
 1. Clone the repo, f.e.: `git clone https://github.com/zpl-c/librg.git`
-2. Run `make` to build all projects, and verify everything works
+2. Run `make` to build all projects and verify everything works
 3. Develop a feature, add tests for it in `code/tests/`
 4. And eventually run `make test` again to check
 
-In case you are working from **Windows**, and/or are not able to use `make`, you can also use built-in `cmake` config file to generate a Visual Studio solution, to do that:
+In case you are working from **Windows**, and/or are not able to use `make`, you can also use the built-in `cmake` config file to generate a Visual Studio solution, to do that:
 
 1. `mkdir build`
 2. `cd build`
@@ -186,7 +200,7 @@ In case you are working from **Windows**, and/or are not able to use `make`, you
 4. `cmake --open .` (opens VS with the solution)
 5. And repeat steps from above
 
-For developers it offers nice benefits:
+For developers, it offers nice benefits:
 
  * compile- and run-time configurable
  * written in C99 (portability reasons)
