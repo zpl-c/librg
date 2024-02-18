@@ -1,0 +1,15 @@
+CompileFlags:
+  Add: [
+    -Wall,
+    -Wextra,
+    -Werror,
+    -Wno-missing-field-initializers,
+    -Wno-unused-value,
+    -Wno-unused-function,
+    -Wno-missing-braces,
+    -I/absolute/path/to/librg/code,
+    -I/absolute/path/to/librg/code/vendor,
+    -DLIBRG_EDITOR=1,
+    -DLIBRG_IMPLEMENTATION=1,
+  ]
+  Compiler: clang

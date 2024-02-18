@@ -18,6 +18,9 @@ build.sh
 build.bat
 package-lock.json
 
+# configs
+.clangd
+
 # gtags
 GPATH
 GRTAGS
