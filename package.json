@@ -1,6 +1,6 @@
 {
   "name": "librg.c",
-  "version": "7.2.1",
+  "version": "7.3.0",
   "author": "Inlife",
   "description": "Pure C library for building simple and elegant cross-platform multiplayer client-server solutions.",
   "homepage": "https://github.com/zpl-c/librg#readme",
