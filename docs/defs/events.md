@@ -28,6 +28,8 @@ It might have been removed or just changed its position.
 Rejecting this event will cause it to be called on the next call.
 Note, however, this even is considered **dangerous**, since underlying entity might have been already untracked, use with caution.
 
+> **Important note**: The `return` parameter of the event is limited to UINT16_MAX, meaning maximum size of the per-event-buffer would also be limited to that size. If you exceed that limit, the library cause a PANIC and terminate the application. However, there is an option to increase that limit via a compile-time flag: `LIBRG_ENABLE_EXTENDED_EVENTBUFFER`. This expands per-event-buffer size to INT32_MAX, which should be more than enough for most of the cases.
+
 ### Read events
 
 Read events can be considered as a set of instructions coming from source world to the destination world, telling which entities should be created/updated/removedº there,
