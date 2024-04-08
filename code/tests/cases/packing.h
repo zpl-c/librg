@@ -52,12 +52,21 @@ int32_t dummy_markuserdata(librg_world *w, librg_event *e) {
 
 #define SEGMENT_CMP(a, b, n) do { for (size_t i=0;i<n;i++) if (a[i] != '?') EQUALS(a[i], b[i]); } while(0)
 
+
 char expected_buffer_create[] = {
+#ifdef LIBRG_ENABLE_EXTENDED_EVENTBUFFER
+    0x00, 0x00, 0x03, 0x00, 0x30, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01, 0x00, 0x02, 0x00, 0x00, 0x00, 0x09, 0x09, 0x02, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0x00, 0x00, 0x00, 0x09, 0x09, 0x03, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0x00, 0x00, 0x00, 0x09, 0x09, 0x09, 0x00, 0x01, 0x00, 0x0e, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, '?', '?', 0x00, 0x00, 0x00, 0x00,
+#else
     0x00, 0x00, 0x03, 0x00, 0x2a, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01, 0x00, 0x02, 0x00, 0x09, 0x09, 0x02, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0x00, 0x09, 0x09, 0x03, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0x00, 0x09, 0x09, 0x09, 0x00, 0x01, 0x00, 0x0c, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, '?', '?', 0x00, 0x00,
+#endif
 };
 
 char expected_buffer_update[] = {
+#ifdef LIBRG_ENABLE_EXTENDED_EVENTBUFFER
+    0x01, 0x00, 0x03, 0x00, 0x30, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0x00, 0x00, 0x00, 0x09, 0x09, 0x02, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0x00, 0x00, 0x00, 0x09, 0x09, 0x03, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0x00, 0x00, 0x00, 0x09, 0x09,
+#else
     0x01, 0x00, 0x03, 0x00, 0x2a, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0x00, 0x09, 0x09, 0x02, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0x00, 0x09, 0x09, 0x03, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0x00, 0x09, 0x09,
+#endif
 };
 
 MODULE(packing, {
@@ -170,8 +179,9 @@ MODULE(packing, {
         r = librg_event_set(world, LIBRG_WRITE_CREATE, dummy_0size); EQUALS(r, LIBRG_OK);
 
         char buffer[4096] = {0};
-        buffer_size = 34;
-        r = librg_world_write(world, 1, 0, buffer, &buffer_size, NULL); EQUALS(r, 38);
+        buffer_size = sizeof(LIBRG_WORLDWRITE_DATATYPE) == 4 ? 45 : 35;
+        r = librg_world_write(world, 1, 0, buffer, &buffer_size, NULL);
+        EQUALS(r, (sizeof(LIBRG_WORLDWRITE_DATATYPE) == 4 ? 23 : 33));
         size_t expected = CREATE_SEGMENT(2, 0); EQUALS(buffer_size, expected);
 
         r = librg_world_destroy(world); EQUALS(r, LIBRG_OK);
@@ -192,7 +202,7 @@ MODULE(packing, {
         r = librg_event_set(world, LIBRG_WRITE_CREATE, dummy_0size); EQUALS(r, LIBRG_OK);
 
         char buffer[4096] = {0};
-        buffer_size = 34;
+        buffer_size = sizeof(LIBRG_WORLDWRITE_DATATYPE) == 4 ? 45 : 35;
         r = librg_world_write(world, 1, 0, buffer, &buffer_size, NULL);
         size_t expected = CREATE_SEGMENT(2, 0); EQUALS(buffer_size, expected);
 
@@ -218,7 +228,7 @@ MODULE(packing, {
         r = librg_event_set(world, LIBRG_WRITE_CREATE, dummy_2bytes); EQUALS(r, LIBRG_OK);
 
         char buffer[4096] = {0};
-        buffer_size = 35;
+        buffer_size = sizeof(LIBRG_WORLDWRITE_DATATYPE) == 4 ? 45 : 35;
         r = librg_world_write(world, 1, 0, buffer, &buffer_size, NULL);
         size_t expected = CREATE_SEGMENT(2, 2); EQUALS(buffer_size, expected);
 
@@ -240,11 +250,11 @@ MODULE(packing, {
         r = librg_event_set(world, LIBRG_WRITE_CREATE, dummy_2bytes); EQUALS(r, LIBRG_OK);
 
         char buffer[4096] = {0};
-        buffer_size = 35;
+        buffer_size = sizeof(LIBRG_WORLDWRITE_DATATYPE) == 4 ? 45 : 35;
         r = librg_world_write(world, 1, 0, buffer, &buffer_size, NULL);
         size_t expected = CREATE_SEGMENT(2, 2); EQUALS(buffer_size, expected);
 
-        buffer_size = 35;
+        buffer_size = sizeof(LIBRG_WORLDWRITE_DATATYPE) == 4 ? 45 : 35;
         r = librg_world_write(world, 1, 0, buffer, &buffer_size, NULL);
         expected = CREATE_SEGMENT(1, 2); EQUALS(buffer_size, expected);
 
@@ -366,7 +376,7 @@ MODULE(packing, {
         buffer_size = 4096;
         r = librg_world_write(world, 1, 0, buffer, &buffer_size, NULL);
 
-        buffer_size = 34;
+        buffer_size = sizeof(LIBRG_WORLDWRITE_DATATYPE) == 4 ? 45 : 35;
         r = librg_world_write(world, 1, 0, buffer, &buffer_size, NULL);
         size_t expected = UPDATE_SEGMENT(2, 0); EQUALS(buffer_size, expected);
 
@@ -391,11 +401,11 @@ MODULE(packing, {
         buffer_size = 4096;
         r = librg_world_write(world, 1, 0, buffer, &buffer_size, NULL);
 
-        buffer_size = 34;
+        buffer_size = sizeof(LIBRG_WORLDWRITE_DATATYPE) == 4 ? 45 : 35;
         r = librg_world_write(world, 1, 0, buffer, &buffer_size, NULL);
         size_t expected = UPDATE_SEGMENT(2, 0); EQUALS(buffer_size, expected);
 
-        buffer_size = 34;
+        buffer_size = sizeof(LIBRG_WORLDWRITE_DATATYPE) == 4 ? 45 : 35;
         r = librg_world_write(world, 1, 0, buffer, &buffer_size, NULL);
         expected = UPDATE_SEGMENT(2, 0); EQUALS(buffer_size, expected);
 
@@ -419,7 +429,7 @@ MODULE(packing, {
         char buffer[4096] = {0};
         buffer_size = 4096;
         r = librg_world_write(world, 1, 0, buffer, &buffer_size, NULL);
-        buffer_size = 35;
+        buffer_size = sizeof(LIBRG_WORLDWRITE_DATATYPE) == 4 ? 45 : 35;
         r = librg_world_write(world, 1, 0, buffer, &buffer_size, NULL);
         size_t expected = UPDATE_SEGMENT(2, 2); EQUALS(buffer_size, expected);
 
@@ -443,11 +453,11 @@ MODULE(packing, {
         char buffer[4096] = {0};
         buffer_size = 4096;
         r = librg_world_write(world, 1, 0, buffer, &buffer_size, NULL);
-        buffer_size = 35;
+        buffer_size = sizeof(LIBRG_WORLDWRITE_DATATYPE) == 4 ? 45 : 35;
         r = librg_world_write(world, 1, 0, buffer, &buffer_size, NULL);
         size_t expected = UPDATE_SEGMENT(2, 2); EQUALS(buffer_size, expected);
 
-        buffer_size = 35;
+        buffer_size = sizeof(LIBRG_WORLDWRITE_DATATYPE) == 4 ? 45 : 35;
         r = librg_world_write(world, 1, 0, buffer, &buffer_size, NULL);
         expected = UPDATE_SEGMENT(2, 2); EQUALS(buffer_size, expected);
 

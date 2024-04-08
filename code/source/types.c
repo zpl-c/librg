@@ -64,6 +64,13 @@ LIBRG_BEGIN_C_DECLS
 #error "LIBRG_WORLDWRITE_MAXQUERY must have value less than 65535"
 #endif
 
+/* enables the increased data-buffer size for world packing */
+#ifdef LIBRG_ENABLE_EXTENDED_EVENTBUFFER
+#define LIBRG_WORLDWRITE_DATATYPE uint32_t
+#else
+#define LIBRG_WORLDWRITE_DATATYPE uint16_t
+#endif
+
 // =======================================================================//
 // !
 // ! Internal data structures

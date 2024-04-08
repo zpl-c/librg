@@ -21,6 +21,8 @@
 
 #define LIBRG_IMPL
 #define LIBRG_DEBUG
+#define LIBRG_ENABLE_EXTENDED_EVENTBUFFER // <-- if uncommented should error out the app because of line 37 (intentional)
+
 // #define LIBRG_WORLDWRITE_MAXQUERY 360
 #include "librg.h"
 
@@ -32,7 +34,7 @@ int32_t _parent_create(librg_world *world, librg_event *event) {
     zpl_unused(world);
     zpl_unused(event);
     // printf("_parent_create %p %d\n", world, event->type);
-    return 0;
+    return ZPL_I32_MAX-1;
 }
 
 int32_t _child_create(librg_world *world, librg_event *event) {

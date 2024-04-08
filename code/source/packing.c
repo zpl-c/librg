@@ -13,11 +13,21 @@ LIBRG_BEGIN_C_DECLS
 // !
 // =======================================================================//
 
+/* size of the segment */
+#define LIBRG_SEGMENT_SIZE 8
+
+/* size of the segment value */
+#ifdef LIBRG_ENABLE_EXTENDED_EVENTBUFFER
+#define LIBRG_SEGVAL_SIZE 14
+#else
+#define LIBRG_SEGVAL_SIZE 12
+#endif
+
 LIBRG_PRAGMA(pack(push, 1));
 typedef struct {
     uint64_t id;
     uint16_t token;
-    uint16_t size;
+    LIBRG_WORLDWRITE_DATATYPE size;
 } librg_segval_t;
 
 typedef struct {
@@ -28,8 +38,8 @@ typedef struct {
 } librg_segment_t;
 LIBRG_PRAGMA(pack(pop));
 
-LIBRG_STATIC_ASSERT(sizeof(librg_segval_t) == 12, "packed librg_segval_t should have a valid size");
-LIBRG_STATIC_ASSERT(sizeof(librg_segment_t) == 8, "packed librg_segment_t should have a valid size");
+LIBRG_STATIC_ASSERT(sizeof(librg_segval_t) == LIBRG_SEGVAL_SIZE, "packed librg_segval_t should have a valid size");
+LIBRG_STATIC_ASSERT(sizeof(librg_segment_t) == LIBRG_SEGMENT_SIZE, "packed librg_segment_t should have a valid size");
 
 // =======================================================================//
 // !
@@ -135,6 +145,19 @@ librg_lbl_ww:
                 /* call event handlers */
                 if (wld->handlers[action_id]) {
                     data_size = (int32_t)wld->handlers[action_id](world, (librg_event*)&evt);
+
+                    /* if data size is bigger than the limit, we will notify user about that */
+                    if (data_size > ZPL_I32_MAX) {
+                        ZPL_PANIC("librg: the data size returned by the event handler is too big for the event. \
+                            Ensure that you are not returning more than %d bytes.", ZPL_I32_MAX);
+                    }
+
+                    #ifndef LIBRG_ENABLE_EXTENDED_EVENTBUFFER
+                    if (data_size > (int32_t)ZPL_U16_MAX) {
+                        ZPL_PANIC("librg: the data size returned by the event handler is bigger than the event buffer size. \
+                            Ensure that you are not returning more than %d bytes.", evt.size);
+                    }
+                    #endif
                 }
 
                 /* if user returned < 0, we consider that event rejected */
