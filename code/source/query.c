@@ -45,7 +45,7 @@ int32_t librg_world_fetch_chunkarray(librg_world *world, const librg_chunk *chun
     size_t buffer_limit = *entity_amount;
     size_t total_count = zpl_array_count(wld->entity_map.entries);
 
-    for (size_t i=0; i < LIBRG_MIN(buffer_limit, total_count); ++i) {
+    for (size_t i=0; i < total_count && count < buffer_limit; ++i) {
         uint64_t entity_id = wld->entity_map.entries[i].key;
         librg_entity_t *entity = &wld->entity_map.entries[i].value;
         iterated++;
@@ -86,7 +86,7 @@ int32_t librg_world_fetch_ownerarray(librg_world *world, const int64_t *owner_id
     size_t buffer_limit = *entity_amount;
     size_t total_count = zpl_array_count(wld->entity_map.entries);
 
-    for (size_t i=0; i < LIBRG_MIN(buffer_limit, total_count); ++i) {
+    for (size_t i=0; i < total_count && count < buffer_limit; ++i) {
         uint64_t entity_id = wld->entity_map.entries[i].key;
         librg_entity_t *entity = &wld->entity_map.entries[i].value;
         iterated++;
