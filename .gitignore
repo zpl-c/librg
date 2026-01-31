@@ -5,6 +5,7 @@ emsdk
 misc/deploy/
 node_modules/
 pkg/
+.vscode/
 
 # vs shit
 *.dir/
