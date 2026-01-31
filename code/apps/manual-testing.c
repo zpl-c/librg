@@ -34,7 +34,7 @@ int32_t _parent_create(librg_world *world, librg_event *event) {
     zpl_unused(world);
     zpl_unused(event);
     // printf("_parent_create %p %d\n", world, event->type);
-    return ZPL_I32_MAX - 1;
+    return ZPL_I32_MAX-1;
 }
 
 int32_t _child_create(librg_world *world, librg_event *event) {
