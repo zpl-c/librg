@@ -29,7 +29,7 @@ jobs:
           url: ${{ secrets.ACTIORD_URL }}
           icon: https://avatars1.githubusercontent.com/u/26773913?s=200&v=4
           state: started
-          discord_channel: 354703318695673857
+          discord_channel: 354674095771615232
 
   build-win:
     name: Test Windows
@@ -78,7 +78,7 @@ jobs:
           url: ${{ secrets.ACTIORD_URL }}
           icon: https://avatars1.githubusercontent.com/u/26773913?s=200&v=4
           state: succeeded
-          discord_channel: 354703318695673857
+          discord_channel: 354674095771615232
 
       - uses: inlife/actiord-action@v1
         if: ${{ !(contains(needs.build-mac.result, 'success') && contains(needs.build-lin.result, 'success') && contains(needs.build-win.result, 'success')) }}
@@ -86,4 +86,4 @@ jobs:
           url: ${{ secrets.ACTIORD_URL }}
           icon: https://avatars1.githubusercontent.com/u/26773913?s=200&v=4
           state: failed
-          discord_channel: 354703318695673857
+          discord_channel: 354674095771615232
