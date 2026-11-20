@@ -263,12 +263,24 @@ int32_t librg_world_read(librg_world *world, int64_t owner_id, const char *buffe
         size_t segment_read = 0;
 
         /* immidiately exit if we will not be able to read the segment data */
-        if (sz_segment+seg->size > size || sz_segment + seg->amount * sizeof(librg_segval_t) > size) {
+        /* (compared against the remaining size, so the sum can't wrap on 32-bit targets) */
+        if (seg->size > size - sz_segment || seg->amount * sizeof(librg_segval_t) > size - sz_segment) {
             break;
         }
 
         for (int i = 0; i < seg->amount; ++i) {
+            /* the descriptor and its declared payload must both fit inside
+               the segment bounds that were validated above */
+            if (seg->size - segment_read < sizeof(librg_segval_t)) {
+                return LIBRG_READ_INVALID;
+            }
+
             librg_segval_t *val = (librg_segval_t*)(buffer+sz_segment+segment_read);
+
+            if (val->size > seg->size - segment_read - sizeof(librg_segval_t)) {
+                return LIBRG_READ_INVALID;
+            }
+
             librg_entity_t *entity_blob = librg_table_ent_get(&wld->entity_map, val->id);
             int8_t action_id = -1;
 

@@ -1095,4 +1095,60 @@ MODULE(packing, {
         r = librg_world_destroy(world1); EQUALS(r, LIBRG_OK);
         r = librg_world_destroy(world2); EQUALS(r, LIBRG_OK);
     });
+
+    // =======================================================================//
+    // !
+    // ! Reading malformed data
+    // !
+    // =======================================================================//
+
+    IT("should reject a value whose declared size runs past the segment", {
+        librg_world *world = librg_world_create();
+        r = librg_event_set(world, LIBRG_READ_CREATE, dummy_markuserdata); EQUALS(r, LIBRG_OK);
+
+        char buffer[64] = {0};
+        librg_segment_t seg = {0};
+        librg_segval_t val = {0};
+
+        seg.type = LIBRG_WRITE_CREATE;
+        seg.amount = 1;
+        seg.size = sizeof(librg_segval_t);
+        memcpy(buffer, &seg, sizeof(seg));
+
+        /* the value claims far more data than was received */
+        val.id = 1;
+        val.size = 0xffff;
+        memcpy(buffer + sizeof(seg), &val, sizeof(val));
+
+        int value = 0;
+        r = librg_world_read(world, 1, buffer, sizeof(seg) + sizeof(val), &value); EQUALS(r, LIBRG_READ_INVALID);
+        EQUALS(value, 0); /* the read handler must never get the out-of-bounds buffer */
+        r = librg_entity_count(world); EQUALS(r, 0);
+
+        r = librg_world_destroy(world); EQUALS(r, LIBRG_OK);
+    });
+
+    IT("should reject a value descriptor that starts past the segment end", {
+        librg_world *world = librg_world_create();
+
+        char buffer[64] = {0};
+        librg_segment_t seg = {0};
+        librg_segval_t val = {0};
+
+        /* both descriptors fit in the received buffer, but the segment only has room for one */
+        seg.type = LIBRG_WRITE_CREATE;
+        seg.amount = 2;
+        seg.size = sizeof(librg_segval_t);
+        memcpy(buffer, &seg, sizeof(seg));
+
+        val.id = 1;
+        memcpy(buffer + sizeof(seg), &val, sizeof(val));
+        val.id = 2;
+        memcpy(buffer + sizeof(seg) + sizeof(val), &val, sizeof(val));
+
+        r = librg_world_read(world, 1, buffer, sizeof(seg) + 2 * sizeof(val), NULL); EQUALS(r, LIBRG_READ_INVALID);
+        r = librg_entity_tracked(world, 2); EQUALS(r, LIBRG_FALSE); /* nothing past the segment end was processed */
+
+        r = librg_world_destroy(world); EQUALS(r, LIBRG_OK);
+    });
 });
